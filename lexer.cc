@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <fstream>
+#include <chrono>
 
 enum class TokenType : uint16_t {
     IDENTIFIER = 128,
@@ -14,6 +16,7 @@ enum class TokenType : uint16_t {
     STRING_LITERAL,
 
     KW_IF,
+    KW_ELSE,
     KW_WHILE,
     KW_FOR,
     KW_RETURN,
@@ -50,6 +53,7 @@ enum class TokenType : uint16_t {
     LBRACKET,
     RBRACKET,
     SEMICOLON,
+    COLON,
     COMMA,
     DOT,
 
@@ -57,6 +61,7 @@ enum class TokenType : uint16_t {
     ADDRESS_OF,
     ARROW,
 
+    END_OF_FILE,
     INVALID,   
 
     // bitwise later (overlap with some other tokens)
@@ -64,6 +69,7 @@ enum class TokenType : uint16_t {
 
 namespace {
     const std::unordered_map<char, TokenType> symbol_map = {
+        {'=', TokenType::ASSIGN},
         {'+', TokenType::ADD},
         {'-', TokenType::SUBTRACT},
         {'*', TokenType::MULTIPLY},
@@ -74,42 +80,53 @@ namespace {
         {'}', TokenType::RBRACE},
         {'[', TokenType::LBRACKET},
         {']', TokenType::RBRACKET},
+        {'>', TokenType::GREATER_THAN},
+        {'<', TokenType::LESS_THAN},
+        {']', TokenType::RBRACKET},
+        {']', TokenType::RBRACKET},
+        {';', TokenType::SEMICOLON},
+        {':', TokenType::COLON},
+        {',', TokenType::COMMA},
+        {'.', TokenType::DOT},
+        {'!', TokenType::LOGICAL_NOT},
     };
 }
 
 struct Token {
     TokenType type;
-    std::string value;
+    std::string lexeme;
+
+    std::string to_string() const {
+        return std::to_string(static_cast<int>(type)) + " " + lexeme;
+    }
 };
 
-std::vector<Token> tokenize(const std::string& source) {
+[[nodiscard]] std::vector<Token> tokenize(std::string_view source) {
     std::vector<Token> tokens;
 
     auto cur = source.begin();
     auto start = cur, end = cur;
 
     while (cur != source.end()) {
-        if (std::isspace(*cur)) {
-            cur++;
-        } else if (std::isdigit(*cur)) {
+        if (std::isspace(*cur)) cur++;
+        else if (std::isdigit(*cur)) {
             start = cur;
-            while (std::isdigit(*cur)) {
-                cur++;
-            }
+            while (std::isdigit(*cur)) cur++;
             end = cur;
             tokens.emplace_back(TokenType::NUMERIC_LITERAL, std::string{start, end});
             cur++;
         } else if (std::isalpha(*cur)) {
             start = cur;
-            while (std::isalpha(*cur) || *cur == '_') {
-                cur++;
-            }
+            while (std::isalpha(*cur) || *cur == '_') cur++;
             end = cur;
-            std::string value {start, end};
 
+            std::string value {start, end};
             TokenType type = TokenType::IDENTIFIER;
+
             if (value == "if")
                 type = TokenType::KW_IF;
+            if (value == "else")
+                type = TokenType::KW_ELSE;
             else if (value == "while")
                 type = TokenType::KW_WHILE;
             else if (value == "for")
@@ -117,7 +134,7 @@ std::vector<Token> tokenize(const std::string& source) {
             else if (value == "return") 
                 type = TokenType::KW_RETURN;
 
-            tokens.emplace_back(type, value);
+            tokens.emplace_back(type, std::string{value});
 
         } else if (symbol_map.count(*cur)) {
             tokens.emplace_back(symbol_map.at(*cur), std::string{*cur});
@@ -130,37 +147,44 @@ std::vector<Token> tokenize(const std::string& source) {
     return tokens;
 }
 
+void tokenize_test(std::string path) {
+    std::string source_text;
+    
+    for (int i = 0; i < 100000; i++) {
+        std::ifstream file{path};
+        if (!file.is_open())
+            throw std::runtime_error("can't open file" + path);
 
+        std::string line;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void tokenize_test() {
-    std::string s {"return     (a + b * 923 /   2) + (c + d * g + 4442)"};
-    try {
-        auto tokens = tokenize(s);
-        for (Token tok : tokens) {
-            std::cout << "Token: " << tok.value << ' ' << "Type: " << static_cast<int>(tok.type) << '\n';
+        while (getline(file, line)) {
+            source_text += line;
         }
+    }
+
+    try {
+        auto start = std::chrono::high_resolution_clock::now();
+        auto tokens = tokenize(source_text);
+        auto end = std::chrono::high_resolution_clock::now();
+
+        auto duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+        std::cout << duration_ms.count() << "ms\n";
+        
+        /*
+        for (Token tok : tokens) {
+            std::cout << tok.to_string() << '\n';
+        }
+        */
+
     } catch (const std::runtime_error &e) {
         std::cerr << e.what() << '\n';
     }
 }
 
-
 int main() {
-    tokenize_test();
+
+    tokenize_test("lex_example.txt");
     
 }
 
