@@ -21,6 +21,7 @@ enum class TokenType : uint16_t {
     KEYWORD_WHILE,
     KEYWORD_FOR,
     KEYWORD_RETURN,
+    KEYWORD_CONST,
     
     ADD,
     SUBTRACT,
@@ -143,6 +144,9 @@ struct Token {
                 type = TokenType::KEYWORD_FOR;
             else if (value == "return") 
                 type = TokenType::KEYWORD_RETURN;
+            else if (value == "const") {
+                type = TokenType::KEYWORD_CONST;
+            }
 
             tokens.emplace_back(type, std::string{value});
         
@@ -235,7 +239,7 @@ struct Token {
                     }
                     break;
                 case '"':
-                    start = cur;
+                    start = cur++;
                     while (*cur != '"') cur++;
                     end = cur;
                     tokens.emplace_back(TokenType::STRING_LITERAL, std::string{start, end+1});
