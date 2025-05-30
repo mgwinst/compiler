@@ -2,6 +2,7 @@ int main() {
     int a = 5;
     int b = 10;
     int result = a + b * 2;
+    string s = "helloworld"
 
     if (result > 10) {
         result += 1;
