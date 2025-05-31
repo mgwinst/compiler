@@ -7,6 +7,8 @@ enum class TokenType : uint16_t {
     NUMERIC_LITERAL,
     STRING_LITERAL,
 
+    TYPE,
+
     KEYWORD_IF,
     KEYWORD_ELSE,
     KEYWORD_WHILE,
@@ -14,18 +16,6 @@ enum class TokenType : uint16_t {
     KEYWORD_RETURN,
     KEYWORD_CONST,
     KEYWORD_TYPEDEF,
-
-    TYPE_INT,
-    TYPE_INT8,
-    TYPE_INT16,
-    TYPE_INT64,
-    TYPE_FLOAT,
-    TYPE_FLOAT16,
-    TYPE_FLOAT64,
-    TYPE_CHAR,
-    TYPE_STRING,
-    TYPE_STRUCT,
-    TYPE_UNION,
 
     ADD,
     SUBTRACT,
@@ -65,7 +55,6 @@ enum class TokenType : uint16_t {
     COLON,
     COMMA,
     DOT,
-    QUESTION,
 
     ADDRESS_OF,
     ARROW,
@@ -79,10 +68,14 @@ enum class TokenType : uint16_t {
 
 struct Token {
     TokenType type;
-    std::string value;
+    std::string lexeme;
+    int line_number;
+    int column_number;
+    int length;
+    
 
     std::string to_string() const {
-        return std::to_string(static_cast<int>(type)) + " " + value;
+        return std::to_string(static_cast<int>(type)) + " " + lexeme;
     }
 };
 

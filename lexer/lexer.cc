@@ -1,10 +1,26 @@
 #include <string>
 #include <vector>
+#include <unordered_set>
 #include <cctype>
 #include <fstream>
 #include <iostream>
 
 #include "lexer.h"
+
+namespace {
+    const std::unordered_set<std::string_view> type_keywords = {
+        "int", "int8", "int16", "int32", "int64",
+        "uint", "uint8", "uint16", "uint32", "uint64",
+        "float", "float16", "float32", "float64",
+        "char", "string", "struct", "bool", "void"
+    };
+
+    const std::unordered_set<char> skippable = {' ', '\n', '\t', '\r'};
+}
+
+
+
+
 
 [[nodiscard]] std::vector<Token> lex(std::string_view source) {
     std::vector<Token> tokens;
@@ -13,8 +29,12 @@
     auto start = cur, end = cur;
 
     while (cur != source.end()) {
+        // whitespace handler
         if (std::isspace(*cur)) {
-            cur++;
+            if (*cur == ' ') {
+                cur++;
+            }
+            
 
         } else if (std::isdigit(*cur)) {
             start = cur;
@@ -32,7 +52,7 @@
 
             if (value == "if")
                 type = TokenType::KEYWORD_IF;
-            if (value == "else")
+            else if (value == "else")
                 type = TokenType::KEYWORD_ELSE;
             else if (value == "while")
                 type = TokenType::KEYWORD_WHILE;
@@ -44,6 +64,8 @@
                 type = TokenType::KEYWORD_CONST;
             else if (value == "typedef")
                 type = TokenType::KEYWORD_TYPEDEF;
+            else if (type_keywords.contains(value))
+                type = TokenType::TYPE;
 
             tokens.emplace_back(type, std::string{value});
         
@@ -205,10 +227,6 @@
     return tokens;
 }
 
-
-
-
-/*
 void test_lex(std::string path) {
     std::ifstream file{path};
     if (!file.is_open())
@@ -232,6 +250,5 @@ void test_lex(std::string path) {
 int main() {
     // test_lex("../test/sample_program.c");
     test_lex("../test/sample_tokens.txt");
-}
 
-*/
+}
