@@ -1,10 +1,8 @@
-#include <iostream>
 #include <string>
 #include <vector>
-#include <unordered_map>
-#include <fstream>
 #include <cctype>
-#include <variant>
+#include <fstream>
+#include <iostream>
 
 #include "lexer.h"
 
@@ -42,9 +40,10 @@
                 type = TokenType::KEYWORD_FOR;
             else if (value == "return") 
                 type = TokenType::KEYWORD_RETURN;
-            else if (value == "const") {
+            else if (value == "const")
                 type = TokenType::KEYWORD_CONST;
-            }
+            else if (value == "typedef")
+                type = TokenType::KEYWORD_TYPEDEF;
 
             tokens.emplace_back(type, std::string{value});
         
@@ -98,6 +97,9 @@
                 case '/':
                     if (*(cur+1) == '=') {
                         tokens.emplace_back(TokenType::DIVIDE_ASSIGN, std::string{cur, cur+2});
+                        cur += 2; 
+                    } else if (*(cur+1) == '/') {
+                        tokens.emplace_back(TokenType::COMMENT, std::string{cur, cur+2});
                         cur += 2;
                     } else {
                         tokens.emplace_back(TokenType::DIVIDE, std::string{*cur});
@@ -206,7 +208,6 @@
 
 
 
-
 /*
 void test_lex(std::string path) {
     std::ifstream file{path};
@@ -229,6 +230,8 @@ void test_lex(std::string path) {
 }
 
 int main() {
-    test_lex("../test/sample_program.c");
+    // test_lex("../test/sample_program.c");
+    test_lex("../test/sample_tokens.txt");
 }
+
 */

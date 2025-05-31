@@ -1,6 +1,9 @@
-var1 a 123 35 "hello world" if else while for return const
+var1 b 123 35 "hello world"
+if else while for return const
 + - * / % ++ --
 = += -= *= /=
 == != <= >= < >
 && ! ( ) { } [ ] ; : , .
 & ->
+//
+typedef

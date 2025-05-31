@@ -59,4 +59,22 @@ TEST(LEXER_TEST, lexer) {
     ASSERT_EQ(tokens[40].type, TokenType::DOT);
     ASSERT_EQ(tokens[41].type, TokenType::ADDRESS_OF);
     ASSERT_EQ(tokens[42].type, TokenType::ARROW);
+    ASSERT_EQ(tokens[43].type, TokenType::COMMENT);
+    ASSERT_EQ(tokens[44].type, TokenType::KEYWORD_TYPEDEF);
+
+    /*
+    ASSERT_EQ(tokens[43].type, TokenType::TYPE_INT);
+    ASSERT_EQ(tokens[44].type, TokenType::TYPE_INT8);
+    ASSERT_EQ(tokens[45].type, TokenType::TYPE_INT16);
+    ASSERT_EQ(tokens[46].type, TokenType::TYPE_INT32);
+    ASSERT_EQ(tokens[47].type, TokenType::TYPE_INT64);
+    ASSERT_EQ(tokens[48].type, TokenType::TYPE_FLOAT);
+    ASSERT_EQ(tokens[49].type, TokenType::TYPE_FLOAT16);
+    ASSERT_EQ(tokens[50].type, TokenType::TYPE_FLOAT32);
+    ASSERT_EQ(tokens[51].type, TokenType::TYPE_FLOAT64);
+    ASSERT_EQ(tokens[52].type, TokenType::TYPE_CHAR);
+    ASSERT_EQ(tokens[53].type, TokenType::TYPE_STRING);
+    ASSERT_EQ(tokens[54].type, TokenType::TYPE_STRUCT);
+    ASSERT_EQ(tokens[55].type, TokenType::TYPE_UNION);
+    */
 }

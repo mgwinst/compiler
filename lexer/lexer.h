@@ -4,8 +4,6 @@
 enum class TokenType : uint16_t {
     IDENTIFIER = 128,
 
-    // INTEGER_CONSTANT,
-    // FLOAT_CONSTANT,
     NUMERIC_LITERAL,
     STRING_LITERAL,
 
@@ -15,7 +13,20 @@ enum class TokenType : uint16_t {
     KEYWORD_FOR,
     KEYWORD_RETURN,
     KEYWORD_CONST,
-    
+    KEYWORD_TYPEDEF,
+
+    TYPE_INT,
+    TYPE_INT8,
+    TYPE_INT16,
+    TYPE_INT64,
+    TYPE_FLOAT,
+    TYPE_FLOAT16,
+    TYPE_FLOAT64,
+    TYPE_CHAR,
+    TYPE_STRING,
+    TYPE_STRUCT,
+    TYPE_UNION,
+
     ADD,
     SUBTRACT,
     MULTIPLY,
@@ -59,6 +70,7 @@ enum class TokenType : uint16_t {
     ADDRESS_OF,
     ARROW,
 
+    COMMENT,
     END_OF_FILE,
     INVALID,   
 
