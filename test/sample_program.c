@@ -1,8 +1,8 @@
 int main() {
-    const int a = 5;
+    const int a1 = 5;
     const int b = 10;
-    int result = a + b * 2;
-    const string s = "helloworld"
+    int result = a1 + b * 2;
+    const string s = "hello world";
 
     if (result > 10) {
         result += 1;
@@ -16,4 +16,3 @@ int main() {
 
     return result;
 }
-
