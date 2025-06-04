@@ -5,6 +5,7 @@
 #include <cctype>
 #include <fstream>
 #include <iostream>
+#include <cassert>
 
 #include "lexer.h"
 
@@ -16,12 +17,59 @@ namespace {
         "char", "string", "struct", "bool", "void"
     };
 
-    const std::unordered_map<State, Token> state_to_token = {
-        {}
-    }
+    const std::unordered_set<State> start_states = {
+        State::ID_START,
+        State::DIGIT_START,
+        State::STRING_LITERAL_START
+    };
+
+    const std::unordered_set<State> middle_states = {
+        State::ID_CHAR,
+        State::DIGIT_CHAR,
+        State::STRING_LITERAL_CHAR
+    };
+
+    const std::unordered_map<State, TokenType> accept_states = {
+        {State::ID_ACCEPT, TokenType::IDENTIFIER},
+        // {State::KEYWORD_ACCEPT, TokenType:: }, forget keywords for now.
+        {State::DIGIT_ACCEPT, TokenType::NUMERIC_LITERAL},
+        {State::STRING_LITERAL_ACCEPT, TokenType::STRING_LITERAL},
+        {State::ASSIGN_ACCEPT, TokenType::ASSIGN},
+        {State::EQUALS_ACCEPT, TokenType::EQUALS},
+        {State::ADD_ACCEPT, TokenType::ADD},
+        {State::ADD_ASSIGN_ACCEPT, TokenType::ADD_ASSIGN},
+        {State::SUB_ACCEPT, TokenType::SUBTRACT},
+        {State::SUB_ASSIGN_ACCEPT, TokenType::SUBTRACT_ASSIGN},
+        {State::INCREMENT_ACCEPT, TokenType::INCREMENT},
+        {State::DECREMENT_ACCEPT, TokenType::DECREMENT},
+        {State::MULTIPLY_ACCEPT, TokenType::MULTIPLY},
+        {State::MULTIPLY_ASSIGN_ACCEPT, TokenType::MULTIPLY_ASSIGN},
+        {State::DIVIDE_ACCEPT, TokenType::DIVIDE},
+        {State::DIVIDE_ASSIGN_ACCEPT, TokenType::DIVIDE_ASSIGN},
+        {State::LESS_THAN_ACCEPT, TokenType::LESS_THAN},
+        {State::LESS_EQUAL_ACCEPT, TokenType::LESS_EQUAL},
+        {State::GREATER_THAN_ACCEPT, TokenType::GREATER_THAN},
+        {State::GREATER_EQUAL_ACCEPT, TokenType::GREATER_EQUAL},
+        {State::LOGICAL_AND_ACCEPT, TokenType::LOGICAL_AND},
+        {State::LOGICAL_OR_ACCEPT, TokenType::LOGICAL_OR},
+        {State::LOGICAL_NOT_ACCEPT, TokenType::LOGICAL_NOT},
+        {State::EXCLA_ACCEPT, TokenType::LOGICAL_NOT},
+        {State::LPAREN_ACCEPT, TokenType::LPAREN},
+        {State::RPAREN_ACCEPT, TokenType::RPAREN},
+        {State::LBRACKET_ACCEPT, TokenType::LBRACKET},
+        {State::RBRACKET_ACCEPT, TokenType::RBRACKET},
+        {State::LBRACE_ACCEPT, TokenType::LBRACE},
+        {State::RBRACE_ACCEPT, TokenType::RBRACE},
+        {State::SEMICOLON_ACCEPT, TokenType::SEMICOLON},
+        {State::COLON_ACCEPT, TokenType::COLON},
+        {State::COMMA_ACCEPT, TokenType::COMMA},
+        {State::DOT_ACCEPT, TokenType::DOT},
+        {State::COMMENT_ACCEPT, TokenType::COMMENT},
+        {State::ADDRESSOF_ACCEPT, TokenType::ADDRESS_OF},
+        {State::ARROW_ACCEPT, TokenType::ARROW}
+    };
 
     Category char_to_category[256];
-
     State transition_table[NUM_STATES][NUM_CHAR_CATEGORIES];
 }
 
@@ -41,6 +89,8 @@ void init_char_categories() {
     for (char c = 'a'; c <= 'z'; c++) {
         char_to_category[(int)c] = Category::LETTER;
     }
+
+    char_to_category[(int)'_'] = Category::LETTER;
 
     char_to_category[(int)'='] = Category::EQUAL;
     char_to_category[(int)'+'] = Category::PLUS;
@@ -62,15 +112,8 @@ void init_char_categories() {
     char_to_category[(int)','] = Category::COMMA;
     char_to_category[(int)'.'] = Category::DOT;
     char_to_category[(int)'!'] = Category::EXCLA_POINT;
-    char_to_category[(int)'?'] = Category::QUESTION;
-    char_to_category[(int)'^'] = Category::CARROT;
-    char_to_category[(int)'_'] = Category::UNDERSCORE;
-
-    // all Categoroy::WHITESPACE or unique?
+    
     char_to_category[(int)' '] = Category::WHITESPACE;
-    char_to_category[(int)'\n'] = Category::WHITESPACE;
-    char_to_category[(int)'\r'] = Category::WHITESPACE;
-    char_to_category[(int)'\t'] = Category::WHITESPACE;
 }
 
 void init_transition_table() {
@@ -80,8 +123,11 @@ void init_transition_table() {
         }
     }
 
+    transition_table[(int)State::INITIAL][(int)Category::WHITESPACE] = State::SKIPPABLE;
+
     transition_table[(int)State::INITIAL][(int)Category::LETTER] = State::ID_START; 
     transition_table[(int)State::ID_START][(int)Category::LETTER] = State::ID_CHAR; 
+    transition_table[(int)State::ID_START][(int)Category::WHITESPACE] = State::ID_ACCEPT; // one letter variables 
     transition_table[(int)State::ID_CHAR][(int)Category::LETTER] = State::ID_CHAR;
     transition_table[(int)State::ID_CHAR][(int)Category::DIGIT] = State::ID_CHAR;
     transition_table[(int)State::ID_CHAR][(int)Category::WHITESPACE] = State::ID_ACCEPT;
@@ -118,9 +164,6 @@ void init_transition_table() {
     transition_table[(int)State::INITIAL][(int)Category::COMMA] = State::COMMA_ACCEPT;
     transition_table[(int)State::INITIAL][(int)Category::DOT] = State::DOT_ACCEPT; 
     transition_table[(int)State::INITIAL][(int)Category::EXCLA_POINT] = State::EXCLA_ACCEPT;
-    transition_table[(int)State::INITIAL][(int)Category::QUESTION] = State::QUESTION_ACCEPT;
-    transition_table[(int)State::INITIAL][(int)Category::CARROT] = State::CARROT_ACCEPT; 
-    transition_table[(int)State::INITIAL][(int)Category::UNDERSCORE] = State::UNDERSCORE_ACCEPT;
     transition_table[(int)State::INITIAL][(int)Category::BAR] = State::BAR_ACCEPT;
 
     transition_table[(int)State::ASSIGN_ACCEPT][(int)Category::EQUAL] = State::EQUALS_ACCEPT;
@@ -133,22 +176,19 @@ void init_transition_table() {
     transition_table[(int)State::LESS_THAN_ACCEPT][(int)Category::EQUAL] = State::LESS_EQUAL_ACCEPT;
     transition_table[(int)State::GREATER_THAN_ACCEPT][(int)Category::EQUAL] = State::GREATER_EQUAL_ACCEPT;
     transition_table[(int)State::ADDRESSOF_ACCEPT][(int)Category::AMPERSAND] = State::LOGICAL_AND_ACCEPT;
-    transition_table[(int)State::EXCLA_ACCEPT][(int)Category::EQUAL] = State::LOGICAL_NOT_ACCEPT;
     transition_table[(int)State::BAR_ACCEPT][(int)Category::BAR] = State::LOGICAL_OR_ACCEPT;
+    transition_table[(int)State::EXCLA_ACCEPT][(int)Category::EQUAL] = State::NOT_EQUAL_ACCEPT;
     transition_table[(int)State::DIVIDE_ACCEPT][(int)Category::SLASH] = State::COMMENT_ACCEPT;
     transition_table[(int)State::SUB_ACCEPT][(int)Category::GREATER_THAN] = State::ARROW_ACCEPT;
 }
 
+[[nodiscard]] std::vector<Token> lex(std::string_view source) {   
+    init_char_categories();
+    init_transition_table();
 
+    std::vector<Token> tokens;
 
-std::optional<Token> transition(State& current_state, const char* cur_char) {
-    auto new_state = transition_table[(int)current_state][(int)(*cur_char)];
-    
-}
-
-
-[[nodiscard]] std::vector<Token> lex2(std::string_view source) {
-    std::vector<Token> tokens;   
+    // int line_num = 0, col_num = 0;
 
     auto cur = source.begin();
     auto start = cur, end = cur;
@@ -156,7 +196,21 @@ std::optional<Token> transition(State& current_state, const char* cur_char) {
     State current_state = State::INITIAL;
 
     while (cur != source.end()) {
-        transition(current_state, cur);
+        current_state = transition_table[(int)current_state][(int)char_to_category[(int)*cur]];
+
+        if (start_states.contains(current_state)) {
+            start = cur++;
+        } else if (middle_states.contains(current_state)) {
+            cur++;
+        } else if (auto it = accept_states.find(current_state); it != accept_states.end()) {
+            end = cur;
+            tokens.emplace_back(it->second, std::string_view{start, end});
+            current_state = State::INITIAL;
+            start = ++cur;
+        } else if (current_state == State::SKIPPABLE) {
+            start = ++cur;
+            current_state = State::INITIAL;
+        }
     }
 
     return tokens;
@@ -164,8 +218,7 @@ std::optional<Token> transition(State& current_state, const char* cur_char) {
 
 void test_lex(std::string path) {
     std::ifstream file{path};
-    if (!file.is_open())
-        throw std::runtime_error("can't open file: sample_program.c");
+    assert(file.is_open());
 
     std::string source_text;
     std::string line;
@@ -184,7 +237,7 @@ void test_lex(std::string path) {
 
 int main() {
     // test_lex("../test/sample_program.c");
-    // test_lex("../test/sample_tokens.txt");
+    test_lex("../test/sample_tokens_small.txt");
 
 
 }

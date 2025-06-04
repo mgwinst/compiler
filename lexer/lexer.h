@@ -73,6 +73,7 @@ enum class TokenType : uint16_t {
 
 enum class State : uint16_t {
     INITIAL,
+    SKIPPABLE,
 
     ID_START,
     ID_CHAR,
@@ -90,6 +91,7 @@ enum class State : uint16_t {
 
     ASSIGN_ACCEPT,
     EQUALS_ACCEPT,
+    NOT_EQUAL_ACCEPT,
 
     ADD_ACCEPT,
     ADD_ASSIGN_ACCEPT,
@@ -122,8 +124,6 @@ enum class State : uint16_t {
     COMMA_ACCEPT,
     DOT_ACCEPT,
     EXCLA_ACCEPT,
-    QUESTION_ACCEPT,
-    CARROT_ACCEPT,
     UNDERSCORE_ACCEPT,
     BAR_ACCEPT,
     COMMENT_ACCEPT,
@@ -134,7 +134,8 @@ enum class State : uint16_t {
     INVALID
 };
 
-enum class Category : uint16_t {
+enum class Category : uint16_t
+{
     WHITESPACE,
     LETTER,
     DIGIT,
@@ -158,30 +159,29 @@ enum class Category : uint16_t {
     COLON,
     COMMA,
     DOT,
-    CARROT,
-    UNDERSCORE,
     EXCLA_POINT,
     QUESTION,
     BAR,
+
     OTHER
 };
 
 struct Token {
     TokenType type;
     std::optional<std::string_view> lexeme;
-    std::size_t line_number;
-    std::size_t column_number;
-    std::size_t length;
+    // std::size_t line_number;
+    // std::size_t column_number;
+    // std::size_t length;
 
+    /*
     Token(TokenType t, std::string_view l, std::size_t ln, std::size_t cn, std::size_t len) :
         type{t}, lexeme{l}, line_number{ln}, column_number{cn}, length{len} {}
+    */
+
+    Token(TokenType t, std::string_view l) : type{t}, lexeme{l} {}
+    Token(TokenType t) : type{t}, lexeme{std::nullopt} {}
 
     ~Token() {}
-
-    Token(const Token&) = delete;
-    Token& operator=(const Token&) = delete;
-    Token(Token&&) = delete;
-    Token& operator=(Token&&) = delete;
 
     std::string to_string() const {
         return std::to_string(static_cast<int>(type)) + " " + std::string{lexeme.value()};
@@ -189,7 +189,5 @@ struct Token {
 };
 
 [[nodiscard]] std::vector<Token> lex(std::string_view);
-
-std::optional<Token> transition(State&, const char);
 
 void test_lex(std::string);
