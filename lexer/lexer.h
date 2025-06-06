@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdint>
 #include <string>
 #include <print>
@@ -76,17 +78,21 @@ struct Token {
     std::size_t column_number;
     std::size_t length;
 
-    Token(TokenType t, std::string_view l, std::size_t ln, std::size_t cn, std::size_t len) :
+    Token(TokenType t, std::optional<std::string_view> l, std::size_t ln, std::size_t cn, std::size_t len) :
         type{t}, lexeme{l}, line_number{ln}, column_number{cn}, length{len} {}
 
     ~Token() {}
 
     std::string to_string() const {
-        return std::format("[{}] {} ({}:{})", static_cast<int>(type), lexeme.value(), line_number, column_number);
+        return std::format("[{}] {}:{} {} ", static_cast<int>(type), line_number, column_number, (lexeme.has_value() ? lexeme.value() : ""));
+    }
+
+    std::string to_string_extra() const {
+        return std::format("[{}] {} ", static_cast<int>(type), line_number, column_number, (lexeme.has_value() ? lexeme.value() : ""));
     }
 };
 
-
+inline char peekchar(const char*);
 [[nodiscard]] std::vector<Token> lex(std::string_view);
 
 void test_lex(std::string);

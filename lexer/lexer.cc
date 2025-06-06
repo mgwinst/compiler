@@ -4,7 +4,6 @@
 #include <cctype>
 #include <fstream>
 #include <iostream>
-#include <print>
 
 #include "lexer.h"
 
@@ -16,6 +15,18 @@ namespace {
         "char", "string", "struct", "bool",
         "void", "union"
     };
+
+    const std::unordered_set<TokenType> tokens_require_lexeme = {
+        TokenType::IDENTIFIER,
+        TokenType::CHAR_LITERAL,
+        TokenType::STRING_LITERAL,
+        TokenType::NUMERIC_LITERAL,
+        TokenType::TYPE,
+    };
+}
+
+inline char peekchar(const char* cur_char) {
+    return *cur_char;
 }
 
 [[nodiscard]] std::vector<Token> lex(std::string_view source) {
@@ -24,213 +35,236 @@ namespace {
     auto cur = source.begin();
     auto start = cur, end = cur;
 
-    std::size_t line_num = 1, col_num = 1, token_len = 1;
+    std::size_t line_num = 1, col_num = 1;
+    std::size_t token_len = 0;
 
+    TokenType tok_type;
+    
     while (cur != source.end()) {
         if (std::isspace(*cur)) {
+            if (*cur == '\n') {
+                line_num++;
+                col_num = 1;
+            } else {
+                col_num++;
+            }
             cur++;
-            
+
         } else if (std::isdigit(*cur)) {
             start = cur;
-            while (std::isdigit(*cur)) cur++;
+            while (std::isdigit(*cur)) {
+                cur++;
+                col_num++;
+            }
             end = cur;
-            tokens.emplace_back(TokenType::NUMERIC_LITERAL, std::string_view{start, end});
+            tokens.emplace_back(TokenType::NUMERIC_LITERAL, std::string_view{start, end}, line_num, col_num - (end-start), (end-start));
 
         } else if (std::isalpha(*cur)) {
             start = cur;
-            while (std::isalnum(*cur) || *cur == '_') cur++;
+            while (std::isalnum(*cur) || *cur == '_') {
+                cur++;
+                col_num++;
+            }
             end = cur;
 
             std::string_view value{start, end};
-            TokenType type = TokenType::IDENTIFIER;
+            tok_type = TokenType::IDENTIFIER;
 
             if (value == "if")
-                type = TokenType::KEYWORD_IF;
+                tok_type = TokenType::KEYWORD_IF;
             else if (value == "else")
-                type = TokenType::KEYWORD_ELSE;
+                tok_type = TokenType::KEYWORD_ELSE;
             else if (value == "while")
-                type = TokenType::KEYWORD_WHILE;
+                tok_type = TokenType::KEYWORD_WHILE;
             else if (value == "for")
-                type = TokenType::KEYWORD_FOR;
+                tok_type = TokenType::KEYWORD_FOR;
             else if (value == "return") 
-                type = TokenType::KEYWORD_RETURN;
+                tok_type = TokenType::KEYWORD_RETURN;
             else if (value == "const")
-                type = TokenType::KEYWORD_CONST;
+                tok_type = TokenType::KEYWORD_CONST;
             else if (value == "typedef")
-                type = TokenType::KEYWORD_TYPEDEF;
+                tok_type = TokenType::KEYWORD_TYPEDEF;
             else if (type_keywords.contains(value))
-                type = TokenType::TYPE;
+                tok_type = TokenType::TYPE;
 
-            tokens.emplace_back(type, std::string_view{value});
-        
+            tokens.emplace_back(tok_type, std::string_view{start, end}, line_num, col_num - (end-start), (end-start));
+
         } else {
             switch (*cur) {
                 case '=':
-                    if (*(cur+1) == '=') {
-                        tokens.emplace_back(TokenType::EQUALS, std::string_view{cur, 2});
-                        cur += 2;
+                    if (peekchar(cur) == '=') {
+                        tok_type = TokenType::EQUALS;
+                        token_len = 2;
                     } else {
-                        tokens.emplace_back(TokenType::ASSIGN, std::string_view{cur, 1});
-                        cur++;
+                        tok_type = TokenType::ASSIGN;
+                        token_len = 1;
                     }
                     break;
                 case '+':
-                    if (*(cur+1) == '=') {
-                        tokens.emplace_back(TokenType::ADD_ASSIGN, std::string_view{cur, 2});
-                        cur += 2;
-                    } else if (*(cur+1) == '+') {
-                        tokens.emplace_back(TokenType::INCREMENT, std::string_view{cur, 2});
-                        cur += 2;
+                    if (peekchar(cur) == '=') {
+                        tok_type = TokenType::ADD_ASSIGN;
+                        token_len = 2;
+                    } else if (peekchar(cur) == '+') {
+                        tok_type = TokenType::INCREMENT;
+                        token_len = 2;
                     } else {
-                        tokens.emplace_back(TokenType::ADD, std::string_view{cur, 1});
-                        cur++;
+                        tok_type = TokenType::ADD;
+                        token_len = 1;
                     }
                     break;
                 case '-':
-                    if (*(cur+1) == '=') {
-                        tokens.emplace_back(TokenType::SUBTRACT_ASSIGN, std::string_view{cur, 2});
-                        cur += 2;
-                    }else if (*(cur+1) == '-') {
-                        tokens.emplace_back(TokenType::DECREMENT, std::string_view{cur, 2});
-                        cur += 2;
-                    } else if (*(cur+1) == '>') {
-                        tokens.emplace_back(TokenType::ARROW, std::string_view{cur, 2});
-                        cur += 2;
+                    if (peekchar(cur) == '=') {
+                        tok_type = TokenType::SUBTRACT_ASSIGN;
+                        token_len = 2;
+                    }else if (peekchar(cur) == '-') {
+                        tok_type = TokenType::DECREMENT;
+                        token_len = 2;
+                    } else if (peekchar(cur) == '>') {
+                        tok_type = TokenType::ARROW;
+                        token_len = 2;
                     } else {
-                        tokens.emplace_back(TokenType::SUBTRACT, std::string_view{cur, 1});
-                        cur++;
+                        tok_type = TokenType::SUBTRACT;
+                        token_len = 1;
                     }
                     break;
                 case '*':
-                    if (*(cur+1) == '=') {
-                        tokens.emplace_back(TokenType::MULTIPLY_ASSIGN, std::string_view{cur, 2});
-                        cur += 2;
+                    if (peekchar(cur) == '=') {
+                        tok_type = TokenType::MULTIPLY_ASSIGN;
+                        token_len = 2;
                     } else {
-                        tokens.emplace_back(TokenType::MULTIPLY, std::string_view{cur, 1});
-                        cur++;
+                        tok_type = TokenType::MULTIPLY;
+                        token_len = 1;
                     }
                     break;
                 case '/':
-                    if (*(cur+1) == '=') {
-                        tokens.emplace_back(TokenType::DIVIDE_ASSIGN, std::string_view{cur, 2});
-                        cur += 2; 
-                    } else if (*(cur+1) == '/') {
-                        tokens.emplace_back(TokenType::COMMENT, std::string_view{cur, 2});
-                        cur += 2;
+                    if (peekchar(cur) == '=') {
+                        tok_type = TokenType::DIVIDE_ASSIGN;
+                        token_len = 2;
+                    } else if (peekchar(cur) == '/') {
+                        tok_type = TokenType::COMMENT;
+                        token_len = 2;
                     } else {
-                        tokens.emplace_back(TokenType::DIVIDE, std::string_view{cur, 1});
-                        cur++;
+                        tok_type = TokenType::DIVIDE;
+                        token_len = 1;
                     }
                     break;
                 case '%':
-                    tokens.emplace_back(TokenType::MODULUS, std::string_view{cur, 1});
-                    cur++;
+                    tok_type = TokenType::MODULUS;
+                    token_len = 1;
                     break;
                 case '(':
-                    tokens.emplace_back(TokenType::LPAREN, std::string_view{cur, 1});
-                    cur++;
+                    tok_type = TokenType::LPAREN;
+                    token_len = 1;
                     break;
                 case ')':
-                    tokens.emplace_back(TokenType::RPAREN, std::string_view{cur, 1});
-                    cur++;
+                    tok_type = TokenType::RPAREN;
+                    token_len = 1;
                     break;
                 case '{':
-                    tokens.emplace_back(TokenType::LBRACE, std::string_view{cur, 1});
-                    cur++;
+                    tok_type = TokenType::LBRACKET;
+                    token_len = 1;
                     break;
                 case '}':
-                    tokens.emplace_back(TokenType::RBRACE, std::string_view{cur, 1});
-                    cur++;
+                    tok_type = TokenType::RBRACKET;
+                    token_len = 1;
                     break;
                 case '[':
-                    tokens.emplace_back(TokenType::LBRACKET, std::string_view{cur, 1});
-                    cur++;
+                    tok_type = TokenType::LBRACE;
+                    token_len = 1;
                     break;
                 case ']':
-                    tokens.emplace_back(TokenType::RBRACKET, std::string_view{cur, 1});
-                    cur++;
+                    tok_type = TokenType::RBRACE;
+                    token_len = 1;
                     break;
                 case '>':
-                    if (*(cur+1) == '=') {
-                        tokens.emplace_back(TokenType::GREATER_EQUAL, std::string_view{cur, 2});
-                        cur += 2;
+                    if (peekchar(cur) == '=') {
+                        tok_type = TokenType::GREATER_EQUAL;
+                        token_len = 2;
                     } else {
-                        tokens.emplace_back(TokenType::GREATER_THAN, std::string_view{cur, 1});
-                        cur++;
+                        tok_type = TokenType::GREATER_THAN;
+                        token_len = 1;
                     }
                     break;
                 case '<':
-                    if (*(cur+1) == '=') {
-                        tokens.emplace_back(TokenType::LESS_EQUAL, std::string_view{cur, 2});
-                        cur += 2;
+                    if (peekchar(cur) == '=') {
+                        tok_type = TokenType::LESS_EQUAL;
+                        token_len = 2;
                     } else {
-                        tokens.emplace_back(TokenType::LESS_THAN, std::string_view{cur, 1});
-                        cur++;
+                        tok_type = TokenType::LESS_THAN;
+                        token_len = 1;
                     }
                     break;
                 case '&':
-                    if (*(cur+1) == '&') {
-                        tokens.emplace_back(TokenType::LOGICAL_AND, std::string_view{cur, 2});
-                        cur += 2;
+                    if (peekchar(cur) == '&') {
+                        tok_type = TokenType::LOGICAL_AND;
+                        token_len = 2;
                     } else {
-                        tokens.emplace_back(TokenType::ADDRESS_OF, std::string_view{cur, 1});
-                        cur++;
+                        tok_type = TokenType::ADDRESS_OF;
+                        token_len = 1;
                     }
                     break;
                 case '"':
-                    start = cur++;
-                    while (*cur != '"') cur++;
-                    end = cur;
-                    tokens.emplace_back(TokenType::STRING_LITERAL, std::string_view{start, end+1});
-                    cur++;
+                    token_len = 0;
+                    start = cur;
+                    while (*start != '"') {
+                        start++;
+                        token_len++;
+                    }
+                    token_len++;
+                    tok_type = TokenType::STRING_LITERAL;
                     break;
                 case ';':
-                    tokens.emplace_back(TokenType::SEMICOLON, std::string_view{cur, 1});
-                    cur++;
+                    tok_type = TokenType::SEMICOLON;
+                    token_len = 1;
                     break;
                 case ':':
-                    tokens.emplace_back(TokenType::COLON, std::string_view{cur, 1});
-                    cur++;
+                    tok_type = TokenType::COLON;
+                    token_len = 1;
                     break;
                 case ',':
-                    tokens.emplace_back(TokenType::COMMA, std::string_view{cur, 1});
-                    cur++;
+                    tok_type = TokenType::COMMA;
+                    token_len = 1;
                     break;
                 case '.':
-                    tokens.emplace_back(TokenType::DOT, std::string_view{cur, 1});
-                    cur++;
+                    tok_type = TokenType::DOT;
+                    token_len = 1;
                     break;
                 case '!':
-                    if (*(cur+1) == '=') {
-                        tokens.emplace_back(TokenType::NOT_EQUAL, std::string_view{cur, 2});
-                        cur += 2;
+                    if (peekchar(cur) == '=') {
+                        tok_type = TokenType::NOT_EQUAL;
+                        token_len = 2;
                     } else {
-                        tokens.emplace_back(TokenType::LOGICAL_NOT, std::string_view{cur, 1});
-                        cur++;
+                        tok_type = TokenType::LOGICAL_NOT;
+                        token_len = 1;
                     }
                     break;
                 case '|':
-                    if (*(cur+1) == '|') {
-                        tokens.emplace_back(TokenType::LOGICAL_OR, std::string_view{cur, 2});
-                        cur += 2;
+                    if (peekchar(cur) == '|') {
+                        tok_type = TokenType::LOGICAL_OR;
+                        token_len = 2;
                     } else {
-                        tokens.emplace_back(TokenType::PIPE, std::string_view{cur, 1});
-                        cur++;
+                        tok_type = TokenType::PIPE;
+                        token_len = 1;
                     }
                     break;
                 case EOF:
-                    tokens.emplace_back(TokenType::END_OF_FILE, std::string_view{cur, 1});
+                    tok_type = TokenType::END_OF_FILE;
                     break;
                 default:
                     throw std::runtime_error("Invalid token: " + std::string{*cur});
             }
+
+            // just for debugging we are going to provide the lexeme for symbols
+            std::string_view lexeme{cur, token_len};
+            cur += token_len;
+            col_num += token_len;
+            tokens.emplace_back(tok_type, lexeme, line_num, col_num, token_len);
         }
     }
 
     return tokens;
 }
 
-/*
 void test_lex(std::string path) {
     std::ifstream file{path};
     if (!file.is_open())
@@ -253,7 +287,7 @@ void test_lex(std::string path) {
 
 int main() {
     test_lex("../test/sample_program.c");
+    
     //test_lex("../test/sample_tokens.txt");
 
 }
-*/
