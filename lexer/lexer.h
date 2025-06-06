@@ -1,10 +1,12 @@
 #include <cstdint>
 #include <string>
+#include <print>
 
 enum class TokenType : uint16_t {
     IDENTIFIER = 128,
 
     NUMERIC_LITERAL,
+    CHAR_LITERAL,
     STRING_LITERAL,
 
     TYPE,
@@ -55,6 +57,7 @@ enum class TokenType : uint16_t {
     COLON,
     COMMA,
     DOT,
+    PIPE,
 
     ADDRESS_OF,
     ARROW,
@@ -68,16 +71,21 @@ enum class TokenType : uint16_t {
 
 struct Token {
     TokenType type;
-    std::string lexeme;
-    int line_number;
-    int column_number;
-    int length;
-    
+    std::optional<std::string_view> lexeme;
+    std::size_t line_number;
+    std::size_t column_number;
+    std::size_t length;
+
+    Token(TokenType t, std::string_view l, std::size_t ln, std::size_t cn, std::size_t len) :
+        type{t}, lexeme{l}, line_number{ln}, column_number{cn}, length{len} {}
+
+    ~Token() {}
 
     std::string to_string() const {
-        return std::to_string(static_cast<int>(type)) + " " + lexeme;
+        return std::format("[{}] {} ({}:{})", static_cast<int>(type), lexeme.value(), line_number, column_number);
     }
 };
+
 
 [[nodiscard]] std::vector<Token> lex(std::string_view);
 
