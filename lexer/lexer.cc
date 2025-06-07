@@ -23,6 +23,8 @@ namespace {
         TokenType::NUMERIC_LITERAL,
         TokenType::TYPE,
     };
+
+    
 }
 
 inline char peekchar(const char* cur_char) {
@@ -267,8 +269,7 @@ inline char peekchar(const char* cur_char) {
 
 void test_lex(std::string path) {
     std::ifstream file{path};
-    if (!file.is_open())
-        throw std::runtime_error("can't open file");
+    assert(file.is_open());
 
     std::string source_text;
     std::string line;

@@ -1,2 +1,6 @@
-int a 223
-int b 5
+int main() {
+    int x = 1;
+    int y = 2;
+    int z = (x + y) * (x * y);
+    print(z);
+}

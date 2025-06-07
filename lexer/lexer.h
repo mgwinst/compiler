@@ -27,6 +27,7 @@ enum class TokenType : uint16_t {
     DEREFERENCE = MULTIPLY,
     DIVIDE,
     MODULUS,
+
     INCREMENT,
     DECREMENT,
 
@@ -35,6 +36,7 @@ enum class TokenType : uint16_t {
     SUBTRACT_ASSIGN,
     MULTIPLY_ASSIGN,
     DIVIDE_ASSIGN,
+    MODULUS_ASSIGN,
 
     EQUALS,
     NOT_EQUAL,
@@ -46,6 +48,9 @@ enum class TokenType : uint16_t {
     LOGICAL_AND,
     LOGICAL_OR,
     LOGICAL_NOT,
+
+    SHIFT_LEFT,
+    SHIFT_RIGHT,
 
     LPAREN,
     RPAREN,
@@ -87,12 +92,10 @@ struct Token {
         return std::format("[{}] {}:{} {} ", static_cast<int>(type), line_number, column_number, (lexeme.has_value() ? lexeme.value() : ""));
     }
 
-    std::string to_string_extra() const {
-        return std::format("[{}] {} ", static_cast<int>(type), line_number, column_number, (lexeme.has_value() ? lexeme.value() : ""));
-    }
 };
 
-inline char peekchar(const char*);
+inline char peekchar(const char* cur_char) { return *cur_char; }
+
 [[nodiscard]] std::vector<Token> lex(std::string_view);
 
 void test_lex(std::string);
