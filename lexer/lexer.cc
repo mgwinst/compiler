@@ -121,17 +121,15 @@ namespace {
             }
 
         // symbols
-        } else if (auto symbol = single_symbol_map.find(*cur); symbol != single_symbol_map.end()) { 
-            if (auto double_symbol = double_symbol_map.find(std::string_view{cur, 2}); double_symbol != double_symbol_map.end()) {
-                tokens.emplace_back(double_symbol->second, std::string_view{cur, 2}, line_num, col_num, 2);
-                cur += 2; col_num += 2;
-                // tokens.emplace_back(double_symbol->second, std::nullopt, line_num, col_num, 2);
-            } else {
-                tokens.emplace_back(symbol->second, std::string_view{cur, 1}, line_num, col_num, 1);
-                cur++; col_num++;
-                // tokens.emplace_back(symbol->second, std::nullopt, line_num, col_num, 1);
-            }
-        } 
+        } else if (auto double_symbol = double_symbol_map.find(std::string_view{cur, 2}); double_symbol != double_symbol_map.end()) {
+            tokens.emplace_back(double_symbol->second, std::string_view{cur, 2}, line_num, col_num, 2);
+            cur += 2; col_num += 2;
+        } else if (auto symbol = single_symbol_map.find(*cur); symbol != single_symbol_map.end()) {
+            tokens.emplace_back(symbol->second, std::string_view{cur, 1}, line_num, col_num, 1);
+            cur++; col_num++;
+        } else {
+            std::runtime_error("Invalid token: " + std::string{*cur});
+        }
     }
 
     return tokens;
