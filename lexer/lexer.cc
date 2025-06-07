@@ -10,12 +10,12 @@
 #include "lexer.h"
 
 namespace {
+
     const std::unordered_set<std::string_view> lang_types {
         "int", "int8", "int16", "int32", "int64",
         "uint", "uint8", "uint16", "uint32", "uint64",
         "float" "float16", "float32", "float64",
-        "char", "string", "struct", "bool",
-        "void", "union"
+        "char", "string", "struct", "bool", "void", "union"
     };
     
     const std::unordered_map<std::string_view, TokenType> keywords {
@@ -28,49 +28,49 @@ namespace {
     };
 
     const std::unordered_map<char, TokenType> single_symbol_map {
-        {'=', TokenType::ASSIGN},
-        {'+', TokenType::ADD},
-        {'-', TokenType::SUBTRACT},
-        {'*', TokenType::MULTIPLY},
-        {'/', TokenType::DIVIDE},
-        {'%', TokenType::MODULUS},
-        {'<', TokenType::LESS_THAN},
-        {'>', TokenType::GREATER_THAN},
+        {'=', TokenType::EQUAL},
+        {'+', TokenType::PLUS},
+        {'-', TokenType::MINUS},
+        {'*', TokenType::STAR},
+        {'/', TokenType::SLASH},
+        {'%', TokenType::PERCENT},
+        {'<', TokenType::LESS},
+        {'>', TokenType::GREATER},
         {'(', TokenType::LPAREN},
         {')', TokenType::RPAREN},
         {'{', TokenType::LBRACKET},
         {'}', TokenType::RBRACKET},
         {'[', TokenType::LBRACE},
         {']', TokenType::RBRACE},
-        {'&', TokenType::ADDRESS_OF},
+        {'&', TokenType::AMPERSAND},
         {'"', TokenType::DOUBLE_QUOTE},
-        {'\'',TokenType::SINGLE_QUOTE},
+        {'\'', TokenType::SINGLE_QUOTE},
         {';', TokenType::SEMICOLON},
         {':', TokenType::COLON},
         {',', TokenType::COMMA},
         {'.', TokenType::DOT},
-        {'!', TokenType::LOGICAL_NOT},
+        {'!', TokenType::BANG},
         {'|', TokenType::PIPE},
     };
 
     const std::unordered_map<std::string_view, TokenType> double_symbol_map {
-        {"==", TokenType::EQUALS},
-        {"!=", TokenType::NOT_EQUAL},
-        {"+=", TokenType::ADD_ASSIGN},
-        {"-=", TokenType::SUBTRACT_ASSIGN},
-        {"*=", TokenType::MULTIPLY_ASSIGN},
-        {"/=", TokenType::DIVIDE_ASSIGN},
-        {"%=", TokenType::MODULUS_ASSIGN},
+        {"==", TokenType::EQUAL_EQUAL},
+        {"!=", TokenType::BANG_EQUAL},
+        {"+=", TokenType::PLUS_EQUAL},
+        {"-=", TokenType::MINUS_EQUAL},
+        {"*=", TokenType::STAR_EQUAL},
+        {"/=", TokenType::SLASH_EQUAL},
+        {"%=", TokenType::PERCENT_EQUAL},
         {"<=", TokenType::LESS_EQUAL},
         {">=", TokenType::GREATER_EQUAL},
-        {"++", TokenType::INCREMENT},
-        {"--", TokenType::DECREMENT},
-        {"<<", TokenType::SHIFT_LEFT},
-        {">>", TokenType::SHIFT_RIGHT},
-        {"&&", TokenType::LOGICAL_AND},
-        {"||", TokenType::LOGICAL_OR},
+        {"++", TokenType::PLUS_PLUS},
+        {"--", TokenType::MINUS_MINUS},
+        {"<<", TokenType::LESS_LESS},
+        {">>", TokenType::GREATER_GREATER},
+        {"&&", TokenType::AMPERSAND_AMPERSAND},
+        {"||", TokenType::PIPE_PIPE},
         {"->", TokenType::ARROW},
-        {"//", TokenType::COMMENT},
+        {"//", TokenType::SLASH_SLASH},
     };
 }
 
@@ -82,9 +82,8 @@ namespace {
 
     std::size_t line_num = 1, col_num = 1;
 
-    TokenType tok_type;
-
     while (cur != source.end()) {
+        // whitespace
         if (std::isspace(*cur)) {
             if (*cur == '\n') {
                 line_num++;
@@ -93,7 +92,8 @@ namespace {
                 col_num++;
             }
             cur++;
-
+        
+        // digits
         } else if (std::isdigit(*cur)) {
             start = cur;
             while (std::isdigit(*cur)) {
@@ -101,7 +101,8 @@ namespace {
             }
             end = cur;
             tokens.emplace_back(TokenType::NUMERIC_LITERAL, std::string_view{start, end}, line_num, col_num - (end-start), (end-start));
-
+        
+        // identifiers, types and keywords
         } else if (std::isalpha(*cur)) {
             start = cur;
             while (std::isalnum(*cur) || *cur == '_') {
@@ -110,17 +111,16 @@ namespace {
             end = cur;
 
             std::string_view value{start, end};
-            tok_type = TokenType::IDENTIFIER;
 
             if (auto kw = keywords.find(value); kw != keywords.end()) {
                 tokens.emplace_back(kw->second, std::string_view{start, end}, line_num, col_num - (end-start), (end-start));
             } else if (auto t = lang_types.find(value); t != lang_types.end()) {
                 tokens.emplace_back(TokenType::TYPE, std::string_view{start, end}, line_num, col_num - (end-start), (end-start));
             } else {
-                tokens.emplace_back(tok_type, std::string_view{start, end}, line_num, col_num - (end-start), (end-start));
+                tokens.emplace_back(TokenType::IDENTIFIER, std::string_view{start, end}, line_num, col_num - (end-start), (end-start));
             }
 
-
+        // symbols
         } else if (auto symbol = single_symbol_map.find(*cur); symbol != single_symbol_map.end()) { 
             if (auto double_symbol = double_symbol_map.find(std::string_view{cur, 2}); double_symbol != double_symbol_map.end()) {
                 tokens.emplace_back(double_symbol->second, std::string_view{cur, 2}, line_num, col_num, 2);
