@@ -72,9 +72,7 @@ enum class TokenType : uint16_t {
 struct Token {
     TokenType type;
     std::optional<std::string_view> lexeme;
-    std::size_t line_number;
-    std::size_t column_number;
-    std::size_t length;
+    std::size_t line_number, column_number, length;
 
     Token(TokenType t, std::optional<std::string_view> l, std::size_t ln, std::size_t cn, std::size_t len) :
         type{t}, lexeme{l}, line_number{ln}, column_number{cn}, length{len} {}
@@ -87,8 +85,11 @@ struct Token {
 
 };
 
-inline char peekchar(const char* cur_char) { return *cur_char; }
+// stateless utility class
+struct Lexer {
+    [[nodiscard]] static std::vector<Token> lex(std::string_view source);
+};
 
-[[nodiscard]] std::vector<Token> lex(std::string_view);
+inline char peekchar(const char* cur_char) { return *cur_char; }
 
 void test_lex(std::string);

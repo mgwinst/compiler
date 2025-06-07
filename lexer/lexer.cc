@@ -74,7 +74,7 @@ namespace {
     };
 }
 
-[[nodiscard]] std::vector<Token> lex(std::string_view source) {
+[[nodiscard]] std::vector<Token> Lexer::lex(std::string_view source) {
     std::vector<Token> tokens;
 
     auto cur = source.begin();
@@ -96,11 +96,12 @@ namespace {
         // digits
         } else if (std::isdigit(*cur)) {
             start = cur;
+            auto start_col_num = col_num;
             while (std::isdigit(*cur)) {
                 cur++; col_num++;
             }
             end = cur;
-            tokens.emplace_back(TokenType::NUMERIC_LITERAL, std::string_view{start, end}, line_num, col_num - (end-start), (end-start));
+            tokens.emplace_back(TokenType::NUMERIC_LITERAL, std::string_view{start, end}, line_num, start_col_num, (end-start));
         
         // identifiers, types and keywords
         } else if (std::isalpha(*cur)) {
@@ -146,7 +147,7 @@ void test_lex(std::string path) {
         source_text += line + '\n';
     }
 
-    auto tokens = lex(source_text);
+    auto tokens = Lexer::lex(source_text);
 
     for (const auto& tok : tokens) {
         std::cout << tok.to_string() << '\n';
