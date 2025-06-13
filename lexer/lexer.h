@@ -79,17 +79,16 @@ struct Token {
 
     ~Token() {}
 
-    std::string to_string() const {
+    auto to_string() const -> std::string {
         return std::format("[{}] {}:{} {} ", static_cast<int>(type), line_number, column_number, (lexeme.has_value() ? lexeme.value() : ""));
     }
 
 };
 
-// stateless utility class
 struct Lexer {
-    [[nodiscard]] static std::vector<Token> lex(std::string_view source);
+    [[nodiscard]] static auto lex(std::string_view) -> std::vector<Token>;
 };
 
-inline char peekchar(const char* cur_char) { return *cur_char; }
+inline auto peekchar(const char* cur_char) -> char { return *cur_char; }
 
-void test_lex(std::string);
+auto test_lex(std::string) -> void;

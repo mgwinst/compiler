@@ -72,9 +72,10 @@ namespace {
         {"->", TokenType::ARROW},
         {"//", TokenType::SLASH_SLASH},
     };
+
 }
 
-[[nodiscard]] std::vector<Token> Lexer::lex(std::string_view source) {
+[[nodiscard]] auto Lexer::lex(std::string_view source) -> std::vector<Token> {
     std::vector<Token> tokens;
 
     auto cur = source.begin();
@@ -136,7 +137,7 @@ namespace {
     return tokens;
 }
 
-void test_lex(std::string path) {
+auto test_lex(std::string path) -> void {
     std::ifstream file{path};
     assert(file.is_open());
 
@@ -152,7 +153,6 @@ void test_lex(std::string path) {
     for (const auto& tok : tokens) {
         std::cout << tok.to_string() << '\n';
     }
-
 }
 
 int main() {
