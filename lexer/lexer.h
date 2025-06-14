@@ -86,7 +86,8 @@ struct Token {
 };
 
 struct Lexer {
-    [[nodiscard]] static auto lex(std::string_view) -> std::vector<Token>;
+    [[nodiscard]] static auto get_token(std::string_view) -> Token;
+    [[nodiscard]] static auto get_next_token(std::string_view) -> Token;
 };
 
 inline auto peekchar(const char* cur_char) -> char { return *cur_char; }

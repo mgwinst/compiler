@@ -75,13 +75,11 @@ namespace {
 
 }
 
-[[nodiscard]] auto Lexer::lex(std::string_view source) -> std::vector<Token> {
-    std::vector<Token> tokens;
+[[nodiscard]] auto Lexer::get_token(std::string_view source) -> Token {
+    static auto cur = source.begin();
+    static auto start = cur, end = cur;
 
-    auto cur = source.begin();
-    auto start = cur, end = cur;
-
-    std::size_t line_num = 1, col_num = 1;
+    static std::size_t line_num = 1, col_num = 1;
 
     while (cur != source.end()) {
         // whitespace
@@ -102,7 +100,7 @@ namespace {
                 cur++; col_num++;
             }
             end = cur;
-            tokens.emplace_back(TokenType::NUMERIC_LITERAL, std::string_view{start, end}, line_num, start_col_num, (end-start));
+            return Token{TokenType::NUMERIC_LITERAL, std::string_view{start, end}, line_num, start_col_num, static_cast<std::size_t>(end-start)};
         
         // identifiers, types and keywords
         } else if (std::isalpha(*cur)) {
@@ -115,26 +113,28 @@ namespace {
             std::string_view value{start, end};
 
             if (auto kw = keywords.find(value); kw != keywords.end()) {
-                tokens.emplace_back(kw->second, std::string_view{start, end}, line_num, col_num - (end-start), (end-start));
+                return Token{kw->second, std::string_view{start, end}, line_num, col_num - (end-start), static_cast<std::size_t>(end-start)};
             } else if (auto t = lang_types.find(value); t != lang_types.end()) {
-                tokens.emplace_back(TokenType::TYPE, std::string_view{start, end}, line_num, col_num - (end-start), (end-start));
+                return Token{TokenType::TYPE, std::string_view{start, end}, line_num, col_num - (end-start), static_cast<std::size_t>(end-start)};
             } else {
-                tokens.emplace_back(TokenType::IDENTIFIER, std::string_view{start, end}, line_num, col_num - (end-start), (end-start));
+                return Token{TokenType::IDENTIFIER, std::string_view{start, end}, line_num, col_num - (end-start), static_cast<std::size_t>(end-start)};
             }
 
         // symbols
         } else if (auto double_symbol = double_symbol_map.find(std::string_view{cur, 2}); double_symbol != double_symbol_map.end()) {
-            tokens.emplace_back(double_symbol->second, std::string_view{cur, 2}, line_num, col_num, 2);
+            Token token{double_symbol->second, std::string_view{cur, 2}, line_num, col_num, 2};
             cur += 2; col_num += 2;
+            return token;
         } else if (auto symbol = single_symbol_map.find(*cur); symbol != single_symbol_map.end()) {
-            tokens.emplace_back(symbol->second, std::string_view{cur, 1}, line_num, col_num, 1);
+            Token token{symbol->second, std::string_view{cur, 1}, line_num, col_num, 1};
             cur++; col_num++;
+            return token;
         } else {
             std::runtime_error("Invalid token: " + std::string{*cur});
         }
     }
 
-    return tokens;
+    return Token{TokenType::END_OF_FILE, {}, line_num, col_num, 1};
 }
 
 auto test_lex(std::string path) -> void {
@@ -148,10 +148,11 @@ auto test_lex(std::string path) -> void {
         source_text += line + '\n';
     }
 
-    auto tokens = Lexer::lex(source_text);
-
-    for (const auto& tok : tokens) {
+    while (1) {
+        Token tok = Lexer::get_token(source_text);
         std::cout << tok.to_string() << '\n';
+        if (tok.type == TokenType::END_OF_FILE)
+            break;
     }
 }
 

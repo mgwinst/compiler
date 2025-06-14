@@ -6,8 +6,6 @@
 #include <print>
 #include <span>
 
-#include "lexer.h"
-
 struct Expr;
 using ExprHandle = std::unique_ptr<Expr>;
 
@@ -38,6 +36,11 @@ struct ArrayIndexingExpr {
 
 struct BooleanExpr {
     bool value;
+};
+
+struct UnaryExpr {
+    std::string_view op;
+    ExprHandle arg;
 };
 
 struct BinaryExpr {
@@ -133,3 +136,5 @@ struct Expr {
         UnionExpr
     > kind;
 };
+
+
