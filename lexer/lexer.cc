@@ -126,11 +126,9 @@ namespace {
             cur += 2; col_num += 2;
             return token;
         } else if (auto symbol = single_symbol_map.find(*cur); symbol != single_symbol_map.end()) {
-            Token token{symbol->second, std::string_view{cur, 1}, line_num, col_num, 1};
-            cur++; col_num++;
-            return token;
+            return Token{symbol->second, std::string_view{cur++, 1}, line_num, col_num++, 1};
         } else {
-            std::runtime_error("Invalid token: " + std::string{*cur});
+            return Token{TokenType::INVALID, std::string_view{cur, 1}, line_num, col_num, 1};
         }
     }
 
