@@ -161,10 +161,10 @@ namespace AST {
 
     struct Expr {
         std::variant<
-            // IntegerLiteralExpr,
-            // FloatLiteralExpr,
-            // CharLiteralExpr,
-            // StringLiteralExpr,
+            IntegerLiteralExpr,
+            FloatLiteralExpr,
+            CharLiteralExpr,
+            StringLiteralExpr,
             // ArrayLiteralExpr,
             // ArrayIndexingExpr,
             // BooleanExpr,
@@ -202,15 +202,15 @@ namespace AST {
     [[nodiscard]] auto inline to_string(const Expr& expr) -> std::string {
         return std::visit(overloaded{
             [](const IntegerLiteralExpr& kind) { return std::to_string(kind.value); },
-            // [](const FloatLiteralExpr& kind) { return std::to_string(kind.value); },
-            // [](const CharLiteralExpr kind) { return kind.value; },
-            // [](const StringLiteralExpr& kind) { return kind.value; },
-            // [](const ArrayLiteralExpr& kind) { return std::format("{}", AST::to_string(kind.array_elems)); },
-            // [](const ArrayIndexingExpr& kind) { return std::format("{}[{}]", AST::to_string(kind.array), AST::to_string(kind.index)); },
-            // [](const BooleanExpr& kind) { return (kind.value == true) ? "true" : "false"; },
+            [](const FloatLiteralExpr& kind) { return std::to_string(kind.value); },
+            [](const CharLiteralExpr kind) { return std::string{kind.value}; },
+            [](const StringLiteralExpr& kind) { return std::string{kind.value}; },
+            // [](const ArrayLiteralExpr& kind) {},
+            // [](const ArrayIndexingExpr& kind) {},
+            [](const BooleanExpr& kind) { return (kind.value == true) ? "true" : "false"; },
             // [](const UnaryExpr& kind) {},
             [](const BinaryExpr& kind) { return std::format("({} {} {})", AST::to_string(*kind.lhs), kind.op, AST::to_string(*kind.rhs)); },
-            [](const VariableExpr& kind) { return std::format("{}", kind.name); },
+            [](const VariableExpr& kind) { return std::string{kind.name}; },
             // [](const IfExpr& kind) {},
             // [](const AssignExpr& kind) {},
             // [](const CompoundExpr& kind) {},
