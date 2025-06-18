@@ -169,8 +169,7 @@ namespace {
 
         // symbols
         } else if (auto double_symbol = double_symbol_map.find(std::string_view{peek_cur, 2}); double_symbol != double_symbol_map.end()) {
-            Token token{double_symbol->second, std::string_view{peek_cur, 2}};
-            return token;
+            return Token{double_symbol->second, std::string_view{peek_cur, 2}};
         } else if (auto symbol = single_symbol_map.find(*peek_cur); symbol != single_symbol_map.end()) {
             return Token{symbol->second, std::string_view{peek_cur, 1}};
         } else {
@@ -193,16 +192,16 @@ auto test_lex(std::string path) -> void {
     }
 
     Lexer lexer{source_text};
-    
-    while (1) {
-        auto cur_token = lexer.get_token();
-        auto next_token = lexer.peek_token();
 
-        std::cout << cur_token.to_string() << " " << next_token.to_string_less() << '\n';
-        if (cur_token.type == TokenType::END_OF_FILE) break;
+    while (1) {
+        lexer.cur_token = lexer.get_token();
+
+        std::cout << lexer.cur_token.to_string() << '\n';
+        if (lexer.cur_token.type == TokenType::END_OF_FILE) break;
     }
 
 }
+
 
 int main() {
     // test_lex("../test/sample_program.c");
