@@ -8,9 +8,6 @@ AST::CharLiteralExpr::CharLiteralExpr(const char value) : value{value} {}
 
 AST::StringLiteralExpr::StringLiteralExpr(std::string_view value) : value{value} {}
 
-AST::ArrayLiteralExpr::ArrayLiteralExpr(std::vector<std::unique_ptr<Expr>> array_elems) : array_elems{std::move(array_elems)} {}
-AST::ArrayLiteralExpr::~ArrayLiteralExpr() {}
-
 AST::ArrayIndexingExpr::ArrayIndexingExpr(std::string_view array, std::unique_ptr<Expr> index) : array{array}, index{std::move(index)} {}
 AST::ArrayIndexingExpr::~ArrayIndexingExpr() {}
 
@@ -22,7 +19,8 @@ AST::UnaryExpr::~UnaryExpr() {}
 AST::BinaryExpr::BinaryExpr(const char op, std::unique_ptr<Expr> lhs, std::unique_ptr<Expr> rhs) : op{op}, lhs{std::move(lhs)}, rhs{std::move(rhs)} {}
 AST::BinaryExpr::~BinaryExpr() {}
 
-AST::VariableExpr::VariableExpr(std::string_view name) : name{name} {}
+AST::VariableExpr::VariableExpr(std::string_view ident) : ident{ident} {}
+AST::VariableDeclExpr::VariableDeclExpr(std::string_view type, std::string_view ident) : type{type}, ident{ident} {}
 
 AST::IfExpr::IfExpr(std::unique_ptr<Expr> cond, std::vector<std::unique_ptr<Expr>> if_else_exprs) : cond{std::move(cond)}, if_else_exprs{std::move(if_else_exprs)} {}
 AST::IfExpr::~IfExpr() {}
@@ -33,15 +31,15 @@ AST::AssignExpr::~AssignExpr() {}
 AST::CompoundExpr::CompoundExpr(std::vector<std::unique_ptr<Expr>> expressions) : expressions{std::move(expressions)} {}
 AST::CompoundExpr::~CompoundExpr() {}
 
-AST::FuncDeclExpr::FuncDeclExpr(std::string_view name, std::string_view return_type, std::vector<std::string_view> param_types) : 
-    name{name}, return_type{return_type}, param_types{std::move(param_types)} {}
+AST::FuncDeclExpr::FuncDeclExpr(std::string_view ident, std::string_view return_type, std::vector<std::string_view> param_types) : 
+    ident{ident}, return_type{return_type}, param_types{std::move(param_types)} {}
 AST::FuncDeclExpr::~FuncDeclExpr() {}
 
-AST::FuncDefExpr::FuncDefExpr(std::string_view name, std::string_view return_type, std::vector<std::pair<std::string_view, std::string_view>> parameters, std::unique_ptr<Expr> body) : 
-    name{name}, return_type{return_type}, parameters{std::move(parameters)}, body{std::move(body)} {}
+AST::FuncDefExpr::FuncDefExpr(std::string_view ident, std::string_view return_type, std::vector<std::pair<std::string_view, std::string_view>> parameters, std::unique_ptr<Expr> body) : 
+    ident{ident}, return_type{return_type}, parameters{std::move(parameters)}, body{std::move(body)} {}
 AST::FuncDefExpr::~FuncDefExpr() {}
 
-AST::FuncCallExpr::FuncCallExpr(std::string_view name, std::vector<std::unique_ptr<Expr>> args) : name{name}, args{std::move(args)} {}
+AST::FuncCallExpr::FuncCallExpr(std::string_view ident, std::vector<std::unique_ptr<Expr>> args) : ident{ident}, args{std::move(args)} {}
 AST::FuncCallExpr::~FuncCallExpr() {}
 
 AST::ReturnExpr::ReturnExpr(std::unique_ptr<Expr> value) : value{std::move(value)} {}
@@ -53,8 +51,3 @@ AST::WhileExpr::~WhileExpr() {}
 AST::ForExpr::ForExpr(std::unique_ptr<Expr> init, std::unique_ptr<Expr> cond, std::unique_ptr<Expr> update, std::unique_ptr<Expr> body) :
     init{std::move(init)}, cond{std::move(cond)}, update{std::move(update)}, body{std::move(body)} {}
 AST::ForExpr::~ForExpr() {}
-
-AST::StructExpr::StructExpr(std::string_view name, std::vector<std::pair<std::string_view, std::string_view>> members) : name{name}, members{std::move(members)} {}
-AST::StructExpr::~StructExpr() {}
-AST::UnionExpr::UnionExpr(std::string_view name, std::vector<std::string_view> members) : name{name}, members{std::move(members)} {}
-AST::UnionExpr::~UnionExpr() {}
