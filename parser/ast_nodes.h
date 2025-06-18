@@ -3,198 +3,229 @@
 #include <vector>
 #include <variant>
 #include <memory>
-#include <print>
-#include <span>
-#include <iostream>
+#include <utility>
+#include <format>
+#include <type_traits>
 
-struct Expr;
+namespace AST {
 
-struct IntegerLiteralExpr {
-    int value;
-    IntegerLiteralExpr(int value);
-};
+    struct Expr;
 
-struct FloatLiteralExpr {
-    float value;
-    FloatLiteralExpr(float value);
-};
+    struct IntegerLiteralExpr {
+        int value;
+        IntegerLiteralExpr(int value);
+    };
 
-struct CharLiteralExpr {
-    const char value;
-    CharLiteralExpr(const char value);
-};
+    struct FloatLiteralExpr {
+        float value;
+        FloatLiteralExpr(float value);
+    };
 
-struct StringLiteralExpr {
-    std::string_view value;
-    StringLiteralExpr(std::string_view value);
-};
+    struct CharLiteralExpr {
+        const char value;
+        CharLiteralExpr(const char value);
+    };
 
-struct ArrayLiteralExpr {
-    std::vector<std::unique_ptr<Expr>> array_elems;
+    struct StringLiteralExpr {
+        std::string_view value;
+        StringLiteralExpr(std::string_view value);
+    };
 
-    ArrayLiteralExpr(std::vector<std::unique_ptr<Expr>> array_elems);
-    ~ArrayLiteralExpr();
-};
+    struct ArrayLiteralExpr {
+        std::vector<std::unique_ptr<Expr>> array_elems;
 
-struct ArrayIndexingExpr {
-    std::string_view array;
-    std::unique_ptr<Expr> index;
+        ArrayLiteralExpr(std::vector<std::unique_ptr<Expr>> array_elems);
+        ~ArrayLiteralExpr();
+    };
 
-    ArrayIndexingExpr(std::string_view array, std::unique_ptr<Expr> index);
-    ~ArrayIndexingExpr();
-};
+    struct ArrayIndexingExpr {
+        std::string_view array;
+        std::unique_ptr<Expr> index;
 
-struct BooleanExpr {
-    bool value;
-    BooleanExpr(bool value);
-};
+        ArrayIndexingExpr(std::string_view array, std::unique_ptr<Expr> index);
+        ~ArrayIndexingExpr();
+    };
 
-struct UnaryExpr {
-    std::string_view op;
-    std::unique_ptr<Expr> arg;
+    struct BooleanExpr {
+        bool value;
+        BooleanExpr(bool value);
+    };
 
-    UnaryExpr(std::string_view op, std::unique_ptr<Expr> arg);
-    ~UnaryExpr();
-};
+    struct UnaryExpr {
+        std::string_view op;
+        std::unique_ptr<Expr> arg;
 
-struct BinaryExpr {
-    const char op;
-    std::unique_ptr<Expr> lhs, rhs;
+        UnaryExpr(std::string_view op, std::unique_ptr<Expr> arg);
+        ~UnaryExpr();
+    };
 
-    BinaryExpr(const char op, std::unique_ptr<Expr> lhs, std::unique_ptr<Expr> rhs);
-    ~BinaryExpr();
-};
+    struct BinaryExpr {
+        const char op;
+        std::unique_ptr<Expr> lhs, rhs;
 
-struct VariableExpr {
-    std::string_view name;
-    VariableExpr(std::string_view);
-};
+        BinaryExpr(const char op, std::unique_ptr<Expr> lhs, std::unique_ptr<Expr> rhs);
+        ~BinaryExpr();
+    };
 
-struct IfExpr {
-    std::unique_ptr<Expr> cond;
-    std::vector<std::unique_ptr<Expr>> if_else_exprs;
+    struct VariableExpr {
+        std::string_view name;
+        VariableExpr(std::string_view);
+    };
 
-    IfExpr(std::unique_ptr<Expr> cond, std::vector<std::unique_ptr<Expr>> if_else_exprs);
-    ~IfExpr();
-};
+    struct IfExpr {
+        std::unique_ptr<Expr> cond;
+        std::vector<std::unique_ptr<Expr>> if_else_exprs;
 
-struct AssignExpr {
-    std::string_view var_name;
-    std::unique_ptr<Expr> value;
+        IfExpr(std::unique_ptr<Expr> cond, std::vector<std::unique_ptr<Expr>> if_else_exprs);
+        ~IfExpr();
+    };
 
-    AssignExpr(std::string_view var_name, std::unique_ptr<Expr> value);
-    ~AssignExpr();
-};
+    struct AssignExpr {
+        std::string_view var_name;
+        std::unique_ptr<Expr> value;
 
-struct CompoundExpr {
-    std::vector<std::unique_ptr<Expr>> expressions;
+        AssignExpr(std::string_view var_name, std::unique_ptr<Expr> value);
+        ~AssignExpr();
+    };
 
-    CompoundExpr(std::vector<std::unique_ptr<Expr>> expressions);
-    ~CompoundExpr();
-};
+    struct CompoundExpr {
+        std::vector<std::unique_ptr<Expr>> expressions;
 
-// types only
-struct FuncDeclExpr {
-    std::string_view name, return_type;
-    std::vector<std::string_view> param_types;
+        CompoundExpr(std::vector<std::unique_ptr<Expr>> expressions);
+        ~CompoundExpr();
+    };
 
-    FuncDeclExpr(std::string_view name, std::string_view return_type, std::vector<std::string_view> param_types);
-    ~FuncDeclExpr();
-};
+    // types only
+    struct FuncDeclExpr {
+        std::string_view name, return_type;
+        std::vector<std::string_view> param_types;
 
-struct FuncDefExpr {
-    std::string_view name, return_type;
-    std::vector<std::pair<std::string_view, std::string_view>> parameters;
-    std::unique_ptr<Expr> body;
+        FuncDeclExpr(std::string_view name, std::string_view return_type, std::vector<std::string_view> param_types);
+        ~FuncDeclExpr();
+    };
 
-    FuncDefExpr(std::string_view name, std::string_view return_type, std::vector<std::pair<std::string_view, std::string_view>> parameters, std::unique_ptr<Expr> body);
-    ~FuncDefExpr();
-};
+    struct FuncDefExpr {
+        std::string_view name, return_type;
+        std::vector<std::pair<std::string_view, std::string_view>> parameters;
+        std::unique_ptr<Expr> body;
 
-struct FuncCallExpr {
-    std::string_view name;
-    std::vector<std::unique_ptr<Expr>> args;
+        FuncDefExpr(std::string_view name, std::string_view return_type, std::vector<std::pair<std::string_view, std::string_view>> parameters, std::unique_ptr<Expr> body);
+        ~FuncDefExpr();
+    };
 
-    FuncCallExpr(std::string_view name, std::vector<std::unique_ptr<Expr>> args);
-    ~FuncCallExpr();
-};
+    struct FuncCallExpr {
+        std::string_view name;
+        std::vector<std::unique_ptr<Expr>> args;
 
-struct ReturnExpr {
-    std::unique_ptr<Expr> value;
+        FuncCallExpr(std::string_view name, std::vector<std::unique_ptr<Expr>> args);
+        ~FuncCallExpr();
+    };
 
-    ReturnExpr(std::unique_ptr<Expr> value);
-    ~ReturnExpr();
-};
+    struct ReturnExpr {
+        std::unique_ptr<Expr> value;
 
-struct WhileExpr {
-    std::unique_ptr<Expr> cond;
-    std::unique_ptr<Expr> body;
+        ReturnExpr(std::unique_ptr<Expr> value);
+        ~ReturnExpr();
+    };
 
-    WhileExpr(std::unique_ptr<Expr> cond, std::unique_ptr<Expr> body);
-    ~WhileExpr();
-};
+    struct WhileExpr {
+        std::unique_ptr<Expr> cond;
+        std::unique_ptr<Expr> body;
 
-struct ForExpr {
-    std::unique_ptr<Expr> init, cond, update, body;
+        WhileExpr(std::unique_ptr<Expr> cond, std::unique_ptr<Expr> body);
+        ~WhileExpr();
+    };
 
-    ForExpr(std::unique_ptr<Expr> init, std::unique_ptr<Expr> cond, std::unique_ptr<Expr> update, std::unique_ptr<Expr> body);
-    ~ForExpr();
-};
+    struct ForExpr {
+        std::unique_ptr<Expr> init, cond, update, body;
 
-struct StructExpr {
-    std::string_view name;
-    std::vector<std::pair<std::string_view, std::string_view>> members;
+        ForExpr(std::unique_ptr<Expr> init, std::unique_ptr<Expr> cond, std::unique_ptr<Expr> update, std::unique_ptr<Expr> body);
+        ~ForExpr();
+    };
 
-    StructExpr(std::string_view name, std::vector<std::pair<std::string_view, std::string_view>> members);
-    ~StructExpr();
-};
+    struct StructExpr {
+        std::string_view name;
+        std::vector<std::pair<std::string_view, std::string_view>> members;
 
-struct UnionExpr {
-    std::string_view name;
-    std::vector<std::string_view> members;
+        StructExpr(std::string_view name, std::vector<std::pair<std::string_view, std::string_view>> members);
+        ~StructExpr();
+    };
 
-    UnionExpr(std::string_view name, std::vector<std::string_view> members);
-    ~UnionExpr();
-};
+    struct UnionExpr {
+        std::string_view name;
+        std::vector<std::string_view> members;
 
-struct Expr {
-    std::variant<
-        IntegerLiteralExpr,
-        FloatLiteralExpr,
-        CharLiteralExpr,
-        StringLiteralExpr,
-        ArrayLiteralExpr,
-        ArrayIndexingExpr,
-        BooleanExpr,
-        UnaryExpr,
-        BinaryExpr,
-        VariableExpr,
-        IfExpr,
-        AssignExpr,
-        CompoundExpr,
-        FuncDeclExpr,
-        FuncDefExpr,
-        FuncCallExpr,
-        ReturnExpr,
-        WhileExpr,
-        ForExpr,
-        StructExpr,
-        UnionExpr
-    > kind;
+        UnionExpr(std::string_view name, std::vector<std::string_view> members);
+        ~UnionExpr();
+    };
 
-    template <typename T>
-    Expr(T&& value) : kind{std::forward<T>(value)} {}
+    struct Expr {
+        std::variant<
+            // IntegerLiteralExpr,
+            // FloatLiteralExpr,
+            // CharLiteralExpr,
+            // StringLiteralExpr,
+            // ArrayLiteralExpr,
+            // ArrayIndexingExpr,
+            // BooleanExpr,
+            // UnaryExpr,
+            BinaryExpr,
+            VariableExpr
+            // IfExpr,
+            // AssignExpr,
+            // CompoundExpr,
+            // FuncDeclExpr,
+            // FuncDefExpr,
+            // FuncCallExpr,
+            // ReturnExpr,
+            // WhileExpr,
+            // ForExpr,
+            // StructExpr,
+            // UnionExpr
+        > kind;
 
-    ~Expr() = default;
+        template <typename T, typename... Args>
+        Expr(std::in_place_type_t<T>, Args&&... args) : 
+            kind{std::in_place_type<T>, std::forward<Args>(args)...} {}
 
-    Expr(const Expr&) = delete;
-    Expr& operator=(const Expr&) = delete;
+        ~Expr() = default;
 
-    Expr(Expr&&) noexcept = delete;
-    Expr& operator=(Expr&&) noexcept = delete;
-};
+        Expr(const Expr&) = delete;
+        Expr& operator=(const Expr&) = delete;
+        Expr(Expr&&) noexcept = delete;
+        Expr& operator=(Expr&&) noexcept = delete;
+    };
+
+    template <typename... Ts>
+    struct overloaded : Ts... { using Ts::operator()...; };
+
+    [[nodiscard]] auto inline to_string(const Expr& expr) -> std::string {
+        return std::visit(overloaded{
+            [](const IntegerLiteralExpr& kind) { return std::to_string(kind.value); },
+            // [](const FloatLiteralExpr& kind) { return std::to_string(kind.value); },
+            // [](const CharLiteralExpr kind) { return kind.value; },
+            // [](const StringLiteralExpr& kind) { return kind.value; },
+            // [](const ArrayLiteralExpr& kind) { return std::format("{}", AST::to_string(kind.array_elems)); },
+            // [](const ArrayIndexingExpr& kind) { return std::format("{}[{}]", AST::to_string(kind.array), AST::to_string(kind.index)); },
+            // [](const BooleanExpr& kind) { return (kind.value == true) ? "true" : "false"; },
+            // [](const UnaryExpr& kind) {},
+            [](const BinaryExpr& kind) { return std::format("({} {} {})", AST::to_string(*kind.lhs), kind.op, AST::to_string(*kind.rhs)); },
+            [](const VariableExpr& kind) { return std::format("{}", kind.name); },
+            // [](const IfExpr& kind) {},
+            // [](const AssignExpr& kind) {},
+            // [](const CompoundExpr& kind) {},
+            // [](const FuncDeclExpr& kind) {},
+            // [](const FuncDefExpr& kind) {},
+            // [](const FuncCallExpr& kind) {},
+            // [](const ReturnExpr& kind) {},
+            // [](const WhileExpr& kind) {},
+            // [](const ForExpr& kind) {},
+            // [](const StructExpr& kind) {},
+            // [](const UnionExpr& kind) {},
+        }, expr.kind);
+    }
 
 
 
 
-
+}
