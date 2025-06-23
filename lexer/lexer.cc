@@ -2,77 +2,11 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
-#include <cctype>
 #include <fstream>
 #include <iostream>
 #include <cassert>
 
 #include "lexer.h"
-
-namespace {
-
-    const std::unordered_set<std::string_view> lang_types {
-        "int", "int8", "int16", "int32", "int64",
-        "uint", "uint8", "uint16", "uint32", "uint64",
-        "float" "float16", "float32", "float64",
-        "char", "string", "struct", "bool", "void", "union"
-    };
-    
-    const std::unordered_map<std::string_view, TokenType> keywords {
-        {"if", TokenType::KEYWORD_IF},
-        {"else", TokenType::KEYWORD_ELSE},
-        {"while", TokenType::KEYWORD_WHILE},
-        {"for", TokenType::KEYWORD_FOR},
-        {"return", TokenType::KEYWORD_RETURN},
-        {"typedef", TokenType::KEYWORD_TYPEDEF},
-    };
-
-    const std::unordered_map<char, TokenType> single_symbol_map {
-        {'=', TokenType::EQUAL},
-        {'+', TokenType::PLUS},
-        {'-', TokenType::MINUS},
-        {'*', TokenType::STAR},
-        {'/', TokenType::SLASH},
-        {'%', TokenType::PERCENT},
-        {'<', TokenType::LESS},
-        {'>', TokenType::GREATER},
-        {'(', TokenType::LPAREN},
-        {')', TokenType::RPAREN},
-        {'{', TokenType::LBRACKET},
-        {'}', TokenType::RBRACKET},
-        {'[', TokenType::LBRACE},
-        {']', TokenType::RBRACE},
-        {'&', TokenType::AMPERSAND},
-        {'"', TokenType::DOUBLE_QUOTE},
-        {'\'', TokenType::SINGLE_QUOTE},
-        {';', TokenType::SEMICOLON},
-        {':', TokenType::COLON},
-        {',', TokenType::COMMA},
-        {'.', TokenType::DOT},
-        {'!', TokenType::BANG},
-        {'|', TokenType::PIPE},
-    };
-
-    const std::unordered_map<std::string_view, TokenType> double_symbol_map {
-        {"==", TokenType::EQUAL_EQUAL},
-        {"!=", TokenType::BANG_EQUAL},
-        {"+=", TokenType::PLUS_EQUAL},
-        {"-=", TokenType::MINUS_EQUAL},
-        {"*=", TokenType::STAR_EQUAL},
-        {"/=", TokenType::SLASH_EQUAL},
-        {"%=", TokenType::PERCENT_EQUAL},
-        {"<=", TokenType::LESS_EQUAL},
-        {">=", TokenType::GREATER_EQUAL},
-        {"++", TokenType::PLUS_PLUS},
-        {"--", TokenType::MINUS_MINUS},
-        {"<<", TokenType::LESS_LESS},
-        {">>", TokenType::GREATER_GREATER},
-        {"&&", TokenType::AMPERSAND_AMPERSAND},
-        {"||", TokenType::PIPE_PIPE},
-        {"->", TokenType::ARROW},
-        {"//", TokenType::SLASH_SLASH},
-    };
-}
 
 [[nodiscard]] auto Lexer::get_token() -> Token {
     auto start = cur, end = cur;

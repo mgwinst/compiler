@@ -1,0 +1,127 @@
+#pragma once
+
+#include <unordered_map>
+#include <unordered_set>
+#include <string_view>
+
+enum class TokenType : uint16_t
+{
+    IDENTIFIER = 128,
+    NUMERIC_LITERAL,
+    CHAR_LITERAL,
+    STRING_LITERAL,
+    TYPE,
+    KEYWORD_IF,
+    KEYWORD_ELSE,
+    KEYWORD_WHILE,
+    KEYWORD_FOR,
+    KEYWORD_RETURN,
+    KEYWORD_CONST,
+    KEYWORD_TYPEDEF,
+    LPAREN,
+    RPAREN,
+    LBRACKET,
+    RBRACKET,
+    LBRACE,
+    RBRACE,
+    EQUAL,
+    PLUS,
+    MINUS,
+    STAR,
+    SLASH,
+    PERCENT,
+    LESS,
+    GREATER,
+    SINGLE_QUOTE,
+    DOUBLE_QUOTE,
+    AMPERSAND,
+    BANG,
+    SEMICOLON,
+    COLON,
+    COMMA,
+    DOT,
+    PIPE,
+    ARROW,
+    EQUAL_EQUAL,
+    BANG_EQUAL,
+    PLUS_EQUAL,
+    MINUS_EQUAL,
+    STAR_EQUAL,
+    SLASH_EQUAL,
+    PERCENT_EQUAL,
+    LESS_EQUAL,
+    GREATER_EQUAL,
+    PLUS_PLUS,
+    MINUS_MINUS,
+    LESS_LESS,
+    GREATER_GREATER,
+    AMPERSAND_AMPERSAND,
+    PIPE_PIPE,
+    SLASH_SLASH,
+    END_OF_FILE,
+    INVALID,
+
+    // handle bitwise later
+};
+
+inline const std::unordered_set<std::string_view> lang_types {
+    "int", "int8", "int16", "int32", "int64",
+    "uint", "uint8", "uint16", "uint32", "uint64",
+    "float" "float16", "float32", "float64",
+    "char", "string", "struct", "bool", "void", "union"
+};
+
+inline const std::unordered_map<std::string_view, TokenType> keywords {
+    {"if", TokenType::KEYWORD_IF},
+    {"else", TokenType::KEYWORD_ELSE},
+    {"while", TokenType::KEYWORD_WHILE},
+    {"for", TokenType::KEYWORD_FOR},
+    {"return", TokenType::KEYWORD_RETURN},
+    {"typedef", TokenType::KEYWORD_TYPEDEF},
+};
+
+inline const std::unordered_map<char, TokenType> single_symbol_map {
+    {'=', TokenType::EQUAL},
+    {'+', TokenType::PLUS},
+    {'-', TokenType::MINUS},
+    {'*', TokenType::STAR},
+    {'/', TokenType::SLASH},
+    {'%', TokenType::PERCENT},
+    {'<', TokenType::LESS},
+    {'>', TokenType::GREATER},
+    {'(', TokenType::LPAREN},
+    {')', TokenType::RPAREN},
+    {'{', TokenType::LBRACKET},
+    {'}', TokenType::RBRACKET},
+    {'[', TokenType::LBRACE},
+    {']', TokenType::RBRACE},
+    {'&', TokenType::AMPERSAND},
+    {'"', TokenType::DOUBLE_QUOTE},
+    {'\'', TokenType::SINGLE_QUOTE},
+    {';', TokenType::SEMICOLON},
+    {':', TokenType::COLON},
+    {',', TokenType::COMMA},
+    {'.', TokenType::DOT},
+    {'!', TokenType::BANG},
+    {'|', TokenType::PIPE},
+};
+
+inline const std::unordered_map<std::string_view, TokenType> double_symbol_map {
+    {"==", TokenType::EQUAL_EQUAL},
+    {"!=", TokenType::BANG_EQUAL},
+    {"+=", TokenType::PLUS_EQUAL},
+    {"-=", TokenType::MINUS_EQUAL},
+    {"*=", TokenType::STAR_EQUAL},
+    {"/=", TokenType::SLASH_EQUAL},
+    {"%=", TokenType::PERCENT_EQUAL},
+    {"<=", TokenType::LESS_EQUAL},
+    {">=", TokenType::GREATER_EQUAL},
+    {"++", TokenType::PLUS_PLUS},
+    {"--", TokenType::MINUS_MINUS},
+    {"<<", TokenType::LESS_LESS},
+    {">>", TokenType::GREATER_GREATER},
+    {"&&", TokenType::AMPERSAND_AMPERSAND},
+    {"||", TokenType::PIPE_PIPE},
+    {"->", TokenType::ARROW},
+    {"//", TokenType::SLASH_SLASH},
+};

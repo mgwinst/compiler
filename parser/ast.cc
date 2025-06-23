@@ -5,16 +5,31 @@
 using namespace AST;
 
 int main() {
-    auto var_node = std::make_unique<AST::Expr>(std::in_place_type<AST::VariableExpr>, "a");
-    auto rhs_node = std::make_unique<AST::Expr>(std::in_place_type<AST::VariableExpr>, "b");
-    // auto binary_op_node = std::make_unique<AST::Expr>(std::in_place_type<AST::BinaryExpr>, '+', std::move(lhs_node), std::move(rhs_node));
+    auto lhs_node_a = std::make_unique<Expr>(std::in_place_type<VariableExpr>, "a");
+    auto rhs_node_b = std::make_unique<Expr>(std::in_place_type<VariableExpr>, "b");
+    auto binary_op_node1 = std::make_unique<Expr>(std::in_place_type<BinaryExpr>, '>', std::move(lhs_node_a), std::move(rhs_node_b));
 
-    auto var_decl_a = std::make_unique<Expr>(std::in_place_type<VariableDeclExpr>, "int32", "a");
-    auto var_decl_b = std::make_unique<Expr>(std::in_place_type<VariableDeclExpr>, "float32", "b");
+    auto decl_var1 = std::make_unique<Expr>(std::in_place_type<VariableDeclExpr>, "int32", "var1");
+    auto decl_var2 = std::make_unique<Expr>(std::in_place_type<VariableDeclExpr>, "float32", "var2");
 
-    auto unary_node = std::make_unique<Expr>(std::in_place_type<UnaryExpr>, "&", std::move(var_node));
+    auto lhs_node_x = std::make_unique<Expr>(std::in_place_type<VariableExpr>, "x");
+    auto rhs_node_y = std::make_unique<Expr>(std::in_place_type<VariableExpr>, "y");
+    auto binary_op_node2 = std::make_unique<Expr>(std::in_place_type<BinaryExpr>, '+', std::move(lhs_node_x), std::move(rhs_node_y));
 
-    auto s = AST::to_string(*unary_node);
+    std::vector<std::unique_ptr<Expr>> v;
+    v.push_back(std::move(binary_op_node2)),
+    v.push_back(std::move(decl_var1));
+    v.push_back(std::move(decl_var2));
+
+    auto if_statement = std::make_unique<Expr>(
+        std::in_place_type<IfExpr>, 
+        std::move(binary_op_node1),
+        std::move(v)
+    );
+
+
+
+    auto s = AST::to_string(*if_statement);
 
     std::cout << s << std::endl;
 }

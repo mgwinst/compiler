@@ -6,6 +6,7 @@
 #include <utility>
 #include <format>
 #include <type_traits>
+#include <iostream>
 
 namespace AST {
 
@@ -151,8 +152,8 @@ namespace AST {
             UnaryExpr,
             BinaryExpr,
             VariableExpr,
-            VariableDeclExpr
-            // IfExpr,
+            VariableDeclExpr,
+            IfExpr
             // AssignExpr,
             // CompoundExpr,
             // FuncDeclExpr,
@@ -168,6 +169,8 @@ namespace AST {
         Expr(std::in_place_type_t<T>, Args&&... args) : 
             kind{std::in_place_type<T>, std::forward<Args>(args)...} {}
 
+        // add other constructors
+
         ~Expr() = default;
 
         Expr(const Expr&) = delete;
@@ -179,6 +182,7 @@ namespace AST {
     template <typename... Ts>
     struct overloaded : Ts... { using Ts::operator()...; };
 
+    // pretty printing
     [[nodiscard]] auto inline to_string(const Expr& expr) -> std::string {
         return std::visit(overloaded{
             [](const IntegerLiteralExpr& kind) { return std::to_string(kind.value); },
@@ -186,11 +190,17 @@ namespace AST {
             [](const CharLiteralExpr kind) { return std::string{kind.value}; },
             [](const StringLiteralExpr& kind) { return std::string{kind.value}; },
             [](const BooleanExpr& kind) { return std::format("boolean: {}", (kind.value == true) ? "true" : "false"); },
-            [](const UnaryExpr& kind) { return std::format("UnaryExpr: {}\n    {}", kind.op, AST::to_string(*kind.arg)); },
-            [](const BinaryExpr& kind) { return std::format("BinaryExpr: {}\n    {}\n    {}", kind.op, AST::to_string(*kind.lhs), AST::to_string(*kind.rhs)); },
-            [](const VariableExpr& kind) { return  std::format("Identifier: {}", std::string{kind.ident}); },
-            [](const VariableDeclExpr& kind) { return  std::format("VarDecl: {} <{}>", std::string{kind.ident}, std::string{kind.type}); },
-            // [](const IfExpr& kind) {},
+            [](const UnaryExpr& kind) { return std::format("UnaryExpr: {}\n  {}", kind.op, AST::to_string(*kind.arg)); },
+            [](const BinaryExpr& kind) { return std::format("BinaryExpr: {}\n  {}\n  {}\n", kind.op, AST::to_string(*kind.lhs), AST::to_string(*kind.rhs)); },
+            [](const VariableExpr& kind) { return std::format("Identifier: {}", std::string{kind.ident}); },
+            [](const VariableDeclExpr& kind) { return std::format("VarDecl: {} <{}>", std::string{kind.ident}, std::string{kind.type}); },
+            [](const IfExpr& kind) { 
+                std::string s{"IfStatement:\n  " + AST::to_string(*kind.cond)};
+                for (const auto& expr : kind.if_else_exprs) {
+                    s += std::format("{}", AST::to_string(*expr));
+                }
+                return s;
+            },
             // [](const AssignExpr& kind) {},
             // [](const CompoundExpr& kind) {},
             // [](const FuncDeclExpr& kind) {},
@@ -202,8 +212,5 @@ namespace AST {
             // [](const ArrayIndexingExpr& kind) {},
         }, expr.kind);
     }
-
-
-
 
 }
