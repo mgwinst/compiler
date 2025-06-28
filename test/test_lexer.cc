@@ -1,10 +1,11 @@
 #include <gtest/gtest.h>
 #include <fstream>
 
-#include "../lexer/lexer.h"
+#include "lexer/lexer.h"
+#include "utils/utils.h"
 
 
-TEST(LEXER, lexer) {
+TEST(TestLexer, lexer) {
     TokenType test_table[60] = {
         TokenType::IDENTIFIER,
         TokenType::IDENTIFIER,
@@ -68,18 +69,8 @@ TEST(LEXER, lexer) {
         TokenType::TYPE
     };
 
-    std::string path{"../samples/sample_tokens.txt"};
-    std::ifstream file{path};
-    assert(file.is_open());
-
-    std::string source_file;
-    std::string line;
-
-    while (getline(file, line)) {
-        source_file += line + '\n';
-    }
-
-    Lexer lexer{source_file};
+    std::string source_text = get_source_text("../samples/sample_program");
+    Lexer lexer{source_text};
 
     int i = 0;
     while (1) {

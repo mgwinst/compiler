@@ -79,11 +79,11 @@ namespace AST {
         ~AssignExpr();
     };
 
-    struct CompoundExpr {
+    struct BlockExpr {
         std::vector<std::unique_ptr<Expr>> expressions;
 
-        CompoundExpr(std::vector<std::unique_ptr<Expr>> expressions);
-        ~CompoundExpr();
+        BlockExpr(std::vector<std::unique_ptr<Expr>> expressions);
+        ~BlockExpr();
     };
 
     // types only
@@ -134,12 +134,12 @@ namespace AST {
         ~ForExpr();
     };
 
-    struct ArrayIndexingExpr {
+    struct IndexingExpr {
         std::string_view array;
         std::unique_ptr<Expr> index;
 
-        ArrayIndexingExpr(std::string_view array, std::unique_ptr<Expr> index);
-        ~ArrayIndexingExpr();
+        IndexingExpr(std::string_view array, std::unique_ptr<Expr> index);
+        ~IndexingExpr();
     };
 
     struct Expr {
@@ -180,9 +180,10 @@ namespace AST {
     };
 
     template <typename... Ts>
-    struct overloaded : Ts... { using Ts::operator()...; };
+    struct overloaded : Ts... { 
+        using Ts::operator()...;
+    };
 
-    // pretty printing
     [[nodiscard]] auto inline to_string(const Expr& expr) -> std::string {
         return std::visit(overloaded{
             [](const IntegerLiteralExpr& kind) { return std::to_string(kind.value); },

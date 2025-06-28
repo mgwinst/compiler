@@ -8,8 +8,8 @@ AST::CharLiteralExpr::CharLiteralExpr(const char value) : value{value} {}
 
 AST::StringLiteralExpr::StringLiteralExpr(std::string_view value) : value{value} {}
 
-AST::ArrayIndexingExpr::ArrayIndexingExpr(std::string_view array, std::unique_ptr<Expr> index) : array{array}, index{std::move(index)} {}
-AST::ArrayIndexingExpr::~ArrayIndexingExpr() {}
+AST::IndexingExpr::IndexingExpr(std::string_view array, std::unique_ptr<Expr> index) : array{array}, index{std::move(index)} {}
+AST::IndexingExpr::~IndexingExpr() {}
 
 AST::BooleanExpr::BooleanExpr(bool value) : value{value} {}
 
@@ -28,8 +28,8 @@ AST::IfExpr::~IfExpr() {}
 AST::AssignExpr::AssignExpr(std::string_view var_name, std::unique_ptr<Expr> value) : var_name{var_name}, value{std::move(value)} {}
 AST::AssignExpr::~AssignExpr() {}
 
-AST::CompoundExpr::CompoundExpr(std::vector<std::unique_ptr<Expr>> expressions) : expressions{std::move(expressions)} {}
-AST::CompoundExpr::~CompoundExpr() {}
+AST::BlockExpr::BlockExpr(std::vector<std::unique_ptr<Expr>> expressions) : expressions{std::move(expressions)} {}
+AST::BlockExpr::~BlockExpr() {}
 
 AST::FuncDeclExpr::FuncDeclExpr(std::string_view ident, std::string_view return_type, std::vector<std::string_view> param_types) : 
     ident{ident}, return_type{return_type}, param_types{std::move(param_types)} {}
