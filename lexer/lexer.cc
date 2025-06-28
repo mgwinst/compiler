@@ -2,7 +2,6 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
-#include <fstream>
 #include <iostream>
 #include <cassert>
 
@@ -114,34 +113,7 @@
     return Token{TokenType::END_OF_FILE, std::nullopt};
 }
 
-auto test_lex(std::string path) -> void {
-    std::ifstream file{path};
-    assert(file.is_open());
 
-    std::string source_text;
-    std::string line;
-
-    while (getline(file, line)) {
-        source_text += line + '\n';
-    }
-
-    Lexer lexer{source_text};
-
-    while (1) {
-        lexer.cur_token = lexer.get_token();
-
-        std::cout << lexer.cur_token.to_string() << '\n';
-        if (lexer.cur_token.type == TokenType::END_OF_FILE) break;
-    }
-
-}
-
-
-int main() {
-    // test_lex("../test/sample_program.c");
-    test_lex("../test/sample_tokens.txt");
-
-}
 
 
 

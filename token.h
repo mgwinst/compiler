@@ -67,7 +67,7 @@ enum class TokenType : uint16_t
 inline const std::unordered_set<std::string_view> lang_types {
     "int", "int8", "int16", "int32", "int64",
     "uint", "uint8", "uint16", "uint32", "uint64",
-    "float" "float16", "float32", "float64",
+    "float", "float16", "float32", "float64",
     "char", "string", "struct", "bool", "void", "union"
 };
 
@@ -77,6 +77,7 @@ inline const std::unordered_map<std::string_view, TokenType> keywords {
     {"while", TokenType::KEYWORD_WHILE},
     {"for", TokenType::KEYWORD_FOR},
     {"return", TokenType::KEYWORD_RETURN},
+    {"const", TokenType::KEYWORD_CONST},
     {"typedef", TokenType::KEYWORD_TYPEDEF},
 };
 
@@ -91,10 +92,10 @@ inline const std::unordered_map<char, TokenType> single_symbol_map {
     {'>', TokenType::GREATER},
     {'(', TokenType::LPAREN},
     {')', TokenType::RPAREN},
-    {'{', TokenType::LBRACKET},
-    {'}', TokenType::RBRACKET},
-    {'[', TokenType::LBRACE},
-    {']', TokenType::RBRACE},
+    {'{', TokenType::LBRACE},
+    {'}', TokenType::RBRACE},
+    {'[', TokenType::LBRACKET},
+    {']', TokenType::RBRACKET},
     {'&', TokenType::AMPERSAND},
     {'"', TokenType::DOUBLE_QUOTE},
     {'\'', TokenType::SINGLE_QUOTE},

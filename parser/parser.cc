@@ -1,5 +1,5 @@
 #include "token.h"
-#include "lexer.h"
+#include "lexer/lexer.h"
 #include "ast_nodes.h"
 
 namespace {

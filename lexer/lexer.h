@@ -5,7 +5,7 @@
 #include <string>
 #include <print>
 
-#include <token.h>
+#include "token.h"
 
 struct Token {
     TokenType type;
@@ -40,5 +40,3 @@ struct Lexer {
     [[nodiscard]] auto get_token() -> Token;
     [[nodiscard]] auto peek_token() -> Token;
 };
-
-auto test_lex(std::string) -> void;
