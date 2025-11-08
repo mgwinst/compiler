@@ -1,64 +1,39 @@
 #include <utility>
+#include <map>
 
-#include "token.h"
+#include "lexer/token.h"
 #include "lexer/lexer.h"
 #include "parser.h"
-#include "ast_nodes.h"
+#include "ast.h"
 
-auto Parser::LogError(std::string_view str) -> std::unique_ptr<AST::Expr> {
-    std::cerr << std::format("Error {}\n", str);
-    return nullptr;
-}
+std::unordered_map<TokenType, uint16_t> binary_op_precedence {
+    {TokenType::STAR, 3},
+    {TokenType::SLASH, 3},
+    {TokenType::PERCENT, 3},
 
-auto Parser::ParseIntegerLiteralExpr() -> std::unique_ptr<AST::Expr> {
-    auto result = std::make_unique<AST::Expr>(std::in_place_type<AST::IntegerLiteralExpr>, num_value);
-    lexer.cur_token = lexer.get_token();
-    return result;
-}
+    {TokenType::PLUS, 4},
+    {TokenType::MINUS, 4},
 
-auto Parser::ParseParenExpr() -> std::unique_ptr<AST::Expr> {
-    lexer.cur_token = lexer.get_token();
-    auto v = ParseExpr();
+    {TokenType::LESS, 6},
+    {TokenType::LESS_EQUAL, 6},
+    {TokenType::GREATER, 6},
+    {TokenType::GREATER_EQUAL, 6},
 
-    if (!v) return nullptr;
-    if (lexer.cur_token.lexeme.value() != ")") return LogError("Expected ')'");
+    {TokenType::EQUAL_EQUAL, 7},
+    {TokenType::BANG_EQUAL, 7},
 
-    lexer.cur_token = lexer.get_token();
-    return v;
-}
+    {TokenType::AMPERSAND, 8},
+    {TokenType::CARROT, 9},
+    {TokenType::PIPE, 10},
+    {TokenType::AMPERSAND_AMPERSAND, 11},
+    {TokenType::PIPE_PIPE, 12},
 
-auto Parser::ParseIdentifierExpr() -> std::unique_ptr<AST::Expr> {
-    std::string id_name = ident_str;
-    lexer.cur_token = lexer.get_token();
+    {TokenType::EQUAL, 14},
+    {TokenType::PLUS_EQUAL, 14},
+    {TokenType::MINUS_EQUAL, 14},
+    {TokenType::STAR_EQUAL, 14},
+    {TokenType::SLASH_EQUAL, 14},
+    {TokenType::PERCENT_EQUAL, 14},
 
-    if (lexer.cur_token.lexeme.value() != "(")
-        return std::make_unique<AST::Expr>(std::in_place_type<AST::VariableExpr>, id_name);
-    
-    lexer.cur_token = lexer.get_token();
-    std::vector<std::unique_ptr<AST::Expr>> args;
-    if (lexer.cur_token.lexeme.value() != ")") {
-        while (true) {
-            if (auto arg = ParseExpr()) args.push_back(std::move(arg));
-            else return nullptr;
-            if (lexer.cur_token.lexeme.value() == ")") break;
-            if (lexer.cur_token.lexeme.value() != ",") return LogError("Expected ')' or ',' in argument list");
-            lexer.cur_token = lexer.get_token();
-        }
-    }
-
-    lexer.cur_token = lexer.get_token();
-    return std::make_unique<AST::Expr>(std::in_place_type<AST::FuncCallExpr>, id_name, std::move(args));
-}
-
-auto Parser::ParsePrimary() -> std::unique_ptr<AST::Expr> {
-    switch (lexer.cur_token.type) {
-    default:
-        return LogError("unknown token when expecting an expression");
-    case TokenType::IDENTIFIER:
-        return ParseIdentifierExpr();
-    case TokenType::NUMERIC_LITERAL:
-        return ParseIntegerLiteralExpr();
-    case TokenType::LPAREN:
-        return ParseParenExpr();
-    }
-}
+    {TokenType::COMMA, 15},
+};

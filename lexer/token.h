@@ -11,6 +11,7 @@ enum class TokenType : uint16_t
     CHAR_LITERAL,
     STRING_LITERAL,
     TYPE,
+    KEYWORD_FUNCTION,
     KEYWORD_IF,
     KEYWORD_ELSE,
     KEYWORD_WHILE,
@@ -36,6 +37,7 @@ enum class TokenType : uint16_t
     DOUBLE_QUOTE,
     AMPERSAND,
     BANG,
+    CARROT,
     SEMICOLON,
     COLON,
     COMMA,
@@ -68,10 +70,11 @@ inline const std::unordered_set<std::string_view> lang_types {
     "int", "int8", "int16", "int32", "int64",
     "uint", "uint8", "uint16", "uint32", "uint64",
     "float", "float16", "float32", "float64",
-    "char", "string", "struct", "bool", "void", "union"
+    "char", "string", "struct", "bool", "void", "union",
 };
 
 inline const std::unordered_map<std::string_view, TokenType> keywords {
+    {"fn", TokenType::KEYWORD_FUNCTION},
     {"if", TokenType::KEYWORD_IF},
     {"else", TokenType::KEYWORD_ELSE},
     {"while", TokenType::KEYWORD_WHILE},
@@ -105,6 +108,7 @@ inline const std::unordered_map<char, TokenType> single_symbol_map {
     {'.', TokenType::DOT},
     {'!', TokenType::BANG},
     {'|', TokenType::PIPE},
+    {'^', TokenType::CARROT},
 };
 
 inline const std::unordered_map<std::string_view, TokenType> double_symbol_map {

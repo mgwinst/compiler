@@ -69,7 +69,7 @@ TEST(TestLexer, lexer) {
         TokenType::TYPE
     };
 
-    std::string source_text = get_source_text("../samples/sample_program");
+    std::string source_text = get_source_text("samples/sample_tokens.txt");
     Lexer lexer{source_text};
 
     int i = 0;

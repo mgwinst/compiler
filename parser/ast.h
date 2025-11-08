@@ -47,9 +47,9 @@ namespace AST {
 
     struct BinaryExpr {
         const char op;
-        std::unique_ptr<Expr> lhs, rhs;
+        std::unique_ptr<Expr> left, right;
 
-        BinaryExpr(const char op, std::unique_ptr<Expr> lhs, std::unique_ptr<Expr> rhs);
+        BinaryExpr(const char op, std::unique_ptr<Expr> left, std::unique_ptr<Expr> right);
         ~BinaryExpr();
     };
 
@@ -192,7 +192,7 @@ namespace AST {
             [](const StringLiteralExpr& kind) { return std::string{kind.value}; },
             [](const BooleanExpr& kind) { return std::format("boolean: {}", (kind.value == true) ? "true" : "false"); },
             [](const UnaryExpr& kind) { return std::format("UnaryExpr: {}\n  {}", kind.op, AST::to_string(*kind.arg)); },
-            [](const BinaryExpr& kind) { return std::format("BinaryExpr: {}\n  {}\n  {}\n", kind.op, AST::to_string(*kind.lhs), AST::to_string(*kind.rhs)); },
+            [](const BinaryExpr& kind) { return std::format("BinaryExpr: {}\n  {}\n  {}\n", kind.op, AST::to_string(*kind.left), AST::to_string(*kind.right)); },
             [](const VariableExpr& kind) { return std::format("Identifier: {}", std::string{kind.ident}); },
             [](const VariableDeclExpr& kind) { return std::format("VarDecl: {} <{}>", std::string{kind.ident}, std::string{kind.type}); },
             [](const IfExpr& kind) { 

@@ -1,1 +1,1 @@
-Compiler for a simple C like language
+Compiler for a simple language

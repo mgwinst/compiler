@@ -19,14 +19,15 @@ struct Token {
     Token(TokenType t) : type{t}, lexeme{std::nullopt}, line_number{0}, column_number{0}, length{0} {}
     ~Token() = default;
 
-    auto to_string() const -> std::string {
+    auto to_string() const -> std::string 
+    {
         return std::format("[{}] {}:{} {} ", static_cast<int>(type), line_number, column_number, (lexeme.has_value() ? lexeme.value() : ""));
     }
 
-    auto to_string_less() const -> std::string {
+    auto to_string_less() const -> std::string 
+    {
         return std::format("{}", (lexeme.has_value() ? lexeme.value() : ""));
     }
-
 };
 
 struct Lexer {

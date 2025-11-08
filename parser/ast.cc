@@ -1,4 +1,4 @@
-#include "ast_nodes.h"
+#include "ast.h"
 
 AST::IntegerLiteralExpr::IntegerLiteralExpr(int value) : value{value} {}
 
@@ -16,7 +16,7 @@ AST::BooleanExpr::BooleanExpr(bool value) : value{value} {}
 AST::UnaryExpr::UnaryExpr(std::string_view op, std::unique_ptr<Expr> arg) : op{op}, arg{std::move(arg)} {}
 AST::UnaryExpr::~UnaryExpr() {}
 
-AST::BinaryExpr::BinaryExpr(const char op, std::unique_ptr<Expr> lhs, std::unique_ptr<Expr> rhs) : op{op}, lhs{std::move(lhs)}, rhs{std::move(rhs)} {}
+AST::BinaryExpr::BinaryExpr(const char op, std::unique_ptr<Expr> left, std::unique_ptr<Expr> right) : op{op}, left{std::move(left)}, right{std::move(right)} {}
 AST::BinaryExpr::~BinaryExpr() {}
 
 AST::VariableExpr::VariableExpr(std::string_view ident) : ident{ident} {}
