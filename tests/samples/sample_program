@@ -1,4 +1,4 @@
-fn add() -> int32
+fn main() -> int32
 {
     int32 a = 10;
     int32 b = 5;
