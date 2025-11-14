@@ -2,10 +2,9 @@
 
 #include <vector>
 #include <variant>
-#include <memory>
 #include <utility>
-#include <format>
-#include <type_traits>
+#include <optional>
+#include <unordered_map>
 
 namespace AST {
 
@@ -42,15 +41,38 @@ namespace AST {
             AssignExpr,
             IndexingExpr,
             BlockExpr,
-            FuncCallExpr>;
+            FuncCallExpr
+        >;
+
+    using Parameters = std::vector<std::pair<std::string, std::string>>;
+    using Fields = std::vector<std::pair<std::string, std::string>>;
 
     // ************** DECLARATIONS **************
 
-    struct VariableDecl
+    struct LocalVariableDecl
     {
         std::string type, ident;
+        std::optional<Expr> init;
+        std::optional<bool> is_const;
 
-        VariableDecl(std::string, std::string);
+        LocalVariableDecl(std::string type, std::string ident, std::optional<Expr> init = std::nullopt, std::optional<bool> is_const);
+    };
+    
+    struct GlobalVariableDecl
+    {
+        std::string type, ident;
+        std::optional<Expr> init;
+        std::optional<bool> is_const;
+
+        GlobalVariableDecl(std::string type, std::string ident, std::optional<Expr> init = std::nullopt, std::optional<bool> is_const);
+    };
+
+    struct StructDecl
+    {
+        std::string ident;
+        std::vector<std::pair<std::string, std::string>> fields;
+
+        StructDecl(std::string ident, std::vector<std::pair<std::string, std::string>> fields);
     };
 
     struct FuncDecl
@@ -61,6 +83,7 @@ namespace AST {
 
         FuncDecl(std::string ident, std::string return_type, std::vector<std::pair<std::string, std::string>> parameters, Expr body);
     };
+
 
     // ************** STATEMENTS **************
 
@@ -81,8 +104,7 @@ namespace AST {
 
     struct WhileStatement
     {
-        Expr cond;
-        Expr body;
+        Expr cond, body;
 
         WhileStatement(Expr cond, Expr body);
     };
@@ -150,10 +172,10 @@ namespace AST {
 
     struct AssignExpr
     {
-        std::string var_name;
+        std::string left_name;
         Expr value;
 
-        AssignExpr(std::string var_name, Expr value);
+        AssignExpr(std::string left_name, Expr value);
     };
 
     struct IndexingExpr
@@ -161,7 +183,7 @@ namespace AST {
         std::string array;
         Expr index;
 
-        IndexingExpr(std::string array, std::unique_ptr<AST::Expr> index);
+        IndexingExpr(std::string array, Expr index);
     };
 
     struct BlockExpr
@@ -178,5 +200,5 @@ namespace AST {
 
         FuncCallExpr(std::string ident, std::vector<Expr> args);
     };
-
+    
 } // namespace AST
