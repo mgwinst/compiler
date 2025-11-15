@@ -7,7 +7,8 @@
 
 #include "lexer.h"
 
-[[nodiscard]] auto Lexer::get_token() -> Token {
+[[nodiscard]] auto Lexer::get_token() -> Token 
+{
     auto start = cur, end = cur;
 
     while (cur != source.end()) {
@@ -64,7 +65,8 @@
     return Token{TokenType::END_OF_FILE, {}, line_num, col_num, 1};
 }
 
-[[nodiscard]] auto Lexer::peek_token() -> Token {
+[[nodiscard]] auto Lexer::peek_token() -> Token 
+{
     auto peek_cur = cur;
     auto start = peek_cur, end = peek_cur;
 

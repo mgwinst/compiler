@@ -1,4 +1,6 @@
 #include <fstream>
+#include <print>
+#include <iostream>
 
 #include "lexer/lexer.h"
 #include "parser/ast.h"
@@ -12,17 +14,12 @@ int main(int argc, char** argv)
     try {
         source_text = get_source_text("../tests/samples/sample_program");
     } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::println(std::cerr, "Error: {}", e.what());
     }
     
-    auto lexer = Lexer{ source_text };
+    auto parser = Parser{ source_text };
 
-    while (true) {
-        lexer.cur_token = lexer.get_token();
-        std::println("{}", lexer.cur_token.to_string());
-        if (lexer.cur_token.type == TokenType::END_OF_FILE)
-            break;
-    }
+    parser.main_parse(); // each parser object internally manages an AST for each compilation unit, do we want this?
 
     return 0;
 }

@@ -12,6 +12,7 @@ enum class TokenType : uint16_t
     STRING_LITERAL,
     TYPE,
     KEYWORD_FUNCTION,
+    KEYWORD_STRUCT,
     KEYWORD_IF,
     KEYWORD_ELSE,
     KEYWORD_WHILE,
@@ -62,19 +63,18 @@ enum class TokenType : uint16_t
     SLASH_SLASH,
     END_OF_FILE,
     INVALID,
-
-    // handle bitwise later
 };
 
 inline const std::unordered_set<std::string_view> lang_types {
     "int", "int8", "int16", "int32", "int64",
     "uint", "uint8", "uint16", "uint32", "uint64",
     "float", "float16", "float32", "float64",
-    "char", "string", "struct", "bool", "void", "union",
+    "char", "string", "bool", "void", "union",
 };
 
 inline const std::unordered_map<std::string_view, TokenType> keywords {
     {"fn", TokenType::KEYWORD_FUNCTION},
+    {"struct", TokenType::KEYWORD_FUNCTION},
     {"if", TokenType::KEYWORD_IF},
     {"else", TokenType::KEYWORD_ELSE},
     {"while", TokenType::KEYWORD_WHILE},
