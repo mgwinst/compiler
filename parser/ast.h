@@ -6,11 +6,8 @@
 #include <optional>
 #include <format>
 
-// StmtRef body -> blocks
-
 using DeclRef = std::size_t;
 using ExprRef = std::size_t;
-using StmtRef = std::size_t;
 
 // ************** DECLARATIONS **************
 
@@ -35,18 +32,18 @@ struct FuncDecl
 {
     std::string ident_, return_type_;
     std::vector<std::pair<std::string, std::string>> parameters_;
-    StmtRef body_;
+    ExprRef body_;
 
-    FuncDecl(std::string ident, std::string return_type, std::vector<std::pair<std::string, std::string>> parameters, StmtRef body);
+    FuncDecl(std::string ident, std::string return_type, std::vector<std::pair<std::string, std::string>> parameters, ExprRef body);
 };
 
 // ************** STATEMENTS **************
 
 struct CompoundStmt
 {
-    std::vector<std::variant<DeclRef, StmtRef, ExprRef>> contents_;
+    std::vector<std::variant<DeclRef, ExprRef, ExprRef>> contents_;
 
-    CompoundStmt(std::vector<std::variant<DeclRef, StmtRef, ExprRef>> contents);
+    CompoundStmt(std::vector<std::variant<DeclRef, ExprRef, ExprRef>> contents);
 };
 
 struct ReturnStmt
@@ -67,17 +64,17 @@ struct IfStmt
 struct WhileStmt
 {
     ExprRef cond_;
-    StmtRef body_;
+    ExprRef body_;
 
-    WhileStmt(ExprRef cond, StmtRef body);
+    WhileStmt(ExprRef cond, ExprRef body);
 };
 
 struct ForStmt
 {
     ExprRef init_, cond_, update_;
-    StmtRef body_;
+    ExprRef body_;
 
-    ForStmt(ExprRef init, ExprRef cond, ExprRef update, StmtRef body);
+    ForStmt(ExprRef init, ExprRef cond, ExprRef update, ExprRef body);
 };
 
 // ************** EXPRESSIONS **************
