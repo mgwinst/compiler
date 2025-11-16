@@ -13,15 +13,16 @@
 
 */
 
-// enum class ParseContext { TopLevel, Function, Statement, Expression }; // ctx
+enum class ParseContext { TopLevel, Function, Statement, Expression };
 
 struct Parser 
 {
     Lexer lexer;
     Token cur_token, next_token;
     AST ast;
+    ParseContext ctx;
 
-    Parser(std::string source_text) : lexer{ source_text }, ast{ AST{} } {}
+    Parser(std::string source_text) : lexer{ source_text }, ast{ AST{} }, ctx{ ParseContext::TopLevel } {}
 
     void eat_token()
     {
@@ -31,16 +32,20 @@ struct Parser
 
     void main_parse();
 
-    DeclRef parse_var_decl();
-    DeclRef parse_func_decl();
-    DeclRef parse_struct_decl();
+    Decl parse_var_decl();
+    Decl parse_func_decl();
+    Expr parse_compound_stmt();
+    Expr parse_expr();
+    
+    /*
+    Decl parse_struct_decl();
 
-    StmtRef parse_return_statement();
-    StmtRef parse_if_statement();
-    StmtRef parse_while_statement();
-    StmtRef parse_for_statement();
+    Expr parse_return_statement();
+    Expr parse_if_statement();
+    Expr parse_while_statement();
+    Expr parse_for_statement();
+    Expr parse_paren_expr();
+    Expr parse_literal_expr();
 
-    ExprRef parse_expr();
-    ExprRef parse_paren_expr();
-    ExprRef parse_literal_expr();
+    */
 };

@@ -4,6 +4,7 @@
 #include <variant>
 #include <utility>
 #include <optional>
+#include <format>
 
 // StmtRef body -> blocks
 
@@ -13,77 +14,68 @@ using StmtRef = std::size_t;
 
 // ************** DECLARATIONS **************
 
-struct GlobalVarDecl
+struct VarDecl
 {
-    bool is_const;
-    std::string type, ident;
-    std::optional<ExprRef> init;
+    bool is_const_;
+    std::string type_, ident_;
+    std::optional<ExprRef> init_;
 
-    GlobalVarDecl(bool is_const, std::string type, std::string ident, std::optional<ExprRef> init = std::nullopt);
-};
-
-struct LocalVarDecl
-{
-    bool is_const;
-    std::string type, ident;
-    std::optional<ExprRef> init;
-
-    LocalVarDecl(bool is_const, std::string type, std::string ident, std::optional<ExprRef> init = std::nullopt);
+    VarDecl(bool is_const, std::string type, std::string ident, std::optional<ExprRef> init = std::nullopt);
 };
 
 struct StructDecl
 {
-    std::string ident;
-    std::vector<std::pair<std::string, std::string>> fields;
+    std::string ident_;
+    std::vector<std::pair<std::string, std::string>> fields_;
 
     StructDecl(std::string ident, std::vector<std::pair<std::string, std::string>> fields);
 };
 
 struct FuncDecl
 {
-    std::string ident, return_type;
-    std::vector<std::pair<std::string, std::string>> parameters;
-    StmtRef body;
+    std::string ident_, return_type_;
+    std::vector<std::pair<std::string, std::string>> parameters_;
+    StmtRef body_;
 
     FuncDecl(std::string ident, std::string return_type, std::vector<std::pair<std::string, std::string>> parameters, StmtRef body);
 };
 
 // ************** STATEMENTS **************
 
-struct BlockStmt
+struct CompoundStmt
 {
-    std::vector<std::variant<DeclRef, StmtRef, ExprRef>> contents; // any tricks?
+    std::vector<std::variant<DeclRef, StmtRef, ExprRef>> contents_;
 
-    BlockStmt(std::vector<std::variant<DeclRef, StmtRef, ExprRef>> contents);
+    CompoundStmt(std::vector<std::variant<DeclRef, StmtRef, ExprRef>> contents);
 };
 
 struct ReturnStmt
 {
-    ExprRef value;
+    ExprRef value_;
 
     ReturnStmt(ExprRef value);
 };
 
 struct IfStmt
 {
-    ExprRef cond;
-    std::vector<ExprRef> if_else_exprs;
+    ExprRef cond_;
+    std::vector<ExprRef> if_else_exprs_;
 
     IfStmt(ExprRef cond, std::vector<ExprRef> if_else_exprs);
 };
 
 struct WhileStmt
 {
-    ExprRef cond;
-    StmtRef body;
+    ExprRef cond_;
+    StmtRef body_;
 
     WhileStmt(ExprRef cond, StmtRef body);
 };
 
 struct ForStmt
 {
-    ExprRef init, cond, update;
-    StmtRef body;
+    ExprRef init_, cond_, update_;
+    StmtRef body_;
 
     ForStmt(ExprRef init, ExprRef cond, ExprRef update, StmtRef body);
 };
@@ -92,96 +84,90 @@ struct ForStmt
 
 struct IntegerLiteralExpr
 {
-    int32_t value;
+    int32_t value_;
+
     IntegerLiteralExpr(int32_t value);
 };
 
 struct FloatLiteralExpr
 {
-    float value;
+    float value_;
+
     FloatLiteralExpr(float value);
 };
 
 struct CharLiteralExpr
 {
-    const char value;
+    const char value_;
+
     CharLiteralExpr(const char value);
 };
 
 struct StringLiteralExpr
 {
-    std::string value;
+    std::string value_;
+
     StringLiteralExpr(std::string value);
 };
 
 struct BooleanExpr
 {
-    bool value;
+    bool value_;
+
     BooleanExpr(bool value);
 };
 
 struct UnaryExpr
 {
-    std::string op;
-    ExprRef arg;
+    std::string op_;
+    ExprRef arg_;
 
     UnaryExpr(std::string op, ExprRef arg);
 };
 
 struct BinaryExpr
 {
-    std::string op;
-    ExprRef left, right;
+    std::string op_;
+    ExprRef left_, right_;
 
     BinaryExpr(std::string op, ExprRef left, ExprRef right);
 };
 
-struct VariableExpr
+struct RefExpr
 {
-    std::string ident;
-    VariableExpr(std::string);
-};
+    std::string ident_;
 
-struct AssignExpr
-{
-    std::string assignee;
-    ExprRef value;
-
-    AssignExpr(std::string assignee, ExprRef value);
+    RefExpr(std::string ident);
 };
 
 struct IndexExpr
 {
-    std::string array;
-    ExprRef index;
+    std::string array_;
+    ExprRef index_;
 
     IndexExpr(std::string array, ExprRef index);
 };
 
 struct CallExpr
 {
-    std::string ident;
-    std::vector<ExprRef> args;
+    std::string ident_;
+    std::vector<ExprRef> args_;
 
     CallExpr(std::string ident, std::vector<ExprRef> args);
 };
 
 using Decl = std::variant<
-    GlobalVarDecl,
-    LocalVarDecl,
+    VarDecl,
     StructDecl,
     FuncDecl
     >;
 
-using Stmt = std::variant<
-    BlockStmt,
+using Expr = std::variant<
+    CompoundStmt,
     ReturnStmt,
     IfStmt,
     WhileStmt,
-    ForStmt
-    >;
-
-using Expr = std::variant<
+    ForStmt,
     IntegerLiteralExpr,
     FloatLiteralExpr,
     CharLiteralExpr,
@@ -189,16 +175,28 @@ using Expr = std::variant<
     BooleanExpr,
     UnaryExpr,
     BinaryExpr,
-    VariableExpr,
-    AssignExpr,
+    RefExpr,
     IndexExpr,
     CallExpr
     >;
 
+template<class... Ts>
+struct overloaded : Ts... { using Ts::operator()...; };
+
+/*
+    template <typename T>
+    [[nodiscard]] auto to_string(const T& expr) -> std::string {
+        return std::visit(overloaded{
+            [](const LocalVarDecl& var) {},
+            [](const FuncDecl& func) {},
+            [](const StructDecl& struct) {},
+        }, expr);
+    }
+*/
+
 struct AST
 {
     std::vector<Decl> decls;
-    std::vector<Stmt> stmts;
     std::vector<Expr> exprs;
 
     template <typename T>
@@ -209,16 +207,9 @@ struct AST
     }
 
     template <typename T>
-    StmtRef add_stmt(T s)
-    {
-        stmts.push_back(s);
-        return stmts.size() - 1;
-    }
-    
-    template <typename T>
     ExprRef add_expr(T e)
     {
-        exprs.push_back(d);
+        exprs.push_back(e);
         return exprs.size() - 1;
     }
 };

@@ -1,0 +1,37 @@
+fn f(int a, int b) -> int
+{
+    int c = a + b;
+    int d = c + 10;
+
+    return d;
+}
+
+fn main() -> int
+{
+    int ans = add(3, 4);
+}
+
+AST:
+
+CompilationUnitDecl
+    FuncDecl 'f' (int, int) -> (int)
+        ParamDecl ['a', int]
+        ParamDecl ['b', int]
+        CompoundStmt
+            VarDecl ['c', int]
+                BinOp ['+', int]
+                    RefExpr ['a', int]
+                    RefExpr ['b', int]
+            VarDecl ['d', int] 
+                BinOp ['+', int]
+                    RefExpr ['c', int]
+                    IntLit [10]
+        ReturnStmt
+            RefExpr ['d', int]
+
+    FuncDecl 'main' () -> (int)
+        CompoundStmt
+            VarDecl ['ans', int]
+                CallExpr ['f', int]
+                    IntLit [3]
+                    IntLit [4]

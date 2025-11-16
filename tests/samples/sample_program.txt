@@ -1,0 +1,12 @@
+fn f(int a, int b) -> int
+{
+    int c = a + b;
+    int d = c + 10;
+
+    return d;
+}
+
+fn main() -> int
+{
+    int ans = add(3, 4);
+}
