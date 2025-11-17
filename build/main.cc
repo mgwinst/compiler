@@ -2,10 +2,10 @@
 #include <print>
 #include <iostream>
 
-#include "lexer/lexer.h"
-#include "parser/ast.h"
-#include "parser/parser.h"
-#include "utils/utils.h"
+#include "core/lexer/lexer.hpp"
+#include "core/parser/ast.hpp"
+#include "core/parser/parser.hpp"
+#include "core/utils/utils.hpp"
 
 int main(int argc, char** argv) 
 {
@@ -20,11 +20,8 @@ int main(int argc, char** argv)
     auto parser = Parser{ source_text };
 
     parser.main_parse(); // each parser object internally manages an AST for each compilation unit, do we want this?
-    
-    for (const auto& elem : parser.ast.decls) {
-        std::println("{}", to_string(elem));
-    }
 
+    // parser.ast.print()
 
     return 0;
 }

@@ -4,7 +4,7 @@
 	<dict>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>English</string>
-		<key>CFBundleIdentifier</key>
+		<key>CFBundlenameifier</key>
 		<string>com.apple.xcode.dsym.a.out</string>
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>

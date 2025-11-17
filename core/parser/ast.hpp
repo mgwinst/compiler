@@ -14,36 +14,45 @@ using ExprRef = std::size_t;
 struct VarDecl
 {
     bool is_const_;
-    std::string type_, ident_;
+    std::string type_, name_;
     std::optional<ExprRef> init_;
 
-    VarDecl(bool is_const, std::string type, std::string ident, std::optional<ExprRef> init = std::nullopt);
+    VarDecl(bool is_const, std::string type, std::string name, std::optional<ExprRef> init = std::nullopt);
 };
 
 struct StructDecl
 {
-    std::string ident_;
+    std::string name_;
     std::vector<std::pair<std::string, std::string>> fields_;
 
-    StructDecl(std::string ident, std::vector<std::pair<std::string, std::string>> fields);
+    StructDecl(std::string name, std::vector<std::pair<std::string, std::string>> fields);
 };
 
 struct FuncDecl
 {
-    std::string ident_, return_type_;
+    std::string name_, return_type_;
     std::vector<std::pair<std::string, std::string>> parameters_;
     ExprRef body_;
 
-    FuncDecl(std::string ident, std::string return_type, std::vector<std::pair<std::string, std::string>> parameters, ExprRef body);
+    FuncDecl(std::string name, std::string return_type, std::vector<std::pair<std::string, std::string>> parameters, ExprRef body);
+};
+
+struct ParamDecl
+{
+    bool is_const_;
+    std::string type_, name_;
+
+    ParamDecl(bool is_const, std::string type, std::string name);
 };
 
 // ************** STATEMENTS **************
 
 struct CompoundStmt
 {
-    std::vector<std::variant<DeclRef, ExprRef, ExprRef>> contents_;
+    std::vector<DeclRef> decls_;
+    std::vector<ExprRef> exprs_;
 
-    CompoundStmt(std::vector<std::variant<DeclRef, ExprRef, ExprRef>> contents);
+    CompoundStmt(std::vector<DeclRef> decls, std::vector<ExprRef> exprs);
 };
 
 struct ReturnStmt
@@ -132,9 +141,9 @@ struct BinaryExpr
 
 struct RefExpr
 {
-    std::string ident_;
+    std::string name_;
 
-    RefExpr(std::string ident);
+    RefExpr(std::string name);
 };
 
 struct IndexExpr
@@ -147,16 +156,17 @@ struct IndexExpr
 
 struct CallExpr
 {
-    std::string ident_;
+    std::string name_;
     std::vector<ExprRef> args_;
 
-    CallExpr(std::string ident, std::vector<ExprRef> args);
+    CallExpr(std::string name, std::vector<ExprRef> args);
 };
 
 using Decl = std::variant<
     VarDecl,
     StructDecl,
-    FuncDecl
+    FuncDecl,
+    ParamDecl
     >;
 
 using Expr = std::variant<
@@ -180,16 +190,27 @@ using Expr = std::variant<
 template<class... Ts>
 struct overloaded : Ts... { using Ts::operator()...; };
 
-/*
-    template <typename T>
-    [[nodiscard]] auto to_string(const T& expr) -> std::string {
-        return std::visit(overloaded{
-            [](const LocalVarDecl& var) {},
-            [](const FuncDecl& func) {},
-            [](const StructDecl& struct) {},
-        }, expr);
-    }
-*/
+template <typename T>
+[[nodiscard]] auto to_string(const T& expr) -> std::string {
+    return std::visit(overloaded{
+        [](const VarDecl& var) {
+            return std::format("VarDecl ['{}', {}]", var.name_, var.type_);
+        },
+        [](const FuncDecl& func) {
+            std::string param_types;
+            for (const auto& type : func.parameters_) {
+                param_types += ", " + type.second;
+            }
+            return std::format("FuncDecl '{}' ({}) -> ({})", func.name_, param_types, func.return_type_);
+        },
+        [](const StructDecl& s) {
+            return std::format("");
+        },
+        [](const ParamDecl& param) {
+            return std::format("");
+        }
+    }, expr);
+}
 
 struct AST
 {
@@ -210,3 +231,13 @@ struct AST
         return exprs.size() - 1;
     }
 };
+
+/*
+    struct CompilationUnit
+    {
+        std::string file_name;
+        AST ast;
+
+        (global symbol table)
+    };
+*/

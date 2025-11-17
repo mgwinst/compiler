@@ -130,3 +130,26 @@ inline const std::unordered_map<std::string_view, TokenType> double_symbol_map {
     {"->", TokenType::ARROW},
     {"//", TokenType::SLASH_SLASH},
 };
+
+struct Token {
+    TokenType type;
+    std::optional<std::string_view> lexeme;
+    std::size_t line_number, column_number, length;
+
+    Token() = default;
+    Token(TokenType t, std::optional<std::string_view> l, std::size_t ln, std::size_t cn, std::size_t len) :
+        type{t}, lexeme{l}, line_number{ln}, column_number{cn}, length{len} {}
+    Token(TokenType t, std::optional<std::string_view> l) : type{t}, lexeme{l}, line_number{0}, column_number{0}, length{0} {}
+    Token(TokenType t) : type{t}, lexeme{std::nullopt}, line_number{0}, column_number{0}, length{0} {}
+    ~Token() = default;
+
+    auto to_string() const -> std::string 
+    {
+        return std::format("[{}] {}:{} {} ", static_cast<int>(type), line_number, column_number, (lexeme.has_value() ? lexeme.value() : ""));
+    }
+
+    auto to_string_less() const -> std::string 
+    {
+        return std::format("{}", (lexeme.has_value() ? lexeme.value() : ""));
+    }
+};

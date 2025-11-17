@@ -5,7 +5,7 @@
 #include <iostream>
 #include <cassert>
 
-#include "lexer.h"
+#include "lexer/lexer.hpp"
 
 [[nodiscard]] auto Lexer::get_token() -> Token 
 {
@@ -32,7 +32,7 @@
             end = cur;
             return Token{TokenType::NUMERIC_LITERAL, std::string_view{start, end}, line_num, start_col_num, static_cast<std::size_t>(end-start)};
         
-        // identifiers, types and keywords
+        // names, types and keywords
         } else if (std::isalpha(*cur)) {
             start = cur;
             while (std::isalnum(*cur) || *cur == '_') {
@@ -84,7 +84,7 @@
             end = peek_cur;
             return Token{TokenType::NUMERIC_LITERAL, std::string_view{start, end}};
         
-        // identifiers, types and keywords
+        // names, types and keywords
         } else if (std::isalpha(*peek_cur)) {
             start = peek_cur;
             while (std::isalnum(*peek_cur) || *peek_cur == '_') {
