@@ -16,11 +16,18 @@ using ExprRef = std::size_t;
 
 struct VarDecl
 {
-    bool is_const_;
     std::string type_, name_;
     std::optional<ExprRef> init_;
 
-    VarDecl(bool is_const, std::string type, std::string name, std::optional<ExprRef> init = std::nullopt);
+    VarDecl(std::string type, std::string name, std::optional<ExprRef> init = std::nullopt);
+};
+
+struct ConstVarDecl
+{
+    std::string type_, name_;
+    ExprRef init_;
+
+    ConstVarDecl(std::string type, std::string name, ExprRef init); // const must have init value
 };
 
 struct StructDecl
@@ -167,6 +174,7 @@ struct CallExpr
 
 using Decl = std::variant<
     VarDecl,
+    ConstVarDecl,
     StructDecl,
     FuncDecl,
     ParamDecl
@@ -195,6 +203,9 @@ template <typename T>
     return std::visit(overloaded{
         [](const VarDecl& var) {
             return std::format("VarDecl ['{}', {}]", var.name_, var.type_);
+        },
+        [](const ConstVarDecl& var) {
+            return std::format("ConstVarDecl ['{}', {}]", var.name_, var.type_);
         },
         [](const FuncDecl& func) {
             std::string param_types;

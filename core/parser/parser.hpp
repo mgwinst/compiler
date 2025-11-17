@@ -20,10 +20,12 @@ struct Parser
 
     void eat_token();
     bool is_cur_token(TokenType token_type);
+    bool is_next_token(TokenType token_type);
     void panic(const ParseError& error);
 
     void main_parse();
     std::expected<Decl, ParseError> parse_var_decl();
+    std::expected<Decl, ParseError> parse_const_var_decl();
     std::expected<Decl, ParseError> parse_func_decl();
     std::expected<Decl, ParseError> parse_struct_decl();
     std::expected<Decl, ParseError> parse_param_decl();

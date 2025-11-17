@@ -2,8 +2,11 @@
 
 // ************** DECLARATIONS **************
 
-VarDecl::VarDecl(bool is_const, std::string type, std::string name, std::optional<ExprRef> init) : 
-    is_const_{ is_const }, type_{ type }, name_{ name }, init_{ init } {}
+VarDecl::VarDecl(std::string type, std::string name, std::optional<ExprRef> init) : 
+    type_{ type }, name_{ name }, init_{ init } {}
+
+ConstVarDecl::ConstVarDecl(std::string type, std::string name, ExprRef init) : 
+    type_{ type }, name_{ name }, init_{ init } {}
 
 StructDecl::StructDecl(std::string name, std::vector<std::pair<std::string, std::string>> fields) :
     name_{ name }, fields_{ std::move(fields) } {}

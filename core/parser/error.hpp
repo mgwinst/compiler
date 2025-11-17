@@ -21,7 +21,6 @@ struct SyntaxError
 using ParseError = std::variant<SyntaxError>;
 using ParseWarning = std::variant<int>;
 
-
 template <typename T>
 [[nodiscard]] auto error_to_string(const T& error) -> std::string
 {
