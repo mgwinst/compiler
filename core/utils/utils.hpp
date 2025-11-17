@@ -21,3 +21,6 @@
 
     return source_text;
 }
+
+template<class... Ts>
+struct overloaded : Ts... { using Ts::operator()...; };

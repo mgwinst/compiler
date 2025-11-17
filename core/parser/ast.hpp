@@ -5,6 +5,9 @@
 #include <utility>
 #include <optional>
 #include <format>
+#include <print>
+
+#include "utils/utils.hpp"
 
 using DeclRef = std::size_t;
 using ExprRef = std::size_t;
@@ -187,9 +190,6 @@ using Expr = std::variant<
     CallExpr
     >;
 
-template<class... Ts>
-struct overloaded : Ts... { using Ts::operator()...; };
-
 template <typename T>
 [[nodiscard]] auto to_string(const T& expr) -> std::string {
     return std::visit(overloaded{
@@ -212,11 +212,9 @@ template <typename T>
     }, expr);
 }
 
-struct AST
+class AST
 {
-    std::vector<Decl> decls;
-    std::vector<Expr> exprs;
-
+public:
     template <typename T>
     DeclRef add_decl(T d)
     {
@@ -230,6 +228,17 @@ struct AST
         exprs.push_back(e);
         return exprs.size() - 1;
     }
+
+    void print()
+    {
+        for (const auto& item : decls) {
+            std::println("{}", to_string(item));
+        }
+    }
+
+private:
+    std::vector<Decl> decls;
+    std::vector<Expr> exprs;
 };
 
 /*

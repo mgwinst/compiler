@@ -19,16 +19,14 @@ void ParseDiagnostics::add_warning(const ParseWarning& warning)
 
 void ParseDiagnostics::dump_errors()
 {
-    int count = 1;
     for (const auto& error : errors) {
-        std::println("{}: {}", count++, error);
+        std::println("{}", error_to_string(error));
     }
 }
 
 void ParseDiagnostics::dump_warnings()
 {
-    int count = 1;
     for (const auto& warning : warnings) {
-        std::println("{}: {}", count++, warning);
+        std::println("{}", warning_to_string(warning));
     }
 }

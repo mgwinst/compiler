@@ -19,9 +19,11 @@ int main(int argc, char** argv)
     
     auto parser = Parser{ source_text };
 
-    parser.main_parse(); // each parser object internally manages an AST for each compilation unit, do we want this?
+    parser.main_parse();
 
-    // parser.ast.print()
+    parser.ast.print();
+
+    parser.diagnostics.dump_errors();
 
     return 0;
 }

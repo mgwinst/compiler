@@ -2,7 +2,6 @@
 
 export COMPILER_HOME=~/compiler
 
-clang++ -std=c++23 -g -I$COMPILER_HOME ../lexer/lexer.cc ../parser/parser.cc ../parser/ast.cc \
-        main.cc && ./a.out
-
-
+clang++ -std=c++23 -g -I$COMPILER_HOME -I$COMPILER_HOME/core \
+    ../core/lexer/lexer.cpp ../core/parser/parser.cpp ../core/parser/ast.cpp ../core/parser/error.cpp \
+    main.cc && ./a.out

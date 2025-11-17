@@ -8,17 +8,35 @@
 #include <iostream>
 
 #include "lexer/token.hpp"
+#include "utils/utils.hpp"
 
 struct SyntaxError
 {
-    std::string error;
+    const std::string msg;
 
     SyntaxError(const Token& token) :
-        error{ std::format("{}:{}: syntax error: unexpected symbol detected", token.line_number, token.column_number) } {}
+        msg{ std::format("{}:{}: syntax error: unexpected symbol detected", token.line_number, token.column_number) } {}
 };
 
 using ParseError = std::variant<SyntaxError>;
 using ParseWarning = std::variant<int>;
+
+
+template <typename T>
+[[nodiscard]] auto error_to_string(const T& error) -> std::string
+{
+    return std::visit(overloaded(
+        [](const SyntaxError& syntax_error) {
+            return std::format("{}", syntax_error.msg);
+        }
+    ), error);
+}
+
+template <typename T>
+[[nodiscard]] auto warning_to_string(const T& warning) -> std::string
+{
+    return std::format("");
+}
 
 struct ParseDiagnostics
 {

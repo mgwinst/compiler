@@ -1,5 +1,6 @@
 #include <iostream>
 #include <utility>
+#include <expected>
 #include <map>
 
 #include "lexer/token.hpp"
@@ -13,18 +14,18 @@ void Parser::eat_token()
     next_token = lexer.peek_token();
 }
 
-void Parser::expect(TokenType token_type)
+bool Parser::is_cur_token(TokenType token_type)
 {
-    if (cur_token.type != token_type) {
-        panic_mode();
-    }
+    return cur_token.type == token_type ? true : false;
 }
 
-void Parser::panic_mode()
+void Parser::panic(const ParseError& error)
 {
-    diagnostics.add_error(SyntaxError{cur_token});
+    diagnostics.add_error(error);
 
-    while (cur_token.type != TokenType::RBRACE && cur_token.type != TokenType::KEYWORD_FUNCTION) {
+    while (!is_cur_token(TokenType::RBRACE) &&
+           !is_cur_token(TokenType::KEYWORD_FUNCTION) && 
+           !is_cur_token(TokenType::END_OF_FILE)) {
         eat_token();
     }
 }
@@ -35,15 +36,21 @@ void Parser::main_parse()
         switch (cur_token.type) {
             case TokenType::TYPE:
             case TokenType::KEYWORD_CONST: {
-                ast.add_decl(parse_var_decl());
+                auto var = parse_var_decl();
+                if (!var.has_value())
+                    panic(var.error());
+                else
+                    ast.add_decl(var.value());
                 break;
             }
             case TokenType::KEYWORD_FUNCTION: {
-                ast.add_decl(parse_func_decl());
+                // auto func = parse_func_decl();
+                //ast.add_decl();
                 break;
             }
             case TokenType::KEYWORD_STRUCT: {
-                // ast.add_decl(parse_struct_decl());
+                // auto s = parse_struct_decl(); 
+                // ast.add_decl();
                 break;
             }
             default:
@@ -54,30 +61,32 @@ void Parser::main_parse()
     }
 }
 
-std::optional<Decl> Parser::parse_var_decl()
+std::expected<Decl, ParseError> Parser::parse_var_decl()
 {
     std::string type{};
     std::string name{};
     bool is_const = false;
 
-    if (cur_token.type == TokenType::KEYWORD_CONST) {
+    if (is_cur_token(TokenType::KEYWORD_CONST)) {
         is_const = true;
         eat_token();
     }
 
-    if (cur_token.type == TokenType::TYPE) {
+    if (is_cur_token(TokenType::TYPE)) {
         type = *cur_token.lexeme;
         eat_token();
     }
 
-    expect(TokenType::IDENTIFIER);
+    if (is_cur_token(TokenType::IDENTIFIER)) {
+        name = *cur_token.lexeme;
+        eat_token();
+    } else {
+        return std::unexpected(SyntaxError{ cur_token });
+    }
 
-    name = *cur_token.lexeme;
-    eat_token();
-
-    if (cur_token.type == TokenType::SEMICOLON) {
+    if (is_cur_token(TokenType::SEMICOLON)) {
         return VarDecl{is_const, type, name};
-    } else if (cur_token.type == TokenType::EQUAL) {
+    } else if (is_cur_token(TokenType::EQUAL)) {
         eat_token();
         return VarDecl(is_const, type, name /* parse_expr() */);
     }
