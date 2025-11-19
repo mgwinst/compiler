@@ -86,11 +86,13 @@ std::expected<DeclRef, ParseError> Parser::parse_var_decl()
         eat_token();
         return ast_.add_decl(VarDecl{type, name});
     } else if (is_cur_token(TokenType::EQUAL)) {
+        /*
         eat_token();
         auto expr = parse_expr(0);
         if (!expr) 
             return std::unexpected(expr.error());
         return ast_.add_decl(VarDecl(type, name, *expr));
+        */
     } else {
         return std::unexpected{ SyntaxError{ cur_token_ } };
     }
@@ -119,10 +121,12 @@ std::expected<DeclRef, ParseError> Parser::parse_const_var_decl()
     if (!is_cur_token(TokenType::EQUAL)) {
         return std::unexpected{ SyntaxError{ cur_token_ } };
     } else {
+        /*
         eat_token();
         auto expr = parse_expr(0);
         if (!expr)
             return std::unexpected{ expr.error() };
         return ast_.add_decl(ConstVarDecl(type, name, *expr));
+        */
     }
 }

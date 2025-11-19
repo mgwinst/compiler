@@ -6,6 +6,7 @@
 #include <optional>
 #include <format>
 #include <print>
+#include <type_traits>
 
 #include "utils/utils.hpp"
 
@@ -198,73 +199,15 @@ using Expr = std::variant<
     CallExpr
     >;
 
-template <typename T, typename U>
-[[nodiscard]] auto node_to_str(const T& expr, const U& ast) -> std::string {
-    return std::visit(overloaded{
-        [&ast](const VarDecl& var) {
-            if (!var.init_)
-                return std::format("VarDecl ['{}', {}]", var.name_, var.type_);
-            else
-                return std::format("VarDecl ['{}', {}]\n\t {}", var.name_, var.type_, node_to_str(ast.exprs.at(*var.init_), ast));
-        },
-        [&ast](const ConstVarDecl& var) {
-            return std::format("ConstVarDecl ['{}', {}]", var.name_, var.type_);
-        },
-        [&ast](const ParamDecl& param) {
-            return std::format("");
-        },
-        [&ast](const FuncDecl& func) {
-            return std::format("");
-        },
-        [&ast](const StructDecl& s) {
-            return std::format("");
-        },
-        [&ast](const CompoundStmt& lit) {
-            return std::format("");
-        },
-        [&ast](const ReturnStmt lit) {
-            return std::format("");
-        },
-        [&ast](const IfStmt& lit) {
-            return std::format("");
-        },
-        [&ast](const WhileStmt& lit) {
-            return std::format("");
-        },
-        [&ast](const ForStmt lit) {
-            return std::format("");
-        },
-        [&ast](const IntegerLiteralExpr& lit) {
-            return std::format("");
-        },
-        [&ast](const FloatLiteralExpr& lit) {
-            return std::format("");
-        },
-        [&ast](const CharLiteralExpr& lit) {
-            return std::format("");
-        },
-        [&ast](const StringLiteralExpr& lit) {
-            return std::format("");
-        },
-        [&ast](const BooleanExpr& boolean) {
-            return std::format("");
-        },
-        [&ast](const UnaryExpr& u) {
-            return std::format("");
-        },
-        [&ast](const BinaryExpr& bin_op) {
-            return std::format("BinOp ['{}']\n\t {}\n {}\n}", bin_op.op_, node_to_str(ast.exprs.at(bin_op.left_), ast), node_to_str(ast.exprs.at(bin_op.right_), ast));
-        },
-        [&ast](const RefExpr& r) {
-            return std::format("RefExpr ['{}']", r.name_);
-        },
-        [&ast](const IndexExpr& idx) {
-            return std::format("");
-        },
-        [&ast](const CallExpr& call) {
-            return std::format("");
-        },
-    }, expr);
+struct AST;
+
+template <typename T>
+[[nodiscard]] auto node_to_str(const AST& ast, const T& node) -> std::string;
+
+template <typename T>
+[[nodiscard]] auto node_to_string(const AST& ast, const T& node) -> std::string
+{
+    return node_to_str(ast, node);
 }
 
 struct AST
@@ -275,7 +218,7 @@ struct AST
     template <typename T>
     DeclRef add_decl(T&& d)
     {
-        decls.push_back(d);
+        decls.push_back(std::forward<T>(d));
         return decls.size() - 1;
     }
 
@@ -289,7 +232,7 @@ struct AST
     template <typename T>
     ExprRef add_expr(T&& e)
     {
-        exprs.push_back(e);
+        exprs.push_back(std::forward<T>(e));
         return exprs.size() - 1;
     }
 
@@ -303,14 +246,111 @@ struct AST
     void print()
     {
         for (const auto& item : decls) {
-            std::println("{}", node_to_str(item, *this));
+            std::println("{}", node_to_str(*this, item));
         }
     }
 };
 
+template <typename> constexpr bool always_false_v = false;
+
+template <typename T>
+[[nodiscard]] auto node_to_str(const AST &ast, const T &node) -> std::string
+{
+    return std::visit([&ast] <typename U> (U&& node) -> std::string {
+        using NodeType = std::decay_t<decltype(node)>;
+
+        if constexpr (std::is_same_v<NodeType, VarDecl>)
+        {
+            if (!node.init_)
+                return std::format("VarDecl ['{}', {}]", node.name_, node.type_);
+            else
+                return std::format("VarDecl ['{}', {}]\n\t {}", node.name_, node.type_, node_to_str(ast, ast.decls.at(*node.init_)));
+        }
+        else if constexpr (std::is_same_v<NodeType, ConstVarDecl>)
+        {
+            return std::format("ConstVarDecl ['{}', {}]", node.name_, node.type_);
+        }
+        else if constexpr (std::is_same_v<NodeType, ParamDecl>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, FuncDecl>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, StructDecl>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, CompoundStmt>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, ReturnStmt>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, IfStmt>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, WhileStmt>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, ForStmt>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, IntegerLiteralExpr>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, FloatLiteralExpr>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, CharLiteralExpr>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, StringLiteralExpr>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, BooleanExpr>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, UnaryExpr>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, BinaryExpr>)
+        {
+            return std::format("BinOp ['{}']\n\t {}\n {}\n}", node.op_, node_to_str(ast, ast.exprs.at(node.left_)), node_to_str(ast, ast.exprs.at(node.right_)));
+        }
+        else if constexpr (std::is_same_v<NodeType, RefExpr>)
+        {
+            return std::format("RefExpr ['{}']", node.name_);
+        }
+        else if constexpr (std::is_same_v<NodeType, IndexExpr>)
+        {
+            return std::format("");
+        }
+        else if constexpr (std::is_same_v<NodeType, CallExpr>)
+        {
+            return std::format("");
+        }
+        else
+        {
+            static_assert(always_false_v<NodeType>, "type not defined in visitor...");
+        }
+    }, node);
+}
+
 struct CompilationUnit
 {
     AST ast;
-
-    // (global symbol table)
+    // SymbolTable symbol_table;
 };

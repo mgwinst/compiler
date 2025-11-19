@@ -1,1 +1,1 @@
-int res = a + b * c;
+float32 value;
