@@ -204,12 +204,6 @@ struct AST;
 template <typename T>
 [[nodiscard]] auto node_to_str(const AST& ast, const T& node) -> std::string;
 
-template <typename T>
-[[nodiscard]] auto node_to_string(const AST& ast, const T& node) -> std::string
-{
-    return node_to_str(ast, node);
-}
-
 struct AST
 {
     std::vector<Decl> decls;

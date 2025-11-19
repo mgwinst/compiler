@@ -130,3 +130,8 @@ std::expected<DeclRef, ParseError> Parser::parse_const_var_decl()
         */
     }
 }
+
+std::expected<ExprRef, ParseError> Parser::parse_expr(int min_prec)
+{
+
+}

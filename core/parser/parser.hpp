@@ -12,11 +12,10 @@ struct Parser
     Lexer lexer_;
     Token cur_token_, next_token_;
     AST ast_;
-    ParseContext ctx_;
     ParseDiagnostics diagnostics_;
 
     Parser(const std::string& source_text) :
-        lexer_{ source_text }, ast_{ AST{} }, ctx_{ ParseContext::TopLevel } {}
+        lexer_{ source_text }, ast_{ AST{} } {}
 
     void eat_token();
     bool is_cur_token(TokenType token_type);
