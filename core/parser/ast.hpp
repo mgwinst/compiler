@@ -30,6 +30,14 @@ struct ConstVarDecl
     ConstVarDecl(std::string type, std::string name, ExprRef init); // const must have init value
 };
 
+struct ParamDecl
+{
+    bool is_const_;
+    std::string type_, name_;
+
+    ParamDecl(bool is_const, std::string type, std::string name);
+};
+
 struct StructDecl
 {
     std::string name_;
@@ -41,18 +49,10 @@ struct StructDecl
 struct FuncDecl
 {
     std::string name_, return_type_;
-    std::vector<std::pair<std::string, std::string>> parameters_;
+    std::vector<DeclRef> params_;
     ExprRef body_;
 
-    FuncDecl(std::string name, std::string return_type, std::vector<std::pair<std::string, std::string>> parameters, ExprRef body);
-};
-
-struct ParamDecl
-{
-    bool is_const_;
-    std::string type_, name_;
-
-    ParamDecl(bool is_const, std::string type, std::string name);
+    FuncDecl(std::string name, std::string return_type, std::vector<DeclRef> params, ExprRef body);
 };
 
 // ************** STATEMENTS **************
@@ -198,43 +198,103 @@ using Expr = std::variant<
     CallExpr
     >;
 
-template <typename T>
-[[nodiscard]] auto to_string(const T& expr) -> std::string {
+template <typename T, typename U>
+[[nodiscard]] auto node_to_str(const T& expr, const U& ast) -> std::string {
     return std::visit(overloaded{
-        [](const VarDecl& var) {
-            return std::format("VarDecl ['{}', {}]", var.name_, var.type_);
+        [&ast](const VarDecl& var) {
+            if (!var.init_)
+                return std::format("VarDecl ['{}', {}]", var.name_, var.type_);
+            else
+                return std::format("VarDecl ['{}', {}]\n\t {}", var.name_, var.type_, node_to_str(ast.exprs.at(*var.init_), ast));
         },
-        [](const ConstVarDecl& var) {
+        [&ast](const ConstVarDecl& var) {
             return std::format("ConstVarDecl ['{}', {}]", var.name_, var.type_);
         },
-        [](const FuncDecl& func) {
-            std::string param_types;
-            for (const auto& type : func.parameters_) {
-                param_types += ", " + type.second;
-            }
-            return std::format("FuncDecl '{}' ({}) -> ({})", func.name_, param_types, func.return_type_);
-        },
-        [](const StructDecl& s) {
+        [&ast](const ParamDecl& param) {
             return std::format("");
         },
-        [](const ParamDecl& param) {
+        [&ast](const FuncDecl& func) {
             return std::format("");
-        }
+        },
+        [&ast](const StructDecl& s) {
+            return std::format("");
+        },
+        [&ast](const CompoundStmt& lit) {
+            return std::format("");
+        },
+        [&ast](const ReturnStmt lit) {
+            return std::format("");
+        },
+        [&ast](const IfStmt& lit) {
+            return std::format("");
+        },
+        [&ast](const WhileStmt& lit) {
+            return std::format("");
+        },
+        [&ast](const ForStmt lit) {
+            return std::format("");
+        },
+        [&ast](const IntegerLiteralExpr& lit) {
+            return std::format("");
+        },
+        [&ast](const FloatLiteralExpr& lit) {
+            return std::format("");
+        },
+        [&ast](const CharLiteralExpr& lit) {
+            return std::format("");
+        },
+        [&ast](const StringLiteralExpr& lit) {
+            return std::format("");
+        },
+        [&ast](const BooleanExpr& boolean) {
+            return std::format("");
+        },
+        [&ast](const UnaryExpr& u) {
+            return std::format("");
+        },
+        [&ast](const BinaryExpr& bin_op) {
+            return std::format("BinOp ['{}']\n\t {}\n {}\n}", bin_op.op_, node_to_str(ast.exprs.at(bin_op.left_), ast), node_to_str(ast.exprs.at(bin_op.right_), ast));
+        },
+        [&ast](const RefExpr& r) {
+            return std::format("RefExpr ['{}']", r.name_);
+        },
+        [&ast](const IndexExpr& idx) {
+            return std::format("");
+        },
+        [&ast](const CallExpr& call) {
+            return std::format("");
+        },
     }, expr);
 }
 
-class AST
+struct AST
 {
-public:
+    std::vector<Decl> decls;
+    std::vector<Expr> exprs;
+
     template <typename T>
-    DeclRef add_decl(T d)
+    DeclRef add_decl(T&& d)
     {
         decls.push_back(d);
         return decls.size() - 1;
     }
 
     template <typename T>
-    ExprRef add_expr(T e)
+    DeclRef add_decl(const T& d)
+    {
+        decls.push_back(d);
+        return decls.size() - 1;
+    }
+
+    template <typename T>
+    ExprRef add_expr(T&& e)
+    {
+        exprs.push_back(e);
+        return exprs.size() - 1;
+    }
+
+    template <typename T>
+    ExprRef add_expr(const T& e)
     {
         exprs.push_back(e);
         return exprs.size() - 1;
@@ -243,21 +303,14 @@ public:
     void print()
     {
         for (const auto& item : decls) {
-            std::println("{}", to_string(item));
+            std::println("{}", node_to_str(item, *this));
         }
     }
-
-private:
-    std::vector<Decl> decls;
-    std::vector<Expr> exprs;
 };
 
-/*
-    struct CompilationUnit
-    {
-        std::string file_name;
-        AST ast;
+struct CompilationUnit
+{
+    AST ast;
 
-        (global symbol table)
-    };
-*/
+    // (global symbol table)
+};

@@ -20,6 +20,8 @@ enum class TokenType : uint16_t
     KEYWORD_RETURN,
     KEYWORD_CONST,
     KEYWORD_TYPEDEF,
+    KEYWORD_TRUE,
+    KEYWORD_FALSE,
     LPAREN,
     RPAREN,
     LBRACKET,
@@ -74,7 +76,7 @@ inline const std::unordered_set<std::string_view> lang_types {
 
 inline const std::unordered_map<std::string_view, TokenType> keywords {
     {"fn", TokenType::KEYWORD_FUNCTION},
-    {"struct", TokenType::KEYWORD_FUNCTION},
+    {"struct", TokenType::KEYWORD_STRUCT},
     {"if", TokenType::KEYWORD_IF},
     {"else", TokenType::KEYWORD_ELSE},
     {"while", TokenType::KEYWORD_WHILE},
@@ -82,6 +84,8 @@ inline const std::unordered_map<std::string_view, TokenType> keywords {
     {"return", TokenType::KEYWORD_RETURN},
     {"const", TokenType::KEYWORD_CONST},
     {"typedef", TokenType::KEYWORD_TYPEDEF},
+    {"true",     TokenType::KEYWORD_TRUE},
+    {"false",    TokenType::KEYWORD_FALSE}
 };
 
 inline const std::unordered_map<char, TokenType> single_symbol_map {
@@ -129,6 +133,44 @@ inline const std::unordered_map<std::string_view, TokenType> double_symbol_map {
     {"||", TokenType::PIPE_PIPE},
     {"->", TokenType::ARROW},
     {"//", TokenType::SLASH_SLASH},
+};
+
+inline const std::unordered_map<TokenType, int> infix_binding_power = {
+    {TokenType::EQUAL,          10},  // = += -= *= /= %=
+    {TokenType::PLUS_EQUAL,     10},
+    {TokenType::MINUS_EQUAL,    10},
+    {TokenType::STAR_EQUAL,     10},
+    {TokenType::SLASH_EQUAL,    10},
+    {TokenType::PERCENT_EQUAL,  10},
+
+    {TokenType::PIPE_PIPE,      20},       // ||
+    {TokenType::AMPERSAND_AMPERSAND, 30},  // &&
+    {TokenType::PIPE,           40},
+    {TokenType::CARROT,         50},
+    {TokenType::AMPERSAND,      60},
+
+    {TokenType::EQUAL_EQUAL,    70},  // == !=
+    {TokenType::BANG_EQUAL,     70},
+
+    {TokenType::LESS,           80},  // < > <= >=
+    {TokenType::GREATER,        80},
+    {TokenType::LESS_EQUAL,     80},
+    {TokenType::GREATER_EQUAL,  80},
+
+    {TokenType::LESS_LESS,      90},  // << >>
+    {TokenType::GREATER_GREATER,90},
+
+    {TokenType::PLUS,           100},  // + -
+    {TokenType::MINUS,          100},
+
+    {TokenType::STAR,           110},  // * / %
+    {TokenType::SLASH,          110},
+    {TokenType::PERCENT,        110},
+
+// postfix ops
+    {TokenType::LPAREN,         120}, // function call
+    {TokenType::LBRACKET,       120}, // array indexing
+    {TokenType::DOT,            120}, // member access (future)
 };
 
 struct Token {

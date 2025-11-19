@@ -8,14 +8,14 @@ VarDecl::VarDecl(std::string type, std::string name, std::optional<ExprRef> init
 ConstVarDecl::ConstVarDecl(std::string type, std::string name, ExprRef init) : 
     type_{ type }, name_{ name }, init_{ init } {}
 
+ParamDecl::ParamDecl(bool is_const, std::string type, std::string name) : 
+    is_const_{ is_const }, type_{ type }, name_{ name } {}
+
 StructDecl::StructDecl(std::string name, std::vector<std::pair<std::string, std::string>> fields) :
     name_{ name }, fields_{ std::move(fields) } {}
 
-FuncDecl::FuncDecl(std::string name, std::string return_type, std::vector<std::pair<std::string, std::string>> parameters, ExprRef body) :
-    name_{ name }, return_type_{ return_type }, parameters_{ std::move(parameters) }, body_{ body } {}
-
-ParamDecl::ParamDecl(bool is_const, std::string type, std::string name) : 
-    is_const_{ is_const }, type_{ type }, name_{ name } {}
+FuncDecl::FuncDecl(std::string name, std::string return_type, std::vector<DeclRef> params, ExprRef body) :
+    name_{ name }, return_type_{ return_type }, params_{ std::move(params) }, body_{ body } {}
 
 // ************** STATEMENTS **************
 

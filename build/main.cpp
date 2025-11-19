@@ -17,13 +17,15 @@ int main(int argc, char** argv)
         std::println(std::cerr, "Error: {}", e.what());
     }
     
-    auto parser = Parser{ source_text };
+    auto ast = AST{};
+
+    auto parser = Parser{source_text, ast};
 
     parser.main_parse();
 
-    parser.ast.print();
+    ast.print();
 
-    parser.diagnostics.dump_errors();
+    parser.diagnostics_.dump_errors();
 
     return 0;
 }
