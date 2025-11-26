@@ -8,16 +8,16 @@
 #include "core/utils/utils.hpp"
 
 int main(int argc, char** argv) 
-{
-    std::string source_text{};
-
-    try {
-        source_text = get_source_text("../tests/samples/sample_program.txt");
-    } catch (const std::exception& e) {
-        std::println(std::cerr, "Error: {}", e.what());
-    }
+{   
+    auto source_text = get_source_text("../tests/samples/sample_program.txt");
+    /*
+    auto source_text2 = get_source_text("somefile.txt");
+    auto source_text3 = get_source_text("somefile.txt");
+    auto source_text4 = get_source_text("somefile.txt");
+    auto source_text5 = get_source_text("somefile.txt");
+    */
     
-    auto parser = Parser{source_text};
+    auto parser = Parser{ source_text };
 
     parser.main_parse();
 

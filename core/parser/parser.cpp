@@ -84,7 +84,7 @@ std::expected<DeclRef, ParseError> Parser::parse_var_decl()
 
     if (is_cur_token(TokenType::SEMICOLON)) {
         eat_token();
-        return ast_.add_decl(VarDecl{type, name});
+        return ast_.add_decl<VarDecl>(std::move(type), std::move(name));
     } else if (is_cur_token(TokenType::EQUAL)) {
         /*
         eat_token();
@@ -97,6 +97,7 @@ std::expected<DeclRef, ParseError> Parser::parse_var_decl()
         return std::unexpected{ SyntaxError{ cur_token_ } };
     }
 }
+
 
 std::expected<DeclRef, ParseError> Parser::parse_const_var_decl()
 {

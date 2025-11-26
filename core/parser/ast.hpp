@@ -9,18 +9,34 @@
 #include <type_traits>
 
 #include "utils/utils.hpp"
+#include "utils/concepts.hpp"
 
 using DeclRef = std::size_t;
 using ExprRef = std::size_t;
 
 // ************** DECLARATIONS **************
 
+struct CompilationUnitDecl
+{
+    std::string name_;
+    std::vector<DeclRef> decls_;
+
+    template <StringConvertible T, std::ranges::contiguous_range Vec>
+    CompilationUnitDecl(T&& name, Vec&& v) noexcept :
+        name_{ std::forward<T>(name) },
+        decls_{ std::forward<Vec>(v) } {}
+};
+
 struct VarDecl
 {
     std::string type_, name_;
     std::optional<ExprRef> init_;
 
-    VarDecl(std::string type, std::string name, std::optional<ExprRef> init = std::nullopt);
+    template <typename T, typename U>
+    VarDecl(T&& type, U&& name, std::optional<ExprRef> init = std::nullopt) noexcept :
+        type_{ std::forward<T>(type) }, 
+        name_{ std::forward<U>(name) }, 
+        init_{ init } {}
 };
 
 struct ConstVarDecl
@@ -28,7 +44,11 @@ struct ConstVarDecl
     std::string type_, name_;
     ExprRef init_;
 
-    ConstVarDecl(std::string type, std::string name, ExprRef init); // const must have init value
+    template <StringConvertible T, StringConvertible U>
+    ConstVarDecl(T&& type, U&& name, ExprRef init) noexcept :
+        type_{ std::forward<T>(type) },
+        name_{ std::forward<U>(name) },
+        init_{ init } {}
 };
 
 struct ParamDecl
@@ -36,7 +56,11 @@ struct ParamDecl
     bool is_const_;
     std::string type_, name_;
 
-    ParamDecl(bool is_const, std::string type, std::string name);
+    template <StringConvertible T, StringConvertible U>
+    ParamDecl(bool is_const, T&& type, U&& name) noexcept :
+        is_const_{ is_const },
+        type_{ std::forward<T>(type) },
+        name_{ std::forward<U>(name) } {}
 };
 
 struct StructDecl
@@ -44,7 +68,10 @@ struct StructDecl
     std::string name_;
     std::vector<std::pair<std::string, std::string>> fields_;
 
-    StructDecl(std::string name, std::vector<std::pair<std::string, std::string>> fields);
+    template <StringConvertible T, std::ranges::contiguous_range Vec>
+    StructDecl(T&& name, Vec&& fields) noexcept :
+        name_{ std::forward<T>(name) },
+        fields_{ std::forward<Vec>(fields) } {}
 };
 
 struct FuncDecl
@@ -53,7 +80,12 @@ struct FuncDecl
     std::vector<DeclRef> params_;
     ExprRef body_;
 
-    FuncDecl(std::string name, std::string return_type, std::vector<DeclRef> params, ExprRef body);
+    template <StringConvertible T, StringConvertible U, std::ranges::contiguous_range Vec>
+    FuncDecl(T&& name, U&& return_type, Vec&& params, ExprRef body) noexcept :
+        name_{ std::forward<T>(name) },
+        return_type_{ std::forward<U>(return_type) },
+        params_{ std::forward<Vec>(params) },
+        body_{ body } {}
 };
 
 // ************** STATEMENTS **************
@@ -63,14 +95,18 @@ struct CompoundStmt
     std::vector<DeclRef> decls_;
     std::vector<ExprRef> exprs_;
 
-    CompoundStmt(std::vector<DeclRef> decls, std::vector<ExprRef> exprs);
+    template <std::ranges::contiguous_range Vec>
+    CompoundStmt(Vec&& decls, Vec&& exprs) noexcept :
+        decls_{ std::forward<Vec>(decls) },
+        exprs_{ std::forward<Vec>(exprs) } {}
 };
 
 struct ReturnStmt
 {
     ExprRef value_;
 
-    ReturnStmt(ExprRef value);
+    ReturnStmt(ExprRef value) noexcept :
+        value_{ value } {}
 };
 
 struct IfStmt
@@ -78,7 +114,10 @@ struct IfStmt
     ExprRef cond_;
     std::vector<ExprRef> if_else_exprs_;
 
-    IfStmt(ExprRef cond, std::vector<ExprRef> if_else_exprs);
+    template <std::ranges::contiguous_range Vec>
+    IfStmt(ExprRef cond, Vec&& if_else_exprs) :
+        cond_{ cond },
+        if_else_exprs_{ std::forward<Vec>(if_else_exprs) } {}
 };
 
 struct WhileStmt
@@ -86,7 +125,9 @@ struct WhileStmt
     ExprRef cond_;
     ExprRef body_;
 
-    WhileStmt(ExprRef cond, ExprRef body);
+    WhileStmt(ExprRef cond, ExprRef body) noexcept :
+        cond_{ cond },
+        body_{ body } {}
 };
 
 struct ForStmt
@@ -94,7 +135,11 @@ struct ForStmt
     ExprRef init_, cond_, update_;
     ExprRef body_;
 
-    ForStmt(ExprRef init, ExprRef cond, ExprRef update, ExprRef body);
+    ForStmt(ExprRef init, ExprRef cond, ExprRef update, ExprRef body) noexcept :
+        init_{ init },
+        cond_{ cond },
+        update_{ update },
+        body_{ body } {}
 };
 
 // ************** EXPRESSIONS **************
@@ -103,35 +148,41 @@ struct IntegerLiteralExpr
 {
     int32_t value_;
 
-    IntegerLiteralExpr(int32_t value);
+    IntegerLiteralExpr(int32_t value) noexcept :
+        value_{ value } {}
 };
 
 struct FloatLiteralExpr
 {
     float value_;
 
-    FloatLiteralExpr(float value);
+    FloatLiteralExpr(float value) noexcept :
+        value_{ value } {}
 };
 
 struct CharLiteralExpr
 {
-    const char value_;
-
-    CharLiteralExpr(const char value);
+    char value_;
+   
+    CharLiteralExpr(char value) noexcept :
+        value_{ value } {}
 };
 
 struct StringLiteralExpr
 {
     std::string value_;
 
-    StringLiteralExpr(std::string value);
+    template <StringConvertible T>
+    StringLiteralExpr(T&& value) :
+        value_{ std::forward<T>(value) } {}
 };
 
 struct BooleanExpr
 {
     bool value_;
 
-    BooleanExpr(bool value);
+    BooleanExpr(bool value) noexcept :
+        value_{ value } {}
 };
 
 struct UnaryExpr
@@ -139,7 +190,10 @@ struct UnaryExpr
     std::string op_;
     ExprRef arg_;
 
-    UnaryExpr(std::string op, ExprRef arg);
+    template <StringConvertible T>
+    UnaryExpr(T&& op, ExprRef arg) noexcept :
+        op_{ std::forward<T>(op) },
+        arg_{ arg } {}
 };
 
 struct BinaryExpr
@@ -147,14 +201,20 @@ struct BinaryExpr
     std::string op_;
     ExprRef left_, right_;
 
-    BinaryExpr(std::string op, ExprRef left, ExprRef right);
+    template <StringConvertible T>
+    BinaryExpr(T&& op, ExprRef left, ExprRef right) noexcept :
+        op_{ std::forward<T>(op) },
+        left_{ left },
+        right_{ right } {}
 };
 
 struct RefExpr
 {
     std::string name_;
 
-    RefExpr(std::string name);
+    template <StringConvertible T>
+    RefExpr(T&& name) noexcept : 
+        name_{ std::forward<T>(name) } {}
 };
 
 struct IndexExpr
@@ -162,7 +222,10 @@ struct IndexExpr
     std::string array_;
     ExprRef index_;
 
-    IndexExpr(std::string array, ExprRef index);
+    template <StringConvertible T>
+    IndexExpr(T&& array, ExprRef index) noexcept :
+        array_{ std::forward<T>(array) },
+        index_{ index } {}
 };
 
 struct CallExpr
@@ -170,7 +233,11 @@ struct CallExpr
     std::string name_;
     std::vector<ExprRef> args_;
 
-    CallExpr(std::string name, std::vector<ExprRef> args);
+
+    template <StringConvertible T, std::ranges::contiguous_range Vec>
+    CallExpr(T&& name, Vec&& args) noexcept :
+        name_{ std::forward<T>(name) },
+        args_{ std::forward<Vec>(args) } {}
 };
 
 using Decl = std::variant<
@@ -209,31 +276,17 @@ struct AST
     std::vector<Decl> decls;
     std::vector<Expr> exprs;
 
-    template <typename T>
-    DeclRef add_decl(T&& d)
+    template <typename T, typename... Args>
+    [[nodiscard]] DeclRef add_decl(Args&&... args)
     {
-        decls.push_back(std::forward<T>(d));
+        decls.emplace_back(std::in_place_type<T>, std::forward<Args>(args)...);
         return decls.size() - 1;
     }
 
-    template <typename T>
-    DeclRef add_decl(const T& d)
+    template <typename T, typename... Args>
+    [[nodiscard]] ExprRef add_expr(Args&&... args)
     {
-        decls.push_back(d);
-        return decls.size() - 1;
-    }
-
-    template <typename T>
-    ExprRef add_expr(T&& e)
-    {
-        exprs.push_back(std::forward<T>(e));
-        return exprs.size() - 1;
-    }
-
-    template <typename T>
-    ExprRef add_expr(const T& e)
-    {
-        exprs.push_back(e);
+        exprs.emplace_back(std::in_place_type<T>, std::forward<Args>(args)...);
         return exprs.size() - 1;
     }
 
