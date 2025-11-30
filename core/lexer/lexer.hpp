@@ -8,13 +8,18 @@
 #include "lexer/token.hpp"
 
 struct Lexer {
-    std::string_view source;
-    std::string_view::iterator cur;
-    std::size_t line_num, col_num;
-    Token cur_token;
+    std::string_view source_;
+    std::string_view::iterator cur_;
+    std::size_t line_num_, col_num_;
+    Token cur_token_;
 
-    Lexer(std::string_view src) : source{src}, cur{src.begin()}, line_num{1}, col_num{1}, cur_token{} {}
+    Lexer(std::string_view source) noexcept: 
+        source_{ std::move(source) }, 
+        cur_{ source.begin() }, 
+        line_num_{ 1 }, 
+        col_num_{ 1 }, 
+        cur_token_{} {}
 
-    [[nodiscard]] auto get_token() -> Token;
-    [[nodiscard]] auto peek_token() -> Token;
+    [[nodiscard]] Token get_token() noexcept;
+    [[nodiscard]] Token peek_token() noexcept;
 };

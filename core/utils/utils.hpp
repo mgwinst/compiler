@@ -8,7 +8,13 @@
 #include <print>
 #include <ranges>
 
-[[nodiscard]] inline std::string get_source_text(const std::string& file_path)
+struct SourceFile
+{
+    std::string file_path;
+    std::string data;
+};
+
+[[nodiscard]] inline SourceFile get_source_file(const std::string& file_path)
 {
     if (!std::filesystem::exists(file_path)) {
         std::println(std::cerr, "File: {} does not exist", file_path);
@@ -21,11 +27,12 @@
         exit(EXIT_FAILURE);
     }
 
-    return std::string {
-        std::istreambuf_iterator<char>{ file },
-        std::istreambuf_iterator<char>{}
-    };
+    auto data = std::string{std::istreambuf_iterator<char>{ file }, std::istreambuf_iterator<char>{}};
+
+    return {file_path, data};
 }
 
 template<class... Ts>
 struct overloaded : Ts... { using Ts::operator()...; };
+
+template <typename> constexpr bool always_false_v = false;

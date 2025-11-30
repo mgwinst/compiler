@@ -8,23 +8,29 @@
 #include "parser/parser.hpp"
 #include "parser/ast.hpp"
 
-void Parser::eat_token()
+Parser::Parser(SourceFile& source_file) noexcept :
+    source_file_{ std::move(source_file) },
+    lexer_{ source_file_.data },
+    diagnostics_{},
+    ast_{} {}
+
+void Parser::eat_token() noexcept
 {
     cur_token_ = lexer_.get_token();
     next_token_ = lexer_.peek_token();
 }
 
-bool Parser::is_cur_token(TokenType token_type)
+bool Parser::is_cur_token(TokenType token_type) const noexcept
 {
-    return cur_token_.type == token_type ? true : false;
+    return cur_token_.type_ == token_type ? true : false;
 }
 
-bool Parser::is_next_token(TokenType token_type)
+bool Parser::is_next_token(TokenType token_type) const noexcept
 {
-    return next_token_.type == token_type ? true : false;
+    return next_token_.type_ == token_type ? true : false;
 }
 
-void Parser::panic(const ParseError& error)
+void Parser::panic(const ParseError& error) noexcept
 {
     diagnostics_.add_error(error);
 
@@ -35,20 +41,27 @@ void Parser::panic(const ParseError& error)
     }
 }
 
-void Parser::main_parse()
+DeclRef Parser::parse_compilation_unit() noexcept
 {
-    while (cur_token_.type != TokenType::END_OF_FILE) {
-        switch (cur_token_.type) {
+    auto comp_unit = ast_.add_decl<CompilationUnitDecl>(std::move(source_file_.file_path));
+
+    while (cur_token_.type_ != TokenType::END_OF_FILE) {
+        switch (cur_token_.type_) {
             case TokenType::TYPE: {
                 auto var = parse_var_decl();
-                if (!var.has_value())
+                if (!var) {
                     panic(var.error());
+                } else {
+                    std::get<CompilationUnitDecl>(ast_.decls[comp_unit]).decls_.push_back(*var);
+                }
                 break;
             }
             case TokenType::KEYWORD_CONST: {
                 auto cvar = parse_const_var_decl();
-                if (!cvar.has_value())
+                if (!cvar)
                     panic(cvar.error());
+                else
+                    //decls.push_back(*cvar);
                 break;
             }
             case TokenType::KEYWORD_FUNCTION: {
@@ -66,9 +79,11 @@ void Parser::main_parse()
         }
         eat_token();
     }
+
+    return comp_unit;
 }
 
-std::expected<DeclRef, ParseError> Parser::parse_var_decl()
+std::expected<DeclRef, ParseError> Parser::parse_var_decl() noexcept
 {
     std::string type{};
     std::string name{};
@@ -76,14 +91,14 @@ std::expected<DeclRef, ParseError> Parser::parse_var_decl()
     if (!(is_cur_token(TokenType::TYPE) && is_next_token(TokenType::IDENTIFIER))) {
         return std::unexpected{ SyntaxError{ cur_token_ } };
     } else {
-        type = *cur_token_.lexeme;
+        type = *cur_token_.lexeme_;
         eat_token();
-        name = *cur_token_.lexeme;
+        name = *cur_token_.lexeme_;
         eat_token();
     }
 
     if (is_cur_token(TokenType::SEMICOLON)) {
-        eat_token();
+        // eat_token();
         return ast_.add_decl<VarDecl>(std::move(type), std::move(name));
     } else if (is_cur_token(TokenType::EQUAL)) {
         /*
@@ -91,15 +106,14 @@ std::expected<DeclRef, ParseError> Parser::parse_var_decl()
         auto expr = parse_expr(0);
         if (!expr) 
             return std::unexpected(expr.error());
-        return ast_.add_decl(VarDecl(type, name, *expr));
+        return ast_.add_decl(VarDecl(type_, name, *expr));
         */
     } else {
         return std::unexpected{ SyntaxError{ cur_token_ } };
     }
 }
 
-
-std::expected<DeclRef, ParseError> Parser::parse_const_var_decl()
+std::expected<DeclRef, ParseError> Parser::parse_const_var_decl() noexcept
 {
     std::string type{};
     std::string name{};
@@ -113,9 +127,9 @@ std::expected<DeclRef, ParseError> Parser::parse_const_var_decl()
     if (!(is_cur_token(TokenType::TYPE) && is_next_token(TokenType::IDENTIFIER))) {
         return std::unexpected{ SyntaxError{ cur_token_ } };
     } else {
-        type = *cur_token_.lexeme;
+        type = *cur_token_.lexeme_;
         eat_token();
-        name = *cur_token_.lexeme;
+        name = *cur_token_.lexeme_;
         eat_token();
     }
 
@@ -127,12 +141,12 @@ std::expected<DeclRef, ParseError> Parser::parse_const_var_decl()
         auto expr = parse_expr(0);
         if (!expr)
             return std::unexpected{ expr.error() };
-        return ast_.add_decl(ConstVarDecl(type, name, *expr));
+        return ast_.add_decl(ConstVarDecl(type_, name, *expr));
         */
     }
 }
 
-std::expected<ExprRef, ParseError> Parser::parse_expr(int min_prec)
+std::expected<ExprRef, ParseError> Parser::parse_expr(int min_prec) noexcept
 {
 
 }

@@ -20,6 +20,7 @@ enum class TokenType : uint16_t
     KEYWORD_RETURN,
     KEYWORD_CONST,
     KEYWORD_TYPEDEF,
+    KEYWORD_STATIC,
     KEYWORD_TRUE,
     KEYWORD_FALSE,
     LPAREN,
@@ -84,6 +85,7 @@ inline const std::unordered_map<std::string_view, TokenType> keywords {
     {"return", TokenType::KEYWORD_RETURN},
     {"const", TokenType::KEYWORD_CONST},
     {"typedef", TokenType::KEYWORD_TYPEDEF},
+    {"static", TokenType::KEYWORD_STATIC},
     {"true",     TokenType::KEYWORD_TRUE},
     {"false",    TokenType::KEYWORD_FALSE}
 };
@@ -174,24 +176,36 @@ inline const std::unordered_map<TokenType, int> infix_binding_power = {
 };
 
 struct Token {
-    TokenType type;
-    std::optional<std::string_view> lexeme;
-    std::size_t line_number, column_number, length;
+    TokenType type_;
+    std::optional<std::string_view> lexeme_;
+    std::size_t line_number_, column_number_, length_;
+
+    Token(TokenType type, std::optional<std::string_view> lexeme, std::size_t line_number, std::size_t column_number, std::size_t length) noexcept:
+        type_{ type }, 
+        lexeme_{ lexeme }, 
+        line_number_{ line_number }, 
+        column_number_{ column_number },
+        length_{ length } {}
+
+    Token(TokenType type, std::optional<std::string_view> lexeme) noexcept:
+        type_{ type },
+        lexeme_{ lexeme },
+        line_number_{ 0 }, 
+        column_number_{ 0 },
+        length_{ 0 } {}
+
+    Token(TokenType type) noexcept:
+        type_{ type },
+        lexeme_{ std::nullopt }, 
+        line_number_{ 0 },
+        column_number_{ 0 }, 
+        length_{ 0 } {}
 
     Token() = default;
-    Token(TokenType t, std::optional<std::string_view> l, std::size_t ln, std::size_t cn, std::size_t len) :
-        type{t}, lexeme{l}, line_number{ln}, column_number{cn}, length{len} {}
-    Token(TokenType t, std::optional<std::string_view> l) : type{t}, lexeme{l}, line_number{0}, column_number{0}, length{0} {}
-    Token(TokenType t) : type{t}, lexeme{std::nullopt}, line_number{0}, column_number{0}, length{0} {}
     ~Token() = default;
 
-    auto to_string() const -> std::string 
+    std::string to_string() const noexcept
     {
-        return std::format("[{}] {}:{} {} ", static_cast<int>(type), line_number, column_number, (lexeme.has_value() ? lexeme.value() : ""));
-    }
-
-    auto to_string_less() const -> std::string 
-    {
-        return std::format("{}", (lexeme.has_value() ? lexeme.value() : ""));
+        return std::format("[{}] {}:{} {} ", static_cast<int>(type_), line_number_, column_number_, (lexeme_.has_value() ? lexeme_.value() : ""));
     }
 };

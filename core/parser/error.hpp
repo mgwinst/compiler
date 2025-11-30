@@ -15,9 +15,10 @@ struct SyntaxError
     const std::string msg;
 
     SyntaxError(const Token& token) :
-        msg{ std::format("{}:{}: syntax error: unexpected symbol detected", token.line_number, token.column_number) } {}
+        msg{ std::format("{}:{}: syntax error: unexpected symbol detected", token.line_number_, token.column_number_) } {}
 };
 
+// populate with more error types...
 using ParseError = std::variant<SyntaxError>;
 using ParseWarning = std::variant<int>;
 

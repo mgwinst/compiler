@@ -9,17 +9,11 @@
 
 int main(int argc, char** argv) 
 {   
-    auto source_text = get_source_text("../tests/samples/sample_program.txt");
-    /*
-    auto source_text2 = get_source_text("somefile.txt");
-    auto source_text3 = get_source_text("somefile.txt");
-    auto source_text4 = get_source_text("somefile.txt");
-    auto source_text5 = get_source_text("somefile.txt");
-    */
-    
-    auto parser = Parser{ source_text };
+    auto source_file = get_source_file("../tests/samples/sample_program.txt");
 
-    parser.main_parse();
+    auto parser = Parser{ source_file };
+
+    parser.parse_compilation_unit();
 
     parser.ast_.print();
 

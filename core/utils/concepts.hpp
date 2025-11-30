@@ -4,4 +4,7 @@
 #include <string>
 
 template <typename T>
-concept StringConvertible = std::convertible_to<T, std::string>;
+concept StringLike = std::convertible_to<T, std::string>;
+
+template <typename T>
+concept Contiguous = std::ranges::contiguous_range<T>;
