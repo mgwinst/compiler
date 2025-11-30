@@ -1,3 +1,4 @@
-lexer/a.out
-lexer/build.sh
+/build/
 .vscode
+/core/main.cpp
+

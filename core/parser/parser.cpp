@@ -98,7 +98,6 @@ std::expected<DeclRef, ParseError> Parser::parse_var_decl() noexcept
     }
 
     if (is_cur_token(TokenType::SEMICOLON)) {
-        // eat_token();
         return ast_.add_decl<VarDecl>(std::move(type), std::move(name));
     } else if (is_cur_token(TokenType::EQUAL)) {
         /*
