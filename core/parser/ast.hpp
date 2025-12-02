@@ -213,34 +213,33 @@ struct BinaryExpr
         right_{ right } {}
 };
 
-struct RefExpr
+struct ReferenceExpr
 {
     std::string name_;
 
     template <StringLike T>
-    RefExpr(T&& name) noexcept : 
+    ReferenceExpr(T&& name) noexcept : 
         name_{ std::forward<T>(name) } {}
 };
 
 struct IndexExpr
 {
-    std::string array_;
+    ExprRef base_;
     ExprRef index_;
 
-    template <StringLike T>
-    IndexExpr(T&& array, ExprRef index) noexcept :
-        array_{ std::forward<T>(array) },
+    IndexExpr(ExprRef base, ExprRef index) noexcept :
+        base_{ base },
         index_{ index } {}
 };
 
 struct CallExpr
 {
-    std::string name_;
+    ExprRef callee_;
     std::vector<ExprRef> args_;
 
-    template <StringLike T, Contiguous Vec>
-    CallExpr(T&& name, Vec&& args) noexcept :
-        name_{ std::forward<T>(name) },
+    template <Contiguous Vec>
+    CallExpr(ExprRef callee, Vec&& args) noexcept :
+        callee_{ callee },
         args_{ std::forward<Vec>(args) } {}
 };
 
@@ -266,32 +265,36 @@ using Expr = std::variant<
     BooleanExpr,
     UnaryExpr,
     BinaryExpr,
-    RefExpr,
+    ReferenceExpr,
     IndexExpr,
     CallExpr
     >;
 
 struct AST
 {   
-    std::vector<Decl> decls;
-    std::vector<Expr> exprs;
+    std::vector<Decl> decls_;
+    std::vector<Expr> exprs_;
+
+    DeclRef root() const noexcept;
 
     template <typename T, typename... Args>
-    [[nodiscard]] DeclRef add_decl(Args&&... args) noexcept
-    {
-        decls.emplace_back(std::in_place_type<T>, std::forward<Args>(args)...);
-        return decls.size() - 1;
+    requires std::is_constructible_v<T, Args...>
+    [[nodiscard]] DeclRef emplace_decl(Args&&... args) noexcept
+    {  
+        decls_.emplace_back(std::in_place_type<T>, std::forward<Args>(args)...);
+        return decls_.size() - 1;
     }
 
     template <typename T, typename... Args>
-    [[nodiscard]] ExprRef add_expr(Args&&... args) noexcept
+    requires std::is_constructible_v<T, Args...>
+    [[nodiscard]] ExprRef emplace_expr(Args&&... args) noexcept
     {
-        exprs.emplace_back(std::in_place_type<T>, std::forward<Args>(args)...);
-        return exprs.size() - 1;
+        exprs_.emplace_back(std::in_place_type<T>, std::forward<Args>(args)...);
+        return exprs_.size() - 1;
     }
 
-    [[nodiscard]] std::string decl_to_str(DeclRef ref, std::string indent) const noexcept;
-    [[nodiscard]] std::string expr_to_str(ExprRef ref, std::string indent) const noexcept;
+    std::string decl_to_str(DeclRef ref, std::string indent) const noexcept;
+    std::string expr_to_str(ExprRef ref, std::string indent) const noexcept;
 
     void print() const noexcept;
 };

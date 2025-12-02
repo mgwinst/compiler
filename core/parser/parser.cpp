@@ -43,7 +43,7 @@ void Parser::panic(const ParseError& error) noexcept
 
 DeclRef Parser::parse_compilation_unit() noexcept
 {
-    auto comp_unit = ast_.add_decl<CompilationUnitDecl>(std::move(source_file_.file_path));
+    auto comp_unit = ast_.emplace_decl<CompilationUnitDecl>(std::move(source_file_.file_path));
 
     while (cur_token_.type_ != TokenType::END_OF_FILE) {
         switch (cur_token_.type_) {
@@ -52,7 +52,7 @@ DeclRef Parser::parse_compilation_unit() noexcept
                 if (!var) {
                     panic(var.error());
                 } else {
-                    std::get<CompilationUnitDecl>(ast_.decls[comp_unit]).decls_.push_back(*var);
+                    std::get<CompilationUnitDecl>(ast_.decls_[comp_unit]).decls_.push_back(*var);
                 }
                 break;
             }
@@ -91,14 +91,14 @@ std::expected<DeclRef, ParseError> Parser::parse_var_decl() noexcept
     if (!(is_cur_token(TokenType::TYPE) && is_next_token(TokenType::IDENTIFIER))) {
         return std::unexpected{ SyntaxError{ cur_token_ } };
     } else {
-        type = *cur_token_.lexeme_;
+        type = cur_token_.lexeme_;
         eat_token();
-        name = *cur_token_.lexeme_;
+        name = cur_token_.lexeme_;
         eat_token();
     }
 
     if (is_cur_token(TokenType::SEMICOLON)) {
-        return ast_.add_decl<VarDecl>(std::move(type), std::move(name));
+        return ast_.emplace_decl<VarDecl>(std::move(type), std::move(name));
     } else if (is_cur_token(TokenType::EQUAL)) {
         /*
         eat_token();
@@ -126,9 +126,9 @@ std::expected<DeclRef, ParseError> Parser::parse_const_var_decl() noexcept
     if (!(is_cur_token(TokenType::TYPE) && is_next_token(TokenType::IDENTIFIER))) {
         return std::unexpected{ SyntaxError{ cur_token_ } };
     } else {
-        type = *cur_token_.lexeme_;
+        type = cur_token_.lexeme_;
         eat_token();
-        name = *cur_token_.lexeme_;
+        name = cur_token_.lexeme_;
         eat_token();
     }
 
@@ -145,7 +145,61 @@ std::expected<DeclRef, ParseError> Parser::parse_const_var_decl() noexcept
     }
 }
 
-std::expected<ExprRef, ParseError> Parser::parse_expr(int min_prec) noexcept
-{
+/*
+    fn main() -> int
+    {
+        a = (b + c) * d;
 
+        arr[a + b] = 10;
+
+        if (a == b) {
+            a = 20;
+        }
+        
+    }
+*/
+
+int lbp(const Token& token)
+{
+    if (auto prec = token_prec.find(token.type_); prec != token_prec.end()) {
+        return prec->second;
+    } else {
+        return -1; // handle this error better
+    }
 }
+
+std::expected<ExprRef, ParseError> Parser::nud(const Token& token)
+{
+    switch (token.type_) {
+        case TokenType::IDENTIFIER: {
+            return ast_.emplace_expr<ReferenceExpr>(token.lexeme_.data());
+        }
+    }
+}
+
+std::expected<ExprRef, ParseError> Parser::led(const Token& token, const ExprRef left)
+{
+    switch (token.type_) {
+        case TokenType::EQUAL: {
+            eat_token();
+            return ast_.emplace_expr<>()
+        }
+    }
+}
+
+std::expected<ExprRef, ParseError> Parser::parse_expr(int rbp = 0) noexcept
+{
+    auto left = nud(cur_token_);
+    
+    eat_token();
+
+    while (rbp < lbp(cur_token_)) {
+        left = led(cur_token_, *left);
+    }
+
+    return left;
+}
+
+
+
+

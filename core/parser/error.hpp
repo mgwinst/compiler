@@ -23,7 +23,7 @@ using ParseError = std::variant<SyntaxError>;
 using ParseWarning = std::variant<int>;
 
 template <typename T>
-[[nodiscard]] auto error_to_string(const T& error) -> std::string
+std::string error_to_string(const T& error)
 {
     return std::visit(overloaded(
         [](const SyntaxError& syntax_error) {
@@ -33,7 +33,7 @@ template <typename T>
 }
 
 template <typename T>
-[[nodiscard]] auto warning_to_string(const T& warning) -> std::string
+std::string warning_to_string(const T& warning)
 {
     return std::format("");
 }

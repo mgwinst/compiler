@@ -137,7 +137,7 @@ inline const std::unordered_map<std::string_view, TokenType> double_symbol_map {
     {"//", TokenType::SLASH_SLASH},
 };
 
-inline const std::unordered_map<TokenType, int> infix_binding_power = {
+inline const std::unordered_map<TokenType, int> token_prec = {
     {TokenType::EQUAL,          10},  // = += -= *= /= %=
     {TokenType::PLUS_EQUAL,     10},
     {TokenType::MINUS_EQUAL,    10},
@@ -169,7 +169,7 @@ inline const std::unordered_map<TokenType, int> infix_binding_power = {
     {TokenType::SLASH,          110},
     {TokenType::PERCENT,        110},
 
-// postfix ops
+    // postfix ops
     {TokenType::LPAREN,         120}, // function call
     {TokenType::LBRACKET,       120}, // array indexing
     {TokenType::DOT,            120}, // member access (future)
@@ -177,28 +177,21 @@ inline const std::unordered_map<TokenType, int> infix_binding_power = {
 
 struct Token {
     TokenType type_;
-    std::optional<std::string_view> lexeme_;
+    std::string_view lexeme_;
     std::size_t line_number_, column_number_, length_;
 
-    Token(TokenType type, std::optional<std::string_view> lexeme, std::size_t line_number, std::size_t column_number, std::size_t length) noexcept:
+    Token(TokenType type, std::string_view lexeme, std::size_t line_number, std::size_t column_number, std::size_t length) noexcept:
         type_{ type }, 
         lexeme_{ lexeme }, 
         line_number_{ line_number }, 
         column_number_{ column_number },
         length_{ length } {}
 
-    Token(TokenType type, std::optional<std::string_view> lexeme) noexcept:
+    Token(TokenType type, std::string_view lexeme) noexcept:
         type_{ type },
         lexeme_{ lexeme },
         line_number_{ 0 }, 
         column_number_{ 0 },
-        length_{ 0 } {}
-
-    Token(TokenType type) noexcept:
-        type_{ type },
-        lexeme_{ std::nullopt }, 
-        line_number_{ 0 },
-        column_number_{ 0 }, 
         length_{ 0 } {}
 
     Token() = default;
@@ -206,6 +199,6 @@ struct Token {
 
     std::string to_string() const noexcept
     {
-        return std::format("[{}] {}:{} {} ", static_cast<int>(type_), line_number_, column_number_, (lexeme_.has_value() ? lexeme_.value() : ""));
+        return std::format("[{}] {}:{} {} ", static_cast<int>(type_), line_number_, column_number_, (lexeme_));
     }
 };

@@ -1,8 +1,19 @@
 #include "ast.hpp"
 
+DeclRef AST::root() const noexcept
+{
+    if (decls_.empty()) {
+        std::println(std::cerr, "AST is empty");
+        exit(EXIT_FAILURE);
+    } else {
+        DeclRef root = 0;
+        return root;
+    }
+}
+
 void AST::print() const noexcept
 {
-    if (decls.empty()) {
+    if (decls_.empty()) {
         std::println(std::cerr, "AST is empty");
         exit(EXIT_FAILURE);
     } else {
@@ -11,7 +22,7 @@ void AST::print() const noexcept
     }
 }
 
-[[nodiscard]] std::string AST::decl_to_str(DeclRef ref, std::string indent) const noexcept
+std::string AST::decl_to_str(DeclRef ref, std::string indent) const noexcept
 {
     return std::visit([this, ref, &indent] (auto&& node) -> std::string {
         using NodeType = std::decay_t<decltype(node)>;
@@ -55,10 +66,10 @@ void AST::print() const noexcept
         {
             static_assert(always_false_v<NodeType>, "type not defined in visitor...");
         }
-    }, decls[ref]);
+    }, decls_[ref]);
 }
 
-[[nodiscard]] std::string AST::expr_to_str(ExprRef ref, std::string indent) const noexcept
+std::string AST::expr_to_str(ExprRef ref, std::string indent) const noexcept
 {
     return std::visit([this, ref, &indent] (auto&& node) -> std::string {
         using NodeType = std::decay_t<decltype(node)>;
@@ -111,9 +122,9 @@ void AST::print() const noexcept
         {
             return std::format("BinOp ['{}']\n\t{}\n{}\n", node.op_, expr_to_str(node.left_, indent + "    "), expr_to_str(node.right_, indent + "    "));
         }
-        else if constexpr (std::is_same_v<NodeType, RefExpr>)
+        else if constexpr (std::is_same_v<NodeType, ReferenceExpr>)
         {
-            return std::format("RefExpr ['{}']", node.name_);
+            return std::format("ReferenceExpr ['{}']", node.name_);
         }
         else if constexpr (std::is_same_v<NodeType, IndexExpr>)
         {
@@ -127,5 +138,6 @@ void AST::print() const noexcept
         {
             static_assert(always_false_v<NodeType>, "type not defined in visitor");
         }
-    }, exprs[ref]);
+    }, exprs_[ref]);
 }
+

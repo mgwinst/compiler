@@ -115,7 +115,7 @@
         }
     }
 
-    return Token{TokenType::END_OF_FILE, std::nullopt};
+    return Token{TokenType::END_OF_FILE, " "};
 }
 
 

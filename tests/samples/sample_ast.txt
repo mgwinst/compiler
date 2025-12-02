@@ -20,14 +20,14 @@ CompilationUnitDecl (main.cpp)
         CompoundStmt
             VarDecl ['c', int]
                 BinOp ['+', int]
-                    RefExpr ['a', int]
-                    RefExpr ['b', int]
+                    ReferenceExpr ['a', int]
+                    ReferenceExpr ['b', int]
             VarDecl ['d', int] 
                 BinOp ['+', int]
-                    RefExpr ['c', int]
+                    ReferenceExpr ['c', int]
                     IntLit [10]
         ReturnStmt
-            RefExpr ['d', int]
+            ReferenceExpr ['d', int]
 
     FuncDecl 'main' () -> (int)
         CompoundStmt

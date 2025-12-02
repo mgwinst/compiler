@@ -28,7 +28,6 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -Wconversion
     -Wsign-conversion
     -Wshadow
-    -Wformat=2
     -Wundef
     -Werror=return-type
     # -Werror
@@ -56,7 +55,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 target_compile_options(${PROJECT_NAME} PRIVATE
     $<$<CONFIG:Release>:
         -O3
-        -flto=auto
+        -flto=auto # -flto=full
         -DNDEBUG
     >
 )
