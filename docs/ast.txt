@@ -11,8 +11,6 @@ fn main() -> int
     int ans = add(3, 4);
 }
 
-AST:
-
 CompilationUnitDecl (main.cpp)
     FuncDecl 'f' (int, int) -> (int)
         ParamDecl ['a', const int]

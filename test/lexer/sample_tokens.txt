@@ -1,0 +1,8 @@
+var1 b 123 35
+fn struct if else while for return const typedef static true false
+= + - * / % < > ( ) { } [ ] & " ' ; : , . ! | ^
+== != += -= *= /= %= <= >= ++ -- << >> && || -> //
+int int8 int16 int32 int64
+uint uint8 uint16 uint32 uint64
+float float16 float32 float64
+char string bool void union

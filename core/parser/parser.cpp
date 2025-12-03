@@ -59,7 +59,8 @@ DeclRef Parser::parse_compilation_unit() noexcept
                 break;
             }
             case TokenType::KEYWORD_FUNCTION: {
-                auto func_decl = parse_func_decl();               
+                bool is_const = false;
+                auto func_decl = parse_func_decl(is_const);
                 if (!func_decl)
                     panic(func_decl.error());
                 else

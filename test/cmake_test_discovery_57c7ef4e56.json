@@ -1,0 +1,33 @@
+{
+  "tests": 3,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "TestLexer",
+      "tests": 2,
+      "testsuite": [
+        {
+          "name": "Tokens",
+          "file": "\/home\/matteo\/compiler\/test\/lexer\/lexer_test.cpp",
+          "line": 88
+        },
+        {
+          "name": "GetAndPeekToken",
+          "file": "\/home\/matteo\/compiler\/test\/lexer\/lexer_test.cpp",
+          "line": 106
+        }
+      ]
+    },
+    {
+      "name": "TestParser",
+      "tests": 1,
+      "testsuite": [
+        {
+          "name": "Parsing",
+          "file": "\/home\/matteo\/compiler\/test\/parser\/parser_test.cpp",
+          "line": 7
+        }
+      ]
+    }
+  ]
+}
