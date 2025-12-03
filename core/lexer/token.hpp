@@ -2,6 +2,8 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <format>
+#include <cstdint>
 #include <string_view>
 
 enum class TokenType : uint16_t

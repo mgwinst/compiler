@@ -1,4 +1,1 @@
-float a;
-float b;
-float c;
-float d;
+int a;

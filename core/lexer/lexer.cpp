@@ -68,7 +68,7 @@
     return Token{TokenType::END_OF_FILE, {}, line_num_, col_num_, 1};
 }
 
-[[nodiscard]] Token Lexer::peek_token() noexcept 
+[[nodiscard]] Token Lexer::peek_token() const noexcept 
 {
     auto peek_cur = cur_;
     auto start = peek_cur, end = peek_cur;

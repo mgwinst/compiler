@@ -12,10 +12,17 @@
 
 struct SyntaxError
 {
-    const std::string msg;
+    std::string msg;
 
     SyntaxError(const Token& token) :
         msg{ std::format("{}:{}: syntax error: unexpected symbol detected", token.line_number_, token.column_number_) } {}
+
+    SyntaxError() = default;
+    SyntaxError(const SyntaxError&) = default;
+    SyntaxError& operator=(const SyntaxError&) = default;
+    SyntaxError(SyntaxError&&) = default;
+    SyntaxError& operator=(SyntaxError&&) = default;
+    ~SyntaxError() = default;
 };
 
 // populate with more error types...

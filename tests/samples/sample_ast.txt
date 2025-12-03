@@ -1,4 +1,4 @@
-fn f(int a, int b) -> int
+fn f(const int a, const int b) -> int
 {
     int c = a + b;
     int d = c + 10;
@@ -15,8 +15,8 @@ AST:
 
 CompilationUnitDecl (main.cpp)
     FuncDecl 'f' (int, int) -> (int)
-        ParamDecl ['a', int]
-        ParamDecl ['b', int]
+        ParamDecl ['a', const int]
+        ParamDecl ['b', const int]
         CompoundStmt
             VarDecl ['c', int]
                 BinOp ['+', int]

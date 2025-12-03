@@ -48,19 +48,19 @@ std::string AST::decl_to_str(DeclRef ref, std::string indent) const noexcept
         }
         else if constexpr (std::is_same_v<NodeType, ConstVarDecl>)
         {
-            return std::format("ConstVarDecl ['{}', {}]", node.name_, node.type_);
+            return indent + std::format("ConstVarDecl ['{}', {}]\n{}", node.name_, node.type_, expr_to_str(node.init_, indent + "    "));
         }
         else if constexpr (std::is_same_v<NodeType, ParamDecl>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, FuncDecl>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, StructDecl>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else
         {
@@ -76,63 +76,63 @@ std::string AST::expr_to_str(ExprRef ref, std::string indent) const noexcept
 
         if constexpr (std::is_same_v<NodeType, CompoundStmt>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, ReturnStmt>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, IfStmt>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, WhileStmt>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, ForStmt>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, IntegerLiteralExpr>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, FloatLiteralExpr>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, CharLiteralExpr>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, StringLiteralExpr>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, BooleanExpr>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, UnaryExpr>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, BinaryExpr>)
         {
-            return std::format("BinOp ['{}']\n\t{}\n{}\n", node.op_, expr_to_str(node.left_, indent + "    "), expr_to_str(node.right_, indent + "    "));
+            return indent + std::format("BinOp ['{}']\n{}\n{}\n", node.op_, expr_to_str(node.left_, indent + "    "), expr_to_str(node.right_, indent + "    "));
         }
         else if constexpr (std::is_same_v<NodeType, ReferenceExpr>)
         {
-            return std::format("ReferenceExpr ['{}']", node.name_);
+            return indent + std::format("ReferenceExpr ['{}']", node.name_);
         }
         else if constexpr (std::is_same_v<NodeType, IndexExpr>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else if constexpr (std::is_same_v<NodeType, CallExpr>)
         {
-            return std::format("");
+            return indent + std::format("");
         }
         else
         {

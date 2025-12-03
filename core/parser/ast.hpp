@@ -72,7 +72,7 @@ struct FuncDecl
 {
     std::string name_, return_type_;
     std::vector<DeclRef> params_;
-    ExprRef body_;
+    ExprRef body_; // at least
 
     template <StringLike T, StringLike U, Contiguous Vec>
     FuncDecl(T&& name, U&& return_type, Vec&& params, ExprRef body) noexcept :
@@ -265,6 +265,7 @@ using Expr = std::variant<
     BooleanExpr,
     UnaryExpr,
     BinaryExpr,
+    // CompoundAssignExpr += -= ... (clang AST has a special node for this)
     ReferenceExpr,
     IndexExpr,
     CallExpr

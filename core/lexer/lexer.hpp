@@ -14,12 +14,12 @@ struct Lexer {
     Token cur_token_;
 
     Lexer(std::string_view source) noexcept: 
-        source_{ std::move(source) }, 
+        source_{ source }, 
         cur_{ source.begin() }, 
         line_num_{ 1 }, 
         col_num_{ 1 }, 
         cur_token_{} {}
 
     [[nodiscard]] Token get_token() noexcept;
-    [[nodiscard]] Token peek_token() noexcept;
+    [[nodiscard]] Token peek_token() const noexcept;
 };
