@@ -45,7 +45,7 @@ void Parser::panic(const ParseError& error) noexcept
     }
 }
 
-std::expected<std::string_view, ParseError> Parser::match(TokenType token_type)
+std::expected<std::string_view, ParseError> Parser::match(TokenType token_type) noexcept
 {
     if (is_cur_token(token_type)) {
         auto lexeme = cur_token().lexeme_;

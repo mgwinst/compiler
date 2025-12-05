@@ -28,8 +28,7 @@ std::string AST::decl_to_str(DeclRef ref, std::string indent) const noexcept
         [this, &indent] (const CompilationUnitDecl& node) {
             std::string str{};
             for (size_t i = 0; i < node.decls_.size(); i++) {
-                auto child = node.decls_[i];
-                str += decl_to_str(child, (indent + "    "));
+                str += decl_to_str(node.decls_[i], (indent + "    "));
                 if (i != node.decls_.size() - 1) {
                     str += '\n';
                 }
@@ -53,8 +52,21 @@ std::string AST::decl_to_str(DeclRef ref, std::string indent) const noexcept
         },
         
         [this, &indent] (const FuncDecl& node) {
-            // FuncDecl 'f' (int, int) -> (int)
-            return indent + std::format("");
+            std::string param_list{};
+            for (size_t i = 0; i < node.params_.size(); i++) {
+                param_list += std::get<ParamDecl>(decls_[node.params_[i]]).type_;
+                if (i != node.params_.size() - 1)
+                    param_list += ", ";
+            }
+
+            std::string param_decls{};
+            for (size_t i = 0; i < node.params_.size(); i++) {
+                param_decls += decl_to_str(node.params_[i], indent + "    ");
+                if (i != node.params_.size() - 1)
+                    param_decls += '\n';
+            }
+            
+            return indent + std::format("FuncDecl '{}' ({}) -> ({})\n{}", node.name_, param_list, node.return_type_, param_decls);
         },
 
         [this, &indent] (const StructDecl& node) {
