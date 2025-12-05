@@ -17,21 +17,18 @@ struct Parser
 
     Parser(SourceFile& source_file) noexcept;
 
+    Parser(const Parser&) = delete;
+    Parser& operator=(const Parser&) = delete;
+    Parser(Parser&&) = delete;
+    Parser& operator=(Parser&&) = delete;
+    ~Parser() = default;
+
     const Token& cur_token() const noexcept;
     void eat_token() noexcept;
     bool is_cur_token(const TokenType token_type) const noexcept;
     bool is_next_token(const TokenType token_type) const noexcept;
     void panic(const ParseError& error) noexcept;
-
-    std::expected<std::string_view, ParseError> match(TokenType token_type)
-    {
-        if (is_cur_token(token_type)) {
-            auto lexeme = cur_token().lexeme_;
-            eat_token();
-            return lexeme;
-        }
-        return std::unexpected{ SyntaxError{ cur_token() } };
-    }
+    std::expected<std::string_view, ParseError> match(TokenType token_type) noexcept;
     
     auto expect(std::same_as<TokenType> auto... token_types)
     {

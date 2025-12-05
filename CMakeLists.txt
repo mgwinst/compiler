@@ -7,17 +7,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON) # don't silently fall back to older standard
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(compiler_lib STATIC
-    core/lexer/lexer.cpp 
-    core/parser/parser.cpp 
-    core/parser/ast.cpp 
-    core/parser/error.cpp
+    src/core/lexer/lexer.cpp 
+    src/core/parser/parser.cpp 
+    src/core/parser/ast.cpp 
+    src/core/parser/error.cpp
 )
 
 target_include_directories(compiler_lib PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
 )
 
-add_executable(${PROJECT_NAME} core/main.cpp)
+add_executable(${PROJECT_NAME} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE compiler_lib)
 
 target_compile_options(${PROJECT_NAME} PRIVATE

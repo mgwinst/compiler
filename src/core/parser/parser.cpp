@@ -45,6 +45,16 @@ void Parser::panic(const ParseError& error) noexcept
     }
 }
 
+std::expected<std::string_view, ParseError> Parser::match(TokenType token_type)
+{
+    if (is_cur_token(token_type)) {
+        auto lexeme = cur_token().lexeme_;
+        eat_token();
+        return lexeme;
+    }
+    return std::unexpected{ SyntaxError{ cur_token() } };
+}
+
 std::expected<DeclRef, ParseError> Parser::parse_compilation_unit() noexcept
 {
     auto comp_unit = ast_.emplace_decl<CompilationUnitDecl>(std::move(source_file_.file_path));
