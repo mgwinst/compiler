@@ -24,120 +24,73 @@ void AST::print() const noexcept
 
 std::string AST::decl_to_str(DeclRef ref, std::string indent) const noexcept
 {
-    return std::visit([this, ref, &indent] (auto&& node) -> std::string {
-        using NodeType = std::decay_t<decltype(node)>;
-
-        if constexpr (std::is_same_v<NodeType, CompilationUnitDecl>)
-        {
+    return std::visit(Overload{
+        [this, &indent] (const CompilationUnitDecl& node) {
             std::string str{};
             for (size_t i = 0; i < node.decls_.size(); i++) {
-                auto child_ref = node.decls_[i];
-                str += decl_to_str(child_ref, (indent + "    "));
+                auto child = node.decls_[i];
+                str += decl_to_str(child, (indent + "    "));
                 if (i != node.decls_.size() - 1) {
                     str += '\n';
                 }
             }
             return indent + std::format("CompilationUnitDecl ({})\n{}", node.name_, str);
-        }
-        else if constexpr (std::is_same_v<NodeType, VarDecl>)
-        {
-            if (!node.init_)
-                return indent + std::format("VarDecl ['{}', {}]", node.name_, node.type_);
-            else
-                return indent + std::format("VarDecl ['{}', {}]\n{}", node.name_, node.type_, expr_to_str(*node.init_, indent + "    "));
-        }
-        else if constexpr (std::is_same_v<NodeType, ConstVarDecl>)
-        {
-            return indent + std::format("ConstVarDecl ['{}', {}]\n{}", node.name_, node.type_, expr_to_str(node.init_, indent + "    "));
-        }
-        else if constexpr (std::is_same_v<NodeType, ParamDecl>)
-        {
+        },
+
+        [this, &indent] (const VarDecl& node) {
+            auto decl_type = (node.constness_ == Constness::CONST ? "ConstVarDecl" : "VarDecl");
+
+            if (!node.init_) {
+                return indent + std::format("{} ['{}', {}]", decl_type, node.name_, node.type_);
+            } else {
+                return indent + std::format("{} ['{}', {}]\n{}", decl_type, node.name_, node.type_, expr_to_str(*node.init_, indent + "    "));
+            }
+        },
+
+        [this, &indent] (const ParamDecl& node) {
+            auto decl_type = (node.constness_ == Constness::CONST ? "ConstParamDecl" : "ParamDecl");
+            return indent + std::format("{} ['{}', {}]", decl_type, node.name_, node.type_);
+        },
+        
+        [this, &indent] (const FuncDecl& node) {
+            // FuncDecl 'f' (int, int) -> (int)
             return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, FuncDecl>)
-        {
+        },
+
+        [this, &indent] (const StructDecl& node) {
             return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, StructDecl>)
-        {
-            return indent + std::format("");
-        }
-        else
-        {
-            static_assert(always_false_v<NodeType>, "type not defined in visitor...");
         }
     }, decls_[ref]);
 }
 
 std::string AST::expr_to_str(ExprRef ref, std::string indent) const noexcept
 {
-    return std::visit([this, ref, &indent] (auto&& node) -> std::string {
-        using NodeType = std::decay_t<decltype(node)>;
+    return std::visit(Overload{
+        [&indent](const CompoundStmt&)       { return indent + std::format(""); },
+        [&indent](const ReturnStmt&)         { return indent + std::format(""); },
+        [&indent](const IfStmt&)             { return indent + std::format(""); },
+        [&indent](const WhileStmt&)          { return indent + std::format(""); },
+        [&indent](const ForStmt&)            { return indent + std::format(""); },
+        [&indent](const IntegerLiteralExpr&) { return indent + std::format(""); },
+        [&indent](const FloatLiteralExpr&)   { return indent + std::format(""); },
+        [&indent](const CharLiteralExpr&)    { return indent + std::format(""); },
+        [&indent](const StringLiteralExpr&)  { return indent + std::format(""); },
+        [&indent](const BooleanExpr&)        { return indent + std::format(""); },
+        [&indent](const UnaryExpr&)    { return indent + std::format(""); },
 
-        if constexpr (std::is_same_v<NodeType, CompoundStmt>)
-        {
-            return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, ReturnStmt>)
-        {
-            return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, IfStmt>)
-        {
-            return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, WhileStmt>)
-        {
-            return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, ForStmt>)
-        {
-            return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, IntegerLiteralExpr>)
-        {
-            return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, FloatLiteralExpr>)
-        {
-            return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, CharLiteralExpr>)
-        {
-            return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, StringLiteralExpr>)
-        {
-            return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, BooleanExpr>)
-        {
-            return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, UnaryExpr>)
-        {
-            return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, BinaryExpr>)
-        {
-            return indent + std::format("BinOp ['{}']\n{}\n{}\n", node.op_, expr_to_str(node.left_, indent + "    "), expr_to_str(node.right_, indent + "    "));
-        }
-        else if constexpr (std::is_same_v<NodeType, ReferenceExpr>)
-        {
+        [this, &indent](const BinaryExpr& node) {
+            return indent + std::format("BinOp ['{}']\n{}\n{}\n",
+                node.op_,
+                expr_to_str(node.left_, indent + " "),
+                expr_to_str(node.right_, indent + " "));
+        },
+
+        [&indent](const ReferenceExpr& node) {
             return indent + std::format("ReferenceExpr ['{}']", node.name_);
-        }
-        else if constexpr (std::is_same_v<NodeType, IndexExpr>)
-        {
-            return indent + std::format("");
-        }
-        else if constexpr (std::is_same_v<NodeType, CallExpr>)
-        {
-            return indent + std::format("");
-        }
-        else
-        {
-            static_assert(always_false_v<NodeType>, "type not defined in visitor");
-        }
+        },
+
+        [&indent](const IndexExpr&) { return indent + std::format(""); },
+        [&indent](const CallExpr&)  { return indent + std::format(""); }
+
     }, exprs_[ref]);
 }
-

@@ -32,7 +32,15 @@ struct SourceFile
     return {file_path, data};
 }
 
-template<class... Ts>
-struct overloaded : Ts... { using Ts::operator()...; };
+enum class Constness
+{
+    CONST,
+    MUTABLE,
+    NON_CONST = MUTABLE
+};
 
-template <typename> constexpr bool always_false_v = false;
+template<typename... Lambdas>
+struct Overload : Lambdas... 
+{ 
+    using Lambdas::operator()...; 
+};

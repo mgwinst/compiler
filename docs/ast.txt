@@ -13,8 +13,8 @@ fn main() -> int
 
 CompilationUnitDecl (main.cpp)
     FuncDecl 'f' (int, int) -> (int)
-        ParamDecl ['a', const int]
-        ParamDecl ['b', const int]
+        ConstParamDecl <0x0800> ['a', int]
+        ConstParamDecl ['b', int]
         CompoundStmt
             VarDecl ['c', int]
                 BinOp ['+', int]

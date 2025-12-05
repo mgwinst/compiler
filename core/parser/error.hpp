@@ -17,6 +17,9 @@ struct SyntaxError
     SyntaxError(const Token& token) :
         msg{ std::format("{}:{}: syntax error: unexpected symbol detected", token.line_number_, token.column_number_) } {}
 
+    SyntaxError(const Token& token, std::string_view error_msg) :
+        msg{ std::format("{}:{}: syntax error: {}", token.line_number_, token.column_number_, error_msg) } {}
+
     SyntaxError() = default;
     SyntaxError(const SyntaxError&) = default;
     SyntaxError& operator=(const SyntaxError&) = default;
@@ -32,7 +35,7 @@ using ParseWarning = std::variant<int>;
 template <typename T>
 std::string error_to_string(const T& error)
 {
-    return std::visit(overloaded(
+    return std::visit(Overload(
         [](const SyntaxError& syntax_error) {
             return std::format("{}", syntax_error.msg);
         }

@@ -21,64 +21,51 @@ struct CompilationUnitDecl
     std::string name_;
     std::vector<DeclRef> decls_;
 
-    template <StringLike T>
-    CompilationUnitDecl(T&& name) noexcept :
-        name_{ std::forward<T>(name) },
+    CompilationUnitDecl(StringLike auto&& name) noexcept :
+        name_{ std::forward<decltype(name)>(name) },
         decls_{} {}
 
-    template <StringLike T, Contiguous Vec>
-    CompilationUnitDecl(T&& name, Vec&& v) noexcept :
-        name_{ std::forward<T>(name) },
-        decls_{ std::forward<Vec>(v) } {}
+    CompilationUnitDecl(StringLike auto&& name, Contiguous auto&& v) noexcept :
+        name_{ std::forward<decltype(name)>(name) },
+        decls_{ std::forward<decltype(name)>(v) } {}
 };
 
 struct VarDecl
 {
+    Constness constness_;
     std::string type_, name_;
     std::optional<ExprRef> init_;
 
-    template <typename T, typename U>
-    VarDecl(T&& type, U&& name, std::optional<ExprRef> init = std::nullopt) noexcept :
-        type_{ std::forward<T>(type) }, 
-        name_{ std::forward<U>(name) }, 
-        init_{ init } {}
-};
-
-struct ConstVarDecl
-{
-    std::string type_, name_;
-    ExprRef init_;
-
-    template <StringLike T, StringLike U>
-    ConstVarDecl(T&& type, U&& name, ExprRef init) noexcept :
-        type_{ std::forward<T>(type) },
-        name_{ std::forward<U>(name) },
+    VarDecl(Constness constness, StringLike auto&& type, StringLike auto&& name, std::optional<ExprRef> init = std::nullopt) noexcept :
+        constness_{ constness },
+        type_{ std::forward<decltype(type)>(type) }, 
+        name_{ std::forward<decltype(name)>(name) }, 
         init_{ init } {}
 };
 
 struct ParamDecl
 {
-    bool is_const_;
+    Constness constness_;
     std::string type_, name_;
 
-    template <StringLike T, StringLike U>
-    ParamDecl(bool is_const, T&& type, U&& name) noexcept :
-        is_const_{ is_const },
-        type_{ std::forward<T>(type) },
-        name_{ std::forward<U>(name) } {}
+    ParamDecl(Constness constness, StringLike auto&& type, StringLike auto&& name) noexcept :
+        constness_{ constness },
+        type_{ std::forward<decltype(type)>(type) }, 
+        name_{ std::forward<decltype(name)>(name) } {}
 };
 
 struct FuncDecl
 {
+    Constness constness_;
     std::string name_, return_type_;
     std::vector<DeclRef> params_;
-    ExprRef body_; // at least
+    ExprRef body_;
 
-    template <StringLike T, StringLike U, Contiguous Vec>
-    FuncDecl(T&& name, U&& return_type, Vec&& params, ExprRef body) noexcept :
-        name_{ std::forward<T>(name) },
-        return_type_{ std::forward<U>(return_type) },
-        params_{ std::forward<Vec>(params) },
+    FuncDecl(Constness constness, StringLike auto&& name, StringLike auto&& return_type, Contiguous auto&& params, ExprRef body) noexcept :
+        constness_{ constness },
+        name_{ std::forward<decltype(name)>(name) },
+        return_type_{ std::forward<decltype(return_type)>(return_type) },
+        params_{ std::forward<decltype(params)>(params) },
         body_{ body } {}
 };
 
@@ -87,10 +74,9 @@ struct StructDecl
     std::string name_;
     std::vector<std::pair<std::string, std::string>> fields_;
 
-    template <StringLike T, Contiguous Vec>
-    StructDecl(T&& name, Vec&& fields) noexcept :
-        name_{ std::forward<T>(name) },
-        fields_{ std::forward<Vec>(fields) } {}
+    StructDecl(StringLike auto&& name, Contiguous auto&& fields) noexcept :
+        name_{ std::forward<decltype(name)>(name) },
+        fields_{ std::forward<decltype(fields)>(fields) } {}
 };
 
 // ************** STATEMENTS **************
@@ -100,10 +86,9 @@ struct CompoundStmt
     std::vector<DeclRef> decls_;
     std::vector<ExprRef> exprs_;
 
-    template <Contiguous Vec>
-    CompoundStmt(Vec&& decls, Vec&& exprs) noexcept :
-        decls_{ std::forward<Vec>(decls) },
-        exprs_{ std::forward<Vec>(exprs) } {}
+    CompoundStmt(Contiguous auto&& decls, Contiguous auto&& exprs) noexcept :
+        decls_{ std::forward<decltype(decls)>(decls) },
+        exprs_{ std::forward<decltype(exprs)>(exprs) } {}
 };
 
 struct ReturnStmt
@@ -119,10 +104,9 @@ struct IfStmt
     ExprRef cond_;
     std::vector<ExprRef> if_else_exprs_;
 
-    template <Contiguous Vec>
-    IfStmt(ExprRef cond, Vec&& if_else_exprs) noexcept :
+    IfStmt(ExprRef cond, Contiguous auto&& if_else_exprs) noexcept :
         cond_{ cond },
-        if_else_exprs_{ std::forward<Vec>(if_else_exprs) } {}
+        if_else_exprs_{ std::forward<decltype(if_else_exprs)>(if_else_exprs) } {}
 };
 
 struct WhileStmt
@@ -177,9 +161,8 @@ struct StringLiteralExpr
 {
     std::string value_;
 
-    template <StringLike T>
-    StringLiteralExpr(T&& value) :
-        value_{ std::forward<T>(value) } {}
+    StringLiteralExpr(StringLike auto&& value) :
+        value_{ std::forward<decltype(value)>(value) } {}
 };
 
 struct BooleanExpr
@@ -195,9 +178,8 @@ struct UnaryExpr
     std::string op_;
     ExprRef arg_;
 
-    template <StringLike T>
-    UnaryExpr(T&& op, ExprRef arg) noexcept :
-        op_{ std::forward<T>(op) },
+    UnaryExpr(StringLike auto&& op, ExprRef arg) noexcept :
+        op_{ std::forward<decltype(op)>(op) },
         arg_{ arg } {}
 };
 
@@ -206,9 +188,8 @@ struct BinaryExpr
     std::string op_;
     ExprRef left_, right_;
 
-    template <StringLike T>
-    BinaryExpr(T&& op, ExprRef left, ExprRef right) noexcept :
-        op_{ std::forward<T>(op) },
+    BinaryExpr(StringLike auto&& op, ExprRef left, ExprRef right) noexcept :
+        op_{ std::forward<decltype(op)>(op) },
         left_{ left },
         right_{ right } {}
 };
@@ -217,9 +198,8 @@ struct ReferenceExpr
 {
     std::string name_;
 
-    template <StringLike T>
-    ReferenceExpr(T&& name) noexcept : 
-        name_{ std::forward<T>(name) } {}
+    ReferenceExpr(StringLike auto&& name) noexcept : 
+        name_{ std::forward<decltype(name)>(name) } {}
 };
 
 struct IndexExpr
@@ -237,16 +217,14 @@ struct CallExpr
     ExprRef callee_;
     std::vector<ExprRef> args_;
 
-    template <Contiguous Vec>
-    CallExpr(ExprRef callee, Vec&& args) noexcept :
+    CallExpr(ExprRef callee, Contiguous auto&& args) noexcept :
         callee_{ callee },
-        args_{ std::forward<Vec>(args) } {}
+        args_{ std::forward<decltype(args)>(args) } {}
 };
 
 using Decl = std::variant<
     CompilationUnitDecl,
     VarDecl,
-    ConstVarDecl,
     ParamDecl,
     FuncDecl,
     StructDecl
@@ -294,8 +272,8 @@ struct AST
         return exprs_.size() - 1;
     }
 
-    std::string decl_to_str(DeclRef ref, std::string indent) const noexcept;
-    std::string expr_to_str(ExprRef ref, std::string indent) const noexcept;
+    std::string decl_to_str(const DeclRef ref, std::string indent) const noexcept;
+    std::string expr_to_str(const ExprRef ref, std::string indent) const noexcept;
 
     void print() const noexcept;
 };
