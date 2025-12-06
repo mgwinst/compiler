@@ -69,8 +69,15 @@ std::string AST::decl_to_str(DeclRef ref, std::string indent) const noexcept
             return indent + std::format("FuncDecl '{}' ({}) -> ({})\n{}", node.name_, param_list, node.return_type_, param_decls);
         },
 
-        [this, &indent] (const StructDecl& node) {
-            return indent + std::format("");
+        [this, &indent] (const StructDef& node) {
+            std::string field_list;
+            for (size_t i = 0; i < node.fields_.size(); i++) {
+                field_list += decl_to_str(node.fields_[i], indent + "    ");
+                if (i != node.fields_.size() - 1)
+                    field_list += '\n';
+            }
+            
+            return indent + std::format("StructDef [{}]\n{}", node.name_, field_list);
         }
     }, decls_[ref]);
 }

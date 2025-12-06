@@ -50,6 +50,7 @@ std::expected<std::string_view, ParseError> Parser::match(TokenType token_type) 
     if (is_cur_token(token_type)) {
         auto lexeme = cur_token().lexeme_;
         eat_token();
+
         return lexeme;
     }
     return std::unexpected{ SyntaxError{ cur_token() } };
@@ -62,73 +63,106 @@ std::expected<DeclRef, ParseError> Parser::parse_compilation_unit() noexcept
     eat_token();
 
     while (!is_cur_token(TokenType::END_OF_FILE)) {
-        switch (lexer_.cur_token_.type_) {
-            case TokenType::KEYWORD_CONST: {
-                eat_token();
-                std::expected<DeclRef, ParseError> const_decl;
+        auto decl = parse_decl();       
+        if (!decl) panic(decl.error());
 
-                if (is_cur_token(TokenType::KEYWORD_FUNCTION))
-                    const_decl = parse_func_decl(Constness::CONST);
-                else if (is_cur_token(TokenType::TYPE))
-                    const_decl = parse_var_decl(Constness::CONST);
-                else
-                    panic(SyntaxError{ cur_token() });
+        std::get<CompilationUnitDecl>(ast_.decls_[comp_unit]).decls_.push_back(*decl);
 
-                if (!const_decl)
-                    panic(const_decl.error());
-                else
-                    std::get<CompilationUnitDecl>(ast_.decls_[comp_unit]).decls_.push_back(*const_decl); // wrap this
-                break;
-            }
-            case TokenType::KEYWORD_FUNCTION: {
-                eat_token();
-
-                auto func_decl = parse_func_decl(Constness::NON_CONST);
-                if (!func_decl)
-                    panic(func_decl.error());
-                else
-                    std::get<CompilationUnitDecl>(ast_.decls_[comp_unit]).decls_.push_back(*func_decl);
-                break;
-            }
-            case TokenType::TYPE: {
-                auto var = parse_var_decl(Constness::MUTABLE);
-                if (!var)
-                    panic(var.error());
-                else 
-                    std::get<CompilationUnitDecl>(ast_.decls_[comp_unit]).decls_.push_back(*var);
-                break;
-            }
-            case TokenType::KEYWORD_STRUCT: {
-                // auto s = parse_struct_decl(); 
-                // ast_.add_decl();
-                break;
-            }
-            default:
-                break;
-        }
         eat_token();
     }
 
     return comp_unit;
 }
 
+std::expected<DeclRef, ParseError> Parser::parse_decl() noexcept
+{
+    switch (cur_token().type_) {
+        case TokenType::KEYWORD_CONST: {
+            eat_token();
+            std::expected<DeclRef, ParseError> const_decl;
+
+            if (is_cur_token(TokenType::KEYWORD_FUNCTION))
+                const_decl = parse_func_decl(Constness::CONST);
+            else if (is_cur_token(TokenType::TYPE))
+                const_decl = parse_var_decl(Constness::CONST);
+            else
+                return std::unexpected{ SyntaxError{cur_token(), "expected function or variable declaration"} };
+
+            if (!const_decl) return std::unexpected{ const_decl.error() };
+
+            return *const_decl;
+        }
+        case TokenType::KEYWORD_FUNCTION: {
+            eat_token();
+
+            auto func_decl = parse_func_decl(Constness::NON_CONST);
+            if (!func_decl) return std::unexpected{ func_decl.error() };
+
+            return *func_decl;
+        }
+        case TokenType::TYPE: {
+            auto var = parse_var_decl(Constness::MUTABLE);
+            if (!var) return std::unexpected{ var.error() };
+
+            return *var;
+        }
+        case TokenType::KEYWORD_STRUCT: {
+            eat_token();
+
+            auto s = parse_struct_def();
+            if (!s) return std::unexpected{ s.error() };
+            
+            return *s;
+        }
+        default:
+            return std::unexpected{ SyntaxError{ cur_token() }}; // fix this later
+    }
+}
+
+std::expected<DeclRef, ParseError> Parser::parse_field() noexcept
+{
+    std::expected<DeclRef, ParseError> var;
+
+    switch (cur_token().type_) {
+        case TokenType::KEYWORD_CONST: {
+            eat_token();
+            var = parse_var_decl(Constness::CONST);
+            break;
+        }
+        case TokenType::TYPE: {
+            var = parse_var_decl(Constness::MUTABLE);
+            break;
+        }
+        default:
+            return std::unexpected{ SyntaxError{cur_token(), "missing struct data field/member"} };
+    }
+
+    if (!var) return std::unexpected{ var.error() };
+
+    return *var;
+}
+
 std::expected<DeclRef, ParseError> Parser::parse_var_decl(Constness constness) noexcept
 {
     auto [type, name] = expect(TokenType::TYPE, TokenType::IDENTIFIER);
-    
+
     if (!type) return std::unexpected{ type.error() };
     if (!name) return std::unexpected{ name.error() };
 
-    if (is_cur_token(TokenType::SEMICOLON)) {
-        return ast_.emplace_decl<VarDecl>(constness, std::move(*type), std::move(*name));
-    } else if (is_cur_token(TokenType::EQUAL)) {
-        eat_token();
-        auto expr = parse_expr(0);
-        if (!expr) 
-            return std::unexpected(expr.error());
-        return ast_.emplace_decl<VarDecl>(constness, std::move(*type), std::move(*name), *expr);
-    } else {
-        return std::unexpected{ SyntaxError{ cur_token() } };
+    switch (cur_token().type_) {
+        case TokenType::SEMICOLON: {
+            return ast_.emplace_decl<VarDecl>(constness, std::string{ *type }, std::string{ *name });
+        }
+        case TokenType::EQUAL: {
+            eat_token();
+
+            auto expr = parse_expr(0);
+            if (!expr) return std::unexpected{ expr.error() };
+
+            return ast_.emplace_decl<VarDecl>(constness, std::string{ *type }, std::string{ *name }, *expr);
+        }
+        default:
+            return std::unexpected{ SyntaxError{ cur_token() } };
     }
 }
 
@@ -146,67 +180,70 @@ std::expected<DeclRef, ParseError> Parser::parse_param_decl() noexcept
     if (!type) return std::unexpected{ type.error() };
     if (!name) return std::unexpected{ name.error() };
 
-    return ast_.emplace_decl<ParamDecl>(constness, std::move(*type), std::move(*name));
+    return ast_.emplace_decl<ParamDecl>(constness, std::string{ *type }, std::string{ *name });
 }
 
 std::expected<DeclRef, ParseError> Parser::parse_func_decl(Constness constness) noexcept
 {
-    if (!is_cur_token(TokenType::IDENTIFIER))
-        return std::unexpected{ SyntaxError{cur_token(), "missing function identifier"} };
-    
-    auto name = cur_token().lexeme_;
+    auto [name] = expect(TokenType::IDENTIFIER);
+    if (!name) return std::unexpected{ SyntaxError{cur_token(), "missing function identifier"}}; 
 
-    eat_token();
-
-    if (!is_cur_token(TokenType::LPAREN))
-        return std::unexpected{ SyntaxError{cur_token(), "missing parameter list (...)"} };
-    
-    eat_token();
+    auto [lparen] = expect(TokenType::LPAREN);
+    if (!lparen) return std::unexpected{ SyntaxError{cur_token(), "missing parameter list (...)"} };
 
     std::vector<DeclRef> params;
 
     while (!is_cur_token(TokenType::RPAREN)) {
         auto param_decl = parse_param_decl();
-
-        if (!param_decl)
-            return std::unexpected{ param_decl.error() };
+        if (!param_decl) return std::unexpected{ param_decl.error() };
 
         params.push_back(*param_decl);
 
-        if (is_cur_token(TokenType::COMMA)) {
-            eat_token();
-        }
+        if (is_cur_token(TokenType::COMMA)) eat_token();
     }
 
     eat_token();
  
-    if (!is_cur_token(TokenType::ARROW))
-        return std::unexpected{ SyntaxError{cur_token(), "missing '->' trailing return type"} };
+    auto [arrow] = expect(TokenType::ARROW);
+    if (!arrow) return std::unexpected{ SyntaxError{cur_token(), "missing '->' trailing return type"} };
 
-    eat_token();
+    auto [return_type] = expect(TokenType::TYPE);
+    if (!return_type) return std::unexpected{ SyntaxError{cur_token(), "missing function return type"} };
 
-    if (!is_cur_token(TokenType::TYPE))
-        return std::unexpected{ SyntaxError{cur_token(), "missing function return type"} };
-
-    auto return_type = cur_token().lexeme_;
-
-    eat_token();
-
-    if (!is_cur_token(TokenType::LBRACE))
-        return std::unexpected{ SyntaxError{cur_token(), "missing function body {...}"} };
-
-    eat_token();
+    auto [lbrace] = expect(TokenType::LBRACE);
+    if (!lbrace) return std::unexpected{ SyntaxError{cur_token(), "missing function body {...}"} };
 
     auto body = parse_compound_stmt();
-    if (!body)
-        return std::unexpected{ body.error() };
+    if (!body) return std::unexpected{ body.error() };
 
-    return ast_.emplace_decl<FuncDecl>(constness, std::move(name), std::move(return_type), std::move(params), *body);
+    return ast_.emplace_decl<FuncDecl>(constness, std::string{ *name }, std::string{ *return_type }, std::move(params), *body);
 }
 
-std::expected<DeclRef, ParseError> Parser::parse_struct_decl() noexcept
+std::expected<DeclRef, ParseError> Parser::parse_struct_def() noexcept
 {
-    return -1;
+    auto [name] = (expect(TokenType::IDENTIFIER));
+    if (!name) return std::unexpected{SyntaxError{cur_token(), "missing struct identifier"}};
+
+    auto [lbrace] = expect(TokenType::LBRACE);
+    if (!lbrace) return std::unexpected{ SyntaxError{cur_token(), "missing struct body {...}"} };
+
+    std::vector<DeclRef> fields;
+ 
+    while (!is_cur_token(TokenType::RBRACE)) {
+        auto field = parse_field();
+        if (!field) return std::unexpected{ field.error() };
+
+        fields.push_back(*field);
+
+        eat_token();
+
+        auto [semi_colon] = expect(TokenType::SEMICOLON);
+        if (semi_colon) return std::unexpected{SyntaxError{cur_token(), "missing ';' after field declaration"}};
+    }
+
+    eat_token();
+
+    return ast_.emplace_decl<StructDef>(std::string{ *name }, std::move(fields));
 }
 
 int lbp(const Token& token) noexcept

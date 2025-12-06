@@ -69,12 +69,12 @@ struct FuncDecl
         body_{ body } {}
 };
 
-struct StructDecl
+struct StructDef
 {
     std::string name_;
-    std::vector<std::pair<std::string, std::string>> fields_;
+    std::vector<DeclRef> fields_;
 
-    StructDecl(StringLike auto&& name, Contiguous auto&& fields) noexcept :
+    StructDef(StringLike auto&& name, Contiguous auto&& fields) noexcept :
         name_{ std::forward<decltype(name)>(name) },
         fields_{ std::forward<decltype(fields)>(fields) } {}
 };
@@ -227,7 +227,7 @@ using Decl = std::variant<
     VarDecl,
     ParamDecl,
     FuncDecl,
-    StructDecl
+    StructDef
     >;
 
 using Expr = std::variant<

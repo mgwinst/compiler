@@ -11,6 +11,12 @@ fn main() -> int
     int ans = add(3, 4);
 }
 
+struct Point
+{
+    int x;
+    int y;
+}
+
 CompilationUnitDecl (main.cpp)
     FuncDecl 'f' (int, int) -> (int)
         ConstParamDecl <0x0800> ['a', int]
@@ -33,3 +39,6 @@ CompilationUnitDecl (main.cpp)
                 CallExpr ['f', int]
                     IntLit [3]
                     IntLit [4]
+    StructDef ['Point']
+        FieldDecl ['x', int]
+        FieldDecl ['y', int]
