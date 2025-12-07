@@ -1,24 +1,28 @@
-int a;
+int a;;;
+
+
 int b = a;
 
 const int c;
 const int d = c;
 
-struct Foo
+struct const Foo
 {
-    int x;
-    int y;
-}
-
-struct Bar
-{
-    float64 i;
-    float64 j;
+    float32 x;
+    float64 y;
 }
 
 struct Foo x;
 const struct Foo y;
 struct Foo z = x;
+
+fn add(float a, float b) -> float
+{
+    
+}
+
+int x;;
+
 
 
 

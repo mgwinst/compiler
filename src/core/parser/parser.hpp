@@ -1,6 +1,7 @@
 #pragma once
 
 #include <expected>
+#include <tuple>
 
 #include "lexer/lexer.hpp"
 #include "parser/ast.hpp"

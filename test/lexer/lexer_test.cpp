@@ -94,13 +94,13 @@ TEST(TestLexer, Tokens) {
 
     int i = 0;
     while (1) {
-        lexer.cur_token_ = lexer.get_token();
-        if (lexer.cur_token_.type_ == TokenType::END_OF_FILE) 
+        Token tok = lexer.get_token();
+        if (tok.type_ == TokenType::END_OF_FILE) 
             break;
 
-        EXPECT_EQ(lexer.cur_token_.type_, token_test_table[i]) << "Mismatch at token: " << i << \
-        " [" << static_cast<int>(lexer.cur_token_.type_) << ", " << static_cast<int>(token_test_table[i]) << ']' << \
-        " [error token: " << lexer.cur_token_.lexeme_ << "]";
+        EXPECT_EQ(tok.type_, token_test_table[i]) << "Mismatch at token: " << i << \
+        " [" << static_cast<int>(tok.type_) << ", " << static_cast<int>(token_test_table[i]) << ']' << \
+        " [error token: " << tok.lexeme_ << "]";
 
         i++;
     }

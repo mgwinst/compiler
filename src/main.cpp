@@ -19,6 +19,9 @@ int main(int argc, char** argv)
     auto parser = Parser{ source };
     parser.parse_compilation_unit();
     parser.ast_.print();
+
+    std::println();   
+
     parser.diagnostics_.dump_errors();
     
     std::println();

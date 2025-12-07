@@ -17,8 +17,7 @@ void AST::print() const noexcept
         std::println(std::cerr, "AST is empty");
         exit(EXIT_FAILURE);
     } else {
-        DeclRef root = 0;
-        std::println("{}", decl_to_str(root, ""));
+        std::println("{}", decl_to_str(root(), ""));
     }
 }
 

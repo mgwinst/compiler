@@ -11,8 +11,8 @@
 
 Parser::Parser(SourceFile& source_file) noexcept :
     source_file_{ std::move(source_file) },
-    lexer_{ source_file_.data },
     diagnostics_{},
+    lexer_{ source_file_.data },
     ast_{} {}
 
 const Token Parser::next_token() const noexcept
@@ -72,10 +72,12 @@ std::expected<DeclRef, ParseError> Parser::parse_compilation_unit() noexcept
     while (!is_cur_token(TokenType::END_OF_FILE)) {
         auto decl = parse_decl();       
 
-        if (!decl) 
+        if (!decl) {
             panic(decl.error());
-        else 
+        }
+        else {
             std::get<CompilationUnitDecl>(ast_.decls_[comp_unit]).decls_.push_back(*decl);
+        }
     }
 
     return comp_unit;
@@ -134,8 +136,10 @@ std::expected<DeclRef, ParseError> Parser::parse_decl() noexcept
             return *s;
         }
 
-        default:
-            return std::unexpected{ SyntaxError{ cur_token_ }}; // fix this later
+        default: {
+            eat_token(); // eat the unexpected token
+            return std::unexpected{ SyntaxError{ prev_token_ } };
+        }
     }
 }
 
@@ -217,7 +221,7 @@ std::expected<DeclRef, ParseError> Parser::parse_func_decl(Constness constness) 
 std::expected<DeclRef, ParseError> Parser::parse_struct(Constness constness) noexcept
 {
     if (!is_cur_token(TokenType::IDENTIFIER)) // struct type
-        return std::unexpected{SyntaxError{cur_token_, "missing struct type"}};
+        return std::unexpected{ SyntaxError{ cur_token_ } };
 
     std::expected<DeclRef, ParseError> s;
 
@@ -366,7 +370,7 @@ std::expected<DeclRef, ParseError> Parser::parse_struct_decl(Constness constness
             auto expr = parse_expr();
             if (!expr) return std::unexpected{ expr.error() };
 
-            EXPECT_RPAREN();
+            // EXPECT_RPAREN();
             EXPECT_SEMICOLON();
             return ast_.emplace_decl<VarDecl>(constness, std::string{ *type }, std::string{ *name }, *expr);
         }
