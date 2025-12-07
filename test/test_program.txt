@@ -1,13 +1,1 @@
-fn main(const int x, const int y) -> int64
-{
-
-}
-
-float64 a;
-float64 b = a;
-
-struct Point
-{
-    const int x;
-    int y;
-}
+struct Foo x{a, b};

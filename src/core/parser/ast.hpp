@@ -32,15 +32,17 @@ struct CompilationUnitDecl
 
 struct VarDecl
 {
+    using Initializer = std::variant<ExprRef, std::vector<ExprRef>>;
+
     Constness constness_;
     std::string type_, name_;
-    std::optional<ExprRef> init_;
+    std::optional<Initializer> init_;
 
-    VarDecl(Constness constness, StringLike auto&& type, StringLike auto&& name, std::optional<ExprRef> init = std::nullopt) noexcept :
+    VarDecl(Constness constness, StringLike auto&& type, StringLike auto&& name, std::optional<Initializer> init = std::nullopt) noexcept :
         constness_{ constness },
         type_{ std::forward<decltype(type)>(type) }, 
         name_{ std::forward<decltype(name)>(name) }, 
-        init_{ init } {}
+        init_{ std::move(init) } {}
 };
 
 struct ParamDecl
@@ -71,11 +73,11 @@ struct FuncDecl
 
 struct StructDef
 {
-    std::string name_;
+    std::string type_;
     std::vector<DeclRef> fields_;
 
-    StructDef(StringLike auto&& name, Contiguous auto&& fields) noexcept :
-        name_{ std::forward<decltype(name)>(name) },
+    StructDef(StringLike auto&& type, Contiguous auto&& fields) noexcept :
+        type_{ std::forward<decltype(type)>(type) },
         fields_{ std::forward<decltype(fields)>(fields) } {}
 };
 
@@ -85,10 +87,12 @@ struct CompoundStmt
 {
     std::vector<DeclRef> decls_;
     std::vector<ExprRef> exprs_;
+    std::optional<ExprRef> return_stmt_;
 
-    CompoundStmt(Contiguous auto&& decls, Contiguous auto&& exprs) noexcept :
+    CompoundStmt(Contiguous auto&& decls, Contiguous auto&& exprs, std::optional<ExprRef> return_stmt = std::nullopt) noexcept :
         decls_{ std::forward<decltype(decls)>(decls) },
-        exprs_{ std::forward<decltype(exprs)>(exprs) } {}
+        exprs_{ std::forward<decltype(exprs)>(exprs) },
+        return_stmt_{ return_stmt } {}
 };
 
 struct ReturnStmt
@@ -280,7 +284,7 @@ struct AST
 
 struct SymbolTable
 {
-
+    int x;
 };
 
 struct CompilationUnit

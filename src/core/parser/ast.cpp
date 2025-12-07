@@ -37,12 +37,27 @@ std::string AST::decl_to_str(DeclRef ref, std::string indent) const noexcept
         },
 
         [this, &indent] (const VarDecl& node) {
+            std::string str{};
             auto decl_type = (node.constness_ == Constness::CONST ? "ConstVarDecl" : "VarDecl");
 
             if (!node.init_) {
                 return indent + std::format("{} ['{}', {}]", decl_type, node.name_, node.type_);
             } else {
-                return indent + std::format("{} ['{}', {}]\n{}", decl_type, node.name_, node.type_, expr_to_str(*node.init_, indent + "    "));
+                std::string init_values{};
+
+                if (std::holds_alternative<ExprRef>(*node.init_)) {
+                    auto init = std::get<ExprRef>(*node.init_);
+                    init_values += expr_to_str(init, indent + "    ");
+                } else {
+                    auto& init = std::get<std::vector<ExprRef>>(*node.init_);
+                    for (size_t i = 0; i < init.size(); i++) {
+                        init_values += expr_to_str(init[i], indent + "    ");
+                        if (i != init.size() - 1)
+                            init_values += '\n';
+                    }
+                }
+
+                return indent + std::format("{} ['{}', {}]\n{}", decl_type, node.name_, node.type_, init_values);
             }
         },
 
@@ -77,7 +92,7 @@ std::string AST::decl_to_str(DeclRef ref, std::string indent) const noexcept
                     field_list += '\n';
             }
             
-            return indent + std::format("StructDef [{}]\n{}", node.name_, field_list);
+            return indent + std::format("StructDef ['{}']\n{}", node.type_, field_list);
         }
     }, decls_[ref]);
 }

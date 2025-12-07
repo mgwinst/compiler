@@ -24,6 +24,7 @@ struct Parser
     ~Parser() = default;
 
     const Token& cur_token() const noexcept;
+    const Token next_token() const noexcept;
     void eat_token() noexcept;
     bool is_cur_token(const TokenType token_type) const noexcept;
     bool is_next_token(const TokenType token_type) const noexcept;
@@ -40,11 +41,15 @@ struct Parser
     std::expected<DeclRef, ParseError> parse_field() noexcept;
     std::expected<DeclRef, ParseError> parse_var_decl(Constness constness) noexcept;
     std::expected<DeclRef, ParseError> parse_param_decl() noexcept;
+
     std::expected<DeclRef, ParseError> parse_func_decl(Constness constness) noexcept;
+    
+    std::expected<DeclRef, ParseError> parse_struct(Constness constness) noexcept;
+    std::expected<DeclRef, ParseError> parse_struct_decl(Constness constness) noexcept;
     std::expected<DeclRef, ParseError> parse_struct_def() noexcept;
 
     std::expected<ExprRef, ParseError> nud(const Token& token);
     std::expected<ExprRef, ParseError> led(const Token& token, const ExprRef left);
-    std::expected<ExprRef, ParseError> parse_expr(int min_prec) noexcept;
+    std::expected<ExprRef, ParseError> parse_expr(int min_prec = 0) noexcept;
     std::expected<ExprRef, ParseError> parse_compound_stmt() noexcept;
 };
