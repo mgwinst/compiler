@@ -1,1 +1,24 @@
-struct Foo x{a, b};
+int a;
+int b = a;
+
+const int c;
+const int d = c;
+
+struct Foo
+{
+    int x;
+    int y;
+}
+
+struct Bar
+{
+    float64 i;
+    float64 j;
+}
+
+struct Foo x;
+const struct Foo y;
+struct Foo z = x;
+
+
+

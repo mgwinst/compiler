@@ -4,9 +4,22 @@
 int main(int argc, char** argv)
 {
     auto source = get_source_file("../../test/test_program.txt");
-    auto parser = Parser{ source };
+    auto lexer = Lexer{ source.data };
 
+    while (1) {
+        Token tok = lexer.get_token();
+        if (tok.type_ == TokenType::END_OF_FILE) 
+            break;
+
+        std::println("{}", tok.to_string());
+    }
+    
+    std::println();
+
+    auto parser = Parser{ source };
     parser.parse_compilation_unit();
     parser.ast_.print();
     parser.diagnostics_.dump_errors();
+    
+    std::println();
 }

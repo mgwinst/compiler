@@ -11,8 +11,9 @@ int lbp(const Token& token) noexcept;
 struct Parser 
 {
     SourceFile source_file_;
-    Lexer lexer_;
     ParseDiagnostics diagnostics_;
+    Lexer lexer_;
+    Token prev_token_, cur_token_;
     AST ast_;
 
     Parser(SourceFile& source_file) noexcept;
@@ -23,7 +24,6 @@ struct Parser
     Parser& operator=(Parser&&) = delete;
     ~Parser() = default;
 
-    const Token& cur_token() const noexcept;
     const Token next_token() const noexcept;
     void eat_token() noexcept;
     bool is_cur_token(const TokenType token_type) const noexcept;
@@ -31,7 +31,7 @@ struct Parser
     void panic(const ParseError& error) noexcept;
     std::expected<std::string_view, ParseError> match(TokenType token_type) noexcept;
     
-    auto expect(std::same_as<TokenType> auto... token_types)
+    auto expect(std::same_as<TokenType> auto... token_types) noexcept
     {
         return std::tuple{ match(token_types)... };
     }
