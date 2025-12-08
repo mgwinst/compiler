@@ -1,28 +1,6 @@
-int a;;;
-
-
-int b = a;
-
-const int c;
-const int d = c;
-
-struct const Foo
+fn some_func(int a, int b) -> int
 {
-    float32 x;
-    float64 y;
+    a + b + c == a + b + c
 }
 
-struct Foo x;
-const struct Foo y;
-struct Foo z = x;
-
-fn add(float a, float b) -> float
-{
-    
-}
-
-int x;;
-
-
-
-
+int x;

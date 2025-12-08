@@ -6,15 +6,15 @@ fn f(const int a, const int b) -> int
     return d;
 }
 
-fn main() -> int
-{
-    int ans = add(3, 4);
-}
-
 struct Point
 {
     int x;
     int y;
+}
+
+fn main() -> int
+{
+    int ans = add(3, 4);
 }
 
 CompilationUnitDecl (main.cpp)
@@ -33,12 +33,13 @@ CompilationUnitDecl (main.cpp)
         ReturnStmt
             ReferenceExpr ['d', int]
 
+    StructDef ['Point']
+        FieldDecl ['x', int]
+        FieldDecl ['y', int]
+
     FuncDecl 'main' () -> (int)
         CompoundStmt
             VarDecl ['ans', int]
                 CallExpr ['f', int]
                     IntLit [3]
                     IntLit [4]
-    StructDef ['Point']
-        FieldDecl ['x', int]
-        FieldDecl ['y', int]

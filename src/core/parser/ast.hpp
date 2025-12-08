@@ -93,6 +93,10 @@ struct CompoundStmt
         decls_{ std::forward<decltype(decls)>(decls) },
         exprs_{ std::forward<decltype(exprs)>(exprs) },
         return_stmt_{ return_stmt } {}
+
+    CompoundStmt(Contiguous auto&& exprs, std::optional<ExprRef> return_stmt = std::nullopt) noexcept :
+        exprs_{ std::forward<decltype(exprs)>(exprs) },
+        return_stmt_{ return_stmt } {}
 };
 
 struct ReturnStmt

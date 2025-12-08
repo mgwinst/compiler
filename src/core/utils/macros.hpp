@@ -29,3 +29,15 @@
         auto [rparen] = expect(TokenType::RPAREN); \
         if (!rparen) return std::unexpected{ SyntaxError{prev_token_, "missing ')'"} }; \
     } while (0)
+
+#define EXPECT_LBRACKET() \
+    do { \
+        auto [lbracket] = expect(TokenType::LBRACKET); \
+        if (!lbracket) return std::unexpected{ SyntaxError{prev_token_, "missing '['"} }; \
+    } while (0)
+
+#define EXPECT_RBRACKET() \
+    do { \
+        auto [rbracket] = expect(TokenType::RBRACKET); \
+        if (!rbracket) return std::unexpected{ SyntaxError{prev_token_, "missing ']'"} }; \
+    } while (0)

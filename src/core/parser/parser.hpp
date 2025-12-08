@@ -49,8 +49,9 @@ struct Parser
     std::expected<DeclRef, ParseError> parse_struct_decl(Constness constness) noexcept;
     std::expected<DeclRef, ParseError> parse_struct_def() noexcept;
 
-    std::expected<ExprRef, ParseError> nud(const Token& token);
-    std::expected<ExprRef, ParseError> led(const Token& token, const ExprRef left);
+    std::expected<ExprRef, ParseError> nud(const Token token);
+    std::expected<ExprRef, ParseError> led(const Token token, const ExprRef left);
     std::expected<ExprRef, ParseError> parse_expr(int min_prec = 0) noexcept;
+    std::expected<ExprRef, ParseError> parse_expr_main() noexcept;
     std::expected<ExprRef, ParseError> parse_compound_stmt() noexcept;
 };

@@ -25,38 +25,37 @@ std::string AST::decl_to_str(DeclRef ref, std::string indent) const noexcept
 {
     return std::visit(Overload{
         [this, &indent] (const CompilationUnitDecl& node) {
-            std::string str{};
+            std::string decls_str{};
             for (size_t i = 0; i < node.decls_.size(); i++) {
-                str += decl_to_str(node.decls_[i], (indent + "    "));
+                decls_str += decl_to_str(node.decls_[i], (indent + "    "));
                 if (i != node.decls_.size() - 1) {
-                    str += '\n';
+                    decls_str += "\n\n";
                 }
             }
-            return indent + std::format("CompilationUnitDecl ({})\n{}", node.name_, str);
+            return indent + std::format("CompilationUnitDecl ({})\n{}", node.name_, decls_str);
         },
 
         [this, &indent] (const VarDecl& node) {
-            std::string str{};
             auto decl_type = (node.constness_ == Constness::CONST ? "ConstVarDecl" : "VarDecl");
 
             if (!node.init_) {
                 return indent + std::format("{} ['{}', {}]", decl_type, node.name_, node.type_);
             } else {
-                std::string init_values{};
+                std::string init_values_str{};
 
                 if (std::holds_alternative<ExprRef>(*node.init_)) {
                     auto init = std::get<ExprRef>(*node.init_);
-                    init_values += expr_to_str(init, indent + "    ");
+                    init_values_str += expr_to_str(init, indent + "    ");
                 } else {
                     auto& init = std::get<std::vector<ExprRef>>(*node.init_);
                     for (size_t i = 0; i < init.size(); i++) {
-                        init_values += expr_to_str(init[i], indent + "    ");
+                        init_values_str += expr_to_str(init[i], indent + "    ");
                         if (i != init.size() - 1)
-                            init_values += '\n';
+                            init_values_str += '\n';
                     }
                 }
 
-                return indent + std::format("{} ['{}', {}]\n{}", decl_type, node.name_, node.type_, init_values);
+                return indent + std::format("{} ['{}', {}]\n{}", decl_type, node.name_, node.type_, init_values_str);
             }
         },
 
@@ -66,32 +65,42 @@ std::string AST::decl_to_str(DeclRef ref, std::string indent) const noexcept
         },
         
         [this, &indent] (const FuncDecl& node) {
-            std::string param_list{};
-            for (size_t i = 0; i < node.params_.size(); i++) {
-                param_list += std::get<ParamDecl>(decls_[node.params_[i]]).type_;
-                if (i != node.params_.size() - 1)
-                    param_list += ", ";
-            }
-
-            std::string param_decls{};
-            for (size_t i = 0; i < node.params_.size(); i++) {
-                param_decls += decl_to_str(node.params_[i], indent + "    ");
-                if (i != node.params_.size() - 1)
-                    param_decls += '\n';
-            }
+            std::string param_list_str{};
+            std::string param_decls_str{};
             
-            return indent + std::format("FuncDecl '{}' ({}) -> ({})\n{}", node.name_, param_list, node.return_type_, param_decls);
+            if (node.params_.size() > 0) {
+                for (size_t i = 0; i < node.params_.size(); i++) {
+                    param_list_str += std::get<ParamDecl>(decls_[node.params_[i]]).type_;
+                    param_decls_str += decl_to_str(node.params_[i], indent + "    ");
+                    if (i != node.params_.size() - 1) {
+                        param_list_str += ", ";
+                        param_decls_str += '\n';
+                    }
+                }
+
+                return indent + std::format("FuncDecl '{}' ({}) -> ({})\n{}\n{}", 
+                    node.name_, 
+                    param_list_str, 
+                    node.return_type_, 
+                    param_decls_str, 
+                    expr_to_str(node.body_, indent + "    "));
+            } 
+
+            return indent + std::format("FuncDecl '{}' () -> ({})\n{}",
+                node.name_, 
+                node.return_type_, 
+                expr_to_str(node.body_, indent + "    "));
         },
 
         [this, &indent] (const StructDef& node) {
-            std::string field_list;
+            std::string field_list_str;
             for (size_t i = 0; i < node.fields_.size(); i++) {
-                field_list += decl_to_str(node.fields_[i], indent + "    ");
+                field_list_str += decl_to_str(node.fields_[i], indent + "    ");
                 if (i != node.fields_.size() - 1)
-                    field_list += '\n';
+                    field_list_str += '\n';
             }
             
-            return indent + std::format("StructDef ['{}']\n{}", node.type_, field_list);
+            return indent + std::format("StructDef ['{}']\n{}", node.type_, field_list_str);
         }
     }, decls_[ref]);
 }
@@ -99,12 +108,26 @@ std::string AST::decl_to_str(DeclRef ref, std::string indent) const noexcept
 std::string AST::expr_to_str(ExprRef ref, std::string indent) const noexcept
 {
     return std::visit(Overload{
-        [&indent](const CompoundStmt&)       { return indent + std::format(""); },
+        [this, &indent](const CompoundStmt& node) { 
+            std::string expr_strs;
+            for (size_t i = 0; i < node.exprs_.size(); i++) {
+                expr_strs += expr_to_str(node.exprs_[i], indent + "    ");
+                if (i != node.exprs_.size() - 1)
+                    expr_strs += '\n';
+            }           
+
+            return indent + std::format("CompoundStatement\n{}", expr_strs); 
+        },
+
         [&indent](const ReturnStmt&)         { return indent + std::format(""); },
         [&indent](const IfStmt&)             { return indent + std::format(""); },
         [&indent](const WhileStmt&)          { return indent + std::format(""); },
         [&indent](const ForStmt&)            { return indent + std::format(""); },
-        [&indent](const IntegerLiteralExpr&) { return indent + std::format(""); },
+
+        [&indent](const IntegerLiteralExpr& node) {
+            return indent + std::format("IntLiteral [{}]", node.value_); 
+        },
+
         [&indent](const FloatLiteralExpr&)   { return indent + std::format(""); },
         [&indent](const CharLiteralExpr&)    { return indent + std::format(""); },
         [&indent](const StringLiteralExpr&)  { return indent + std::format(""); },
@@ -114,8 +137,8 @@ std::string AST::expr_to_str(ExprRef ref, std::string indent) const noexcept
         [this, &indent](const BinaryExpr& node) {
             return indent + std::format("BinOp ['{}']\n{}\n{}\n",
                 node.op_,
-                expr_to_str(node.left_, indent + " "),
-                expr_to_str(node.right_, indent + " "));
+                expr_to_str(node.left_, indent + "    "),
+                expr_to_str(node.right_, indent + "    "));
         },
 
         [&indent](const ReferenceExpr& node) {

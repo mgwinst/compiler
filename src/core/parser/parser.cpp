@@ -2,12 +2,14 @@
 #include <utility>
 #include <expected>
 #include <map>
+#include <charconv>
 
 #include "lexer/token.hpp"
 #include "lexer/lexer.hpp"
 #include "parser/parser.hpp"
 #include "parser/ast.hpp"
 #include "utils/macros.hpp"
+#include "utils/string_utils.hpp"
 
 Parser::Parser(SourceFile& source_file) noexcept :
     source_file_{ std::move(source_file) },
@@ -143,12 +145,31 @@ std::expected<DeclRef, ParseError> Parser::parse_decl() noexcept
     }
 }
 
+// must now accept var = {...}, do this later
 std::expected<DeclRef, ParseError> Parser::parse_var_decl(Constness constness) noexcept
 {
     auto [type, name] = expect(TokenType::TYPE, TokenType::IDENTIFIER);
 
     if (!type) return std::unexpected{ type.error() };
     if (!name) return std::unexpected{ name.error() };
+
+    //std::println("{} {}", *type, *name);
+
+    std::string full_type{ *type };
+
+    if (is_cur_token(TokenType::LBRACKET)) {       
+        eat_token();
+
+        if (is_cur_token(TokenType::NUMERIC_LITERAL)) {
+            auto size = cur_token_.lexeme_;
+            full_type = full_type + "[" + std::string{ size } + "]";
+            eat_token();
+            EXPECT_RBRACKET();
+        } else {
+            EXPECT_RBRACKET();
+            full_type = full_type + "[]";
+        }
+    }
 
     if (is_cur_token(TokenType::EQUAL)) {
         eat_token();
@@ -158,11 +179,11 @@ std::expected<DeclRef, ParseError> Parser::parse_var_decl(Constness constness) n
 
         EXPECT_SEMICOLON();
 
-        return ast_.emplace_decl<VarDecl>(constness, std::string{ *type }, std::string{ *name }, *expr);
+        return ast_.emplace_decl<VarDecl>(constness, std::move(full_type), std::string{ *name }, *expr);
     } else {
         EXPECT_SEMICOLON();
 
-        return ast_.emplace_decl<VarDecl>(constness, std::string{ *type }, std::string{ *name });
+        return ast_.emplace_decl<VarDecl>(constness, std::move(full_type), std::string{ *name });
     }
 }
 
@@ -212,8 +233,6 @@ std::expected<DeclRef, ParseError> Parser::parse_func_decl(Constness constness) 
 
     auto body = parse_compound_stmt();
     if (!body) return std::unexpected{ body.error() };
-
-    EXPECT_RBRACE();
 
     return ast_.emplace_decl<FuncDecl>(constness, std::string{ *name }, std::string{ *return_type }, std::move(params), *body);
 }
@@ -411,37 +430,67 @@ int lbp(const Token& token) noexcept
     }
 }
 
-std::expected<ExprRef, ParseError> Parser::nud(const Token& token)
+std::expected<ExprRef, ParseError> Parser::nud(const Token token)
 {
     switch (token.type_) {
         case TokenType::IDENTIFIER: {
-            return ast_.emplace_expr<ReferenceExpr>(std::string{token.lexeme_});
+            return ast_.emplace_expr<ReferenceExpr>(std::string{ token.lexeme_ });
         }
-        case TokenType::RBRACE: {
+
+        case TokenType::NUMERIC_LITERAL: {
+            auto value = sv_to_numeric<int64_t>(token.lexeme_);
+            if (!value) return std::unexpected{ cur_token_ };
+
+            return ast_.emplace_expr<IntegerLiteralExpr>(*value);
+        }
+
+        case TokenType::LPAREN: {
+            
             break;
         }
+
         default:
             break;
     }
-
-    return -1;
 }
 
-std::expected<ExprRef, ParseError> Parser::led(const Token& token, const ExprRef left)
+std::expected<ExprRef, ParseError> Parser::led(const Token token, const ExprRef left)
 {
+
     switch (token.type_) {
         case TokenType::SEMICOLON: {
 
         }
-        case TokenType::EQUAL: {
-            eat_token();
-            return ast_.emplace_expr<BinaryExpr>(token.lexeme_, left, *parse_expr(lbp(token)));
-        }
-        default:
-            break;
-    }
 
-    return -1;
+        case TokenType::EQUAL:
+        case TokenType::PLUS:
+        case TokenType::MINUS:
+        case TokenType::STAR:
+        case TokenType::SLASH:
+        case TokenType::PERCENT:
+        case TokenType::GREATER:
+        case TokenType::LESS:
+        case TokenType::AMPERSAND:
+        case TokenType::PIPE:
+        case TokenType::BANG_EQUAL:
+        case TokenType::EQUAL_EQUAL:
+        case TokenType::PLUS_EQUAL:
+        case TokenType::MINUS_EQUAL:
+        case TokenType::STAR_EQUAL:
+        case TokenType::SLASH_EQUAL:
+        case TokenType::PERCENT_EQUAL:
+        case TokenType::GREATER_GREATER:
+        case TokenType::LESS_LESS:
+        case TokenType::AMPERSAND_AMPERSAND:
+        case TokenType::PIPE_PIPE: {
+            eat_token();
+            return ast_.emplace_expr<BinaryExpr>(std::string{ token.lexeme_ }, left, *parse_expr(lbp(token)));
+        }
+
+        default:
+            return std::unexpected{ token };
+
+    }
 }
 
 std::expected<ExprRef, ParseError> Parser::parse_expr(int rbp) noexcept
@@ -450,9 +499,6 @@ std::expected<ExprRef, ParseError> Parser::parse_expr(int rbp) noexcept
     
     eat_token();
 
-    if (is_cur_token(TokenType::COMMA))
-        return left;
-
     while (rbp < lbp(cur_token_)) {
         left = led(cur_token_, *left);
     }
@@ -460,15 +506,45 @@ std::expected<ExprRef, ParseError> Parser::parse_expr(int rbp) noexcept
     return left;
 }
 
+std::expected<ExprRef, ParseError> Parser::parse_expr_main() noexcept
+{
+    auto expr = parse_expr();
+    if (!expr) return std::unexpected{ expr.error() };
+
+    EXPECT_SEMICOLON();
+
+    return *expr;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // compoundstmt is most general node type
 std::expected<ExprRef, ParseError> Parser::parse_compound_stmt() noexcept
 {
-    std::vector<DeclRef> decls;
+    // std::vector<DeclRef> decls;
     std::vector<ExprRef> exprs;
 
     while (!is_cur_token(TokenType::RBRACE)) {
+        auto expr = parse_expr();
+        if (!expr) return std::unexpected{ expr.error() };
 
+        exprs.push_back(*expr);
     }
 
-    return ast_.emplace_expr<CompoundStmt>(std::move(decls), std::move(exprs));
+    EXPECT_RBRACE();
+
+    return ast_.emplace_expr<CompoundStmt>(std::move(exprs));
 }
