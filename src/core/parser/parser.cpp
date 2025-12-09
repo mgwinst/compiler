@@ -174,10 +174,8 @@ std::expected<DeclRef, ParseError> Parser::parse_var_decl(Constness constness) n
     if (is_cur_token(TokenType::EQUAL)) {
         eat_token();
 
-        auto expr = parse_expr();
+        auto expr = parse_expr_main();
         if (!expr) return std::unexpected{ expr.error() };
-
-        EXPECT_SEMICOLON();
 
         return ast_.emplace_decl<VarDecl>(constness, std::move(full_type), std::string{ *name }, *expr);
     } else {
@@ -356,10 +354,9 @@ std::expected<DeclRef, ParseError> Parser::parse_struct_decl(Constness constness
         case TokenType::EQUAL: {
             eat_token();
 
-            auto expr = parse_expr();
+            auto expr = parse_expr_main();
             if (!expr) return std::unexpected{ expr.error() };
 
-            EXPECT_SEMICOLON();
             return ast_.emplace_decl<VarDecl>(constness, std::string{ *type }, std::string{ *name }, *expr);
         }
 
@@ -386,11 +383,10 @@ std::expected<DeclRef, ParseError> Parser::parse_struct_decl(Constness constness
         case TokenType::LPAREN: {
             eat_token();
 
-            auto expr = parse_expr();
+            auto expr = parse_expr_main();
             if (!expr) return std::unexpected{ expr.error() };
 
             // EXPECT_RPAREN();
-            EXPECT_SEMICOLON();
             return ast_.emplace_decl<VarDecl>(constness, std::string{ *type }, std::string{ *name }, *expr);
         }
 
@@ -538,7 +534,7 @@ std::expected<ExprRef, ParseError> Parser::parse_compound_stmt() noexcept
     std::vector<ExprRef> exprs;
 
     while (!is_cur_token(TokenType::RBRACE)) {
-        auto expr = parse_expr();
+        auto expr = parse_expr_main();
         if (!expr) return std::unexpected{ expr.error() };
 
         exprs.push_back(*expr);

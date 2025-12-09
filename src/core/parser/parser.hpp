@@ -51,7 +51,7 @@ struct Parser
 
     std::expected<ExprRef, ParseError> nud(const Token token);
     std::expected<ExprRef, ParseError> led(const Token token, const ExprRef left);
-    std::expected<ExprRef, ParseError> parse_expr(int min_prec = 0) noexcept;
-    std::expected<ExprRef, ParseError> parse_expr_main() noexcept;
+    std::expected<ExprRef, ParseError> parse_expr(int min_prec = 0) noexcept; // when you expect multiple exprs (x, y, z, ...)
+    std::expected<ExprRef, ParseError> parse_expr_main() noexcept; // when you expect a single expression
     std::expected<ExprRef, ParseError> parse_compound_stmt() noexcept;
 };

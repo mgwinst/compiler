@@ -1,6 +1,7 @@
-fn some_func(int a, int b) -> int
-{
-    a + b + c == a + b + c
-}
-
 int x;
+
+int& ref = x;
+
+int* ptr = &x;
+
+int y = *ptr;

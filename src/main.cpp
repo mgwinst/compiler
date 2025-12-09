@@ -31,7 +31,7 @@ void test_parser()
 
 int main(int argc, char** argv)
 {
-    test_lexer();
-    std::println();
+    // test_lexer();
+    // std::println();
     test_parser();
 }

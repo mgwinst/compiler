@@ -21,6 +21,7 @@ enum class TokenType : uint16_t
     KEYWORD_FOR,
     KEYWORD_RETURN,
     KEYWORD_CONST,
+    KEYWORD_MUT,
     KEYWORD_TYPEDEF,
     KEYWORD_STATIC,
     KEYWORD_TRUE,
@@ -89,10 +90,12 @@ inline const std::unordered_map<std::string_view, TokenType> keywords {
     {"for", TokenType::KEYWORD_FOR},
     {"return", TokenType::KEYWORD_RETURN},
     {"const", TokenType::KEYWORD_CONST},
+    {"mut", TokenType::KEYWORD_MUT},
     {"typedef", TokenType::KEYWORD_TYPEDEF},
     {"static", TokenType::KEYWORD_STATIC},
     {"true",     TokenType::KEYWORD_TRUE},
-    {"false",    TokenType::KEYWORD_FALSE}
+    {"false",    TokenType::KEYWORD_FALSE},
+    {"lambda",    TokenType::KEYWORD_LAMBDA}
 };
 
 inline const std::unordered_map<char, TokenType> single_symbol_map {
