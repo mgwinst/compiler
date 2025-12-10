@@ -184,11 +184,13 @@ struct BooleanExpr
 struct UnaryExpr
 {
     std::string op_;
-    ExprRef arg_;
+    ExprRef operand_;
+    bool is_postfix_ = false;
 
-    UnaryExpr(StringLike auto&& op, ExprRef arg) noexcept :
+    UnaryExpr(StringLike auto&& op, ExprRef operand, bool is_postfix = false) noexcept :
         op_{ std::forward<decltype(op)>(op) },
-        arg_{ arg } {}
+        operand_{ operand },
+        is_postfix_{ is_postfix } {}
 };
 
 struct BinaryExpr
@@ -210,12 +212,12 @@ struct ReferenceExpr
         name_{ std::forward<decltype(name)>(name) } {}
 };
 
-struct IndexExpr
+struct ArraySubscriptExpr
 {
     ExprRef base_;
     ExprRef index_;
 
-    IndexExpr(ExprRef base, ExprRef index) noexcept :
+    ArraySubscriptExpr(ExprRef base, ExprRef index) noexcept :
         base_{ base },
         index_{ index } {}
 };
@@ -253,8 +255,9 @@ using Expr = std::variant<
     BinaryExpr,
     // CompoundAssignExpr += -= ... (clang AST has a special node for this)
     ReferenceExpr,
-    IndexExpr,
+    ArraySubscriptExpr,
     CallExpr
+    // ExplicitCastExpr,
     >;
 
 struct AST

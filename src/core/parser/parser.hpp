@@ -7,8 +7,6 @@
 #include "parser/ast.hpp"
 #include "parser/error.hpp"
 
-int lbp(const Token& token) noexcept;
-
 struct Parser 
 {
     SourceFile source_file_;
@@ -30,8 +28,9 @@ struct Parser
     bool is_cur_token(const TokenType token_type) const noexcept;
     bool is_next_token(const TokenType token_type) const noexcept;
     void panic(const ParseError& error) noexcept;
-    std::expected<std::string_view, ParseError> match(TokenType token_type) noexcept;
     
+    std::expected<std::string_view, ParseError> match(TokenType token_type) noexcept;
+
     auto expect(std::same_as<TokenType> auto... token_types) noexcept
     {
         return std::tuple{ match(token_types)... };
@@ -42,16 +41,12 @@ struct Parser
     std::expected<DeclRef, ParseError> parse_field() noexcept;
     std::expected<DeclRef, ParseError> parse_var_decl(Constness constness) noexcept;
     std::expected<DeclRef, ParseError> parse_param_decl() noexcept;
-
     std::expected<DeclRef, ParseError> parse_func_decl(Constness constness) noexcept;
-    
     std::expected<DeclRef, ParseError> parse_struct(Constness constness) noexcept;
     std::expected<DeclRef, ParseError> parse_struct_decl(Constness constness) noexcept;
     std::expected<DeclRef, ParseError> parse_struct_def() noexcept;
-
     std::expected<ExprRef, ParseError> nud(const Token token);
     std::expected<ExprRef, ParseError> led(const Token token, const ExprRef left);
-    std::expected<ExprRef, ParseError> parse_expr(int min_prec = 0) noexcept; // when you expect multiple exprs (x, y, z, ...)
-    std::expected<ExprRef, ParseError> parse_expr_main() noexcept; // when you expect a single expression
+    std::expected<ExprRef, ParseError> parse_expr(int min_prec = 0) noexcept;
     std::expected<ExprRef, ParseError> parse_compound_stmt() noexcept;
 };

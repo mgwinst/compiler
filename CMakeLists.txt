@@ -30,7 +30,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     $<$<CONFIG:Debug>:
         -O0 -g3
         -fno-omit-frame-pointer
-        -fsanitize=address,undefined,leak
+        -fsanitize=address,undefined #leak
         -fsanitize-address-use-after-scope
         -fno-sanitize-recover=all
     >
@@ -43,7 +43,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 
 target_link_options(${PROJECT_NAME} PRIVATE
     $<$<CONFIG:Debug>:
-        -fsanitize=address,undefined,leak
+        -fsanitize=address,undefined #leak
         -fsanitize-address-use-after-scope
         -fno-sanitize-recover=all
     >

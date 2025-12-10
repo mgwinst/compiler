@@ -26,9 +26,10 @@ enum class TokenType : uint16_t
     KEYWORD_STATIC,
     KEYWORD_TRUE,
     KEYWORD_FALSE,
+    KEYWORD_LAMBDA,
+    KEYWORD_NULL,
     KEYWORD_SIZEOF,
     KEYWORD_ALIGNOF,
-    KEYWORD_LAMBDA,
     LPAREN,
     RPAREN,
     LBRACKET,
@@ -54,6 +55,7 @@ enum class TokenType : uint16_t
     DOT,
     PIPE,
     ARROW,
+    TILDE,
     EQUAL_EQUAL,
     BANG_EQUAL,
     PLUS_EQUAL,
@@ -67,6 +69,7 @@ enum class TokenType : uint16_t
     MINUS_MINUS,
     LESS_LESS,
     GREATER_GREATER,
+    STAR_STAR,
     AMPERSAND_AMPERSAND,
     PIPE_PIPE,
     SLASH_SLASH,
@@ -78,24 +81,27 @@ inline const std::unordered_set<std::string_view> lang_types {
     "int", "int8", "int16", "int32", "int64",
     "uint", "uint8", "uint16", "uint32", "uint64",
     "float", "float16", "float32", "float64",
-    "char", "string", "bool", "void", "union",
+    "char", "string", "bool", "void", "union", "enum",
 };
 
 inline const std::unordered_map<std::string_view, TokenType> keywords {
-    {"fn", TokenType::KEYWORD_FUNCTION},
-    {"struct", TokenType::KEYWORD_STRUCT},
-    {"if", TokenType::KEYWORD_IF},
-    {"else", TokenType::KEYWORD_ELSE},
-    {"while", TokenType::KEYWORD_WHILE},
-    {"for", TokenType::KEYWORD_FOR},
-    {"return", TokenType::KEYWORD_RETURN},
-    {"const", TokenType::KEYWORD_CONST},
-    {"mut", TokenType::KEYWORD_MUT},
+    {"fn",      TokenType::KEYWORD_FUNCTION},
+    {"struct",  TokenType::KEYWORD_STRUCT},
+    {"if",      TokenType::KEYWORD_IF},
+    {"else",    TokenType::KEYWORD_ELSE},
+    {"while",   TokenType::KEYWORD_WHILE},
+    {"for",     TokenType::KEYWORD_FOR},
+    {"return",  TokenType::KEYWORD_RETURN},
+    {"const",   TokenType::KEYWORD_CONST},
+    {"mut",     TokenType::KEYWORD_MUT},
     {"typedef", TokenType::KEYWORD_TYPEDEF},
-    {"static", TokenType::KEYWORD_STATIC},
-    {"true",     TokenType::KEYWORD_TRUE},
-    {"false",    TokenType::KEYWORD_FALSE},
-    {"lambda",    TokenType::KEYWORD_LAMBDA}
+    {"static",  TokenType::KEYWORD_STATIC},
+    {"true",    TokenType::KEYWORD_TRUE},
+    {"false",   TokenType::KEYWORD_FALSE},
+    {"lambda",  TokenType::KEYWORD_LAMBDA},
+    {"null",    TokenType::KEYWORD_NULL},
+    {"sizeof",  TokenType::KEYWORD_SIZEOF},
+    {"alignof", TokenType::KEYWORD_ALIGNOF},
 };
 
 inline const std::unordered_map<char, TokenType> single_symbol_map {
@@ -123,6 +129,7 @@ inline const std::unordered_map<char, TokenType> single_symbol_map {
     {'!', TokenType::BANG},
     {'|', TokenType::PIPE},
     {'^', TokenType::CARROT},
+    {'~', TokenType::TILDE}
 };
 
 inline const std::unordered_map<std::string_view, TokenType> double_symbol_map {
@@ -139,48 +146,11 @@ inline const std::unordered_map<std::string_view, TokenType> double_symbol_map {
     {"--", TokenType::MINUS_MINUS},
     {"<<", TokenType::LESS_LESS},
     {">>", TokenType::GREATER_GREATER},
+    {"**", TokenType::STAR_STAR},
     {"&&", TokenType::AMPERSAND_AMPERSAND},
     {"||", TokenType::PIPE_PIPE},
     {"->", TokenType::ARROW},
     {"//", TokenType::SLASH_SLASH},
-};
-
-inline const std::unordered_map<TokenType, int> token_prec = {
-    {TokenType::EQUAL,          10},  // = += -= *= /= %=
-    {TokenType::PLUS_EQUAL,     10},
-    {TokenType::MINUS_EQUAL,    10},
-    {TokenType::STAR_EQUAL,     10},
-    {TokenType::SLASH_EQUAL,    10},
-    {TokenType::PERCENT_EQUAL,  10},
-
-    {TokenType::PIPE_PIPE,      20},       // ||
-    {TokenType::AMPERSAND_AMPERSAND, 30},  // &&
-    {TokenType::PIPE,           40},
-    {TokenType::CARROT,         50},
-    {TokenType::AMPERSAND,      60},
-
-    {TokenType::EQUAL_EQUAL,    70},  // == !=
-    {TokenType::BANG_EQUAL,     70},
-
-    {TokenType::LESS,           80},  // < > <= >=
-    {TokenType::GREATER,        80},
-    {TokenType::LESS_EQUAL,     80},
-    {TokenType::GREATER_EQUAL,  80},
-
-    {TokenType::LESS_LESS,      90},  // << >>
-    {TokenType::GREATER_GREATER,90},
-
-    {TokenType::PLUS,           100},  // + -
-    {TokenType::MINUS,          100},
-
-    {TokenType::STAR,           110},  // * / %
-    {TokenType::SLASH,          110},
-    {TokenType::PERCENT,        110},
-
-    // postfix ops
-    {TokenType::LPAREN,         120}, // function call
-    {TokenType::LBRACKET,       120}, // array indexing
-    {TokenType::DOT,            120}, // member access (future)
 };
 
 struct Token {

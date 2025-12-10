@@ -1,7 +1,7 @@
-int x;
-
 int& ref = x;
 
-int* ptr = &x;
+struct Foo& x;
 
-int y = *ptr;
+int x = arr[3];
+
+int z = func(x+y, x-y);
