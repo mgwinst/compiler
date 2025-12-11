@@ -673,11 +673,18 @@ std::expected<ExprRef, ParseError> Parser::led(const Token token, const ExprRef 
             return ast_.emplace_expr<ArraySubscriptExpr>(left, *index);
         }
 
+        case TokenType::DOT:
+        case TokenType::ARROW: {
+            auto member = parse_expr();
+            if (!member) return std::unexpected{ member.error() };
+
+            ret
+        }
+
         default:
             return std::unexpected{ token };
     }
 }
-
 
 std::expected<ExprRef, ParseError> Parser::parse_expr(int min_prec) noexcept
 {
@@ -697,11 +704,3 @@ std::expected<ExprRef, ParseError> Parser::parse_expr(int min_prec) noexcept
 
     return left;
 }
-
-
-
-
-
-
-
-

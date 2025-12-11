@@ -2,11 +2,8 @@
 
 #include <vector>
 #include <variant>
-#include <utility>
 #include <optional>
-#include <format>
-#include <print>
-#include <type_traits>
+#include <utility>
 
 #include "utils/utils.hpp"
 #include "utils/concepts.hpp"
@@ -81,7 +78,7 @@ struct StructDef
         fields_{ std::forward<decltype(fields)>(fields) } {}
 };
 
-// ************** STATEMENTS **************
+// ************** EXPRESSIONS **************
 
 struct CompoundStmt
 {
@@ -139,8 +136,6 @@ struct ForStmt
         body_{ body } {}
 };
 
-// ************** EXPRESSIONS **************
-
 struct IntegerLiteralExpr
 {
     int32_t value_;
@@ -173,11 +168,11 @@ struct StringLiteralExpr
         value_{ std::forward<decltype(value)>(value) } {}
 };
 
-struct BooleanExpr
+struct BooleanLiteralExpr
 {
     bool value_;
 
-    BooleanExpr(bool value) noexcept :
+    BooleanLiteralExpr(bool value) noexcept :
         value_{ value } {}
 };
 
@@ -212,16 +207,6 @@ struct ReferenceExpr
         name_{ std::forward<decltype(name)>(name) } {}
 };
 
-struct ArraySubscriptExpr
-{
-    ExprRef base_;
-    ExprRef index_;
-
-    ArraySubscriptExpr(ExprRef base, ExprRef index) noexcept :
-        base_{ base },
-        index_{ index } {}
-};
-
 struct CallExpr
 {
     ExprRef callee_;
@@ -232,6 +217,60 @@ struct CallExpr
         args_{ std::forward<decltype(args)>(args) } {}
 };
 
+struct MemberExpr
+{
+    // std::string name_; .x / ->x
+    ExprRef base_;
+    ExprRef member_;
+    
+    MemberExpr(ExprRef base, ExprRef member) : 
+        base_{ base },
+        member_{ member } {}
+};
+
+struct ArraySubscriptExpr
+{
+    ExprRef base_;
+    ExprRef index_;
+
+    ArraySubscriptExpr(ExprRef base, ExprRef index) noexcept :
+        base_{ base },
+        index_{ index } {}
+};
+
+struct InitListExpr
+{
+    std::vector<ExprRef> init_values_;
+    
+    InitListExpr(Contiguous auto&& init_values) :
+        init_values_{ std::forward<decltype(init_values)(init_values) } {}
+};
+
+struct ExplicitCastExpr
+{
+
+};
+
+struct ImplicitCastExpr
+{
+
+};
+
+struct NewExpr
+{
+
+};
+
+struct ConstructExpr
+{
+
+};
+
+struct DestructExpr
+{
+
+};
+
 using Decl = std::variant<
     CompilationUnitDecl,
     VarDecl,
@@ -240,24 +279,49 @@ using Decl = std::variant<
     StructDef
     >;
 
-using Expr = std::variant<
+using Stmt = std::variant<
     CompoundStmt,
     ReturnStmt,
-    IfStmt,
-    WhileStmt,
-    ForStmt,
+    IfStmt, 
+    WhileStmt, 
+    ForStmt
+    >;
+
+using LiteralExpr = std::variant<
     IntegerLiteralExpr,
     FloatLiteralExpr,
     CharLiteralExpr,
     StringLiteralExpr,
-    BooleanExpr,
+    BooleanLiteralExpr
+    >;
+
+using PrimaryExpr = std::variant<
+    LiteralExpr,
+    ReferenceExpr,
+    CallExpr,
+    MemberExpr,
+    ArraySubscriptExpr,
+    InitListExpr
+    >;
+
+using CastExpr = std::variant<
+    ExplicitCastExpr, 
+    ImplicitCastExpr
+    >;
+
+using LifetimeExpr = std::variant<
+    NewExpr, 
+    ConstructExpr, 
+    DestructExpr
+    >;
+
+using Expr = std::variant<
+    Stmt,
+    PrimaryExpr,
     UnaryExpr,
     BinaryExpr,
-    // CompoundAssignExpr += -= ... (clang AST has a special node for this)
-    ReferenceExpr,
-    ArraySubscriptExpr,
-    CallExpr
-    // ExplicitCastExpr,
+    CastExpr,
+    LifetimeExpr
     >;
 
 struct AST

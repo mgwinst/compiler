@@ -119,32 +119,32 @@ std::string AST::expr_to_str(ExprRef ref, std::string indent) const noexcept
             return indent + std::format("CompoundStatement\n{}", expr_strs); 
         },
 
-        [&indent](const ReturnStmt&)         { return indent + std::format(""); },
-        [&indent](const IfStmt&)             { return indent + std::format(""); },
-        [&indent](const WhileStmt&)          { return indent + std::format(""); },
-        [&indent](const ForStmt&)            { return indent + std::format(""); },
+        [&indent] (const ReturnStmt&)         { return indent + std::format(""); },
+        [&indent] (const IfStmt&)             { return indent + std::format(""); },
+        [&indent] (const WhileStmt&)          { return indent + std::format(""); },
+        [&indent] (const ForStmt&)            { return indent + std::format(""); },
 
-        [&indent](const IntegerLiteralExpr& node) {
+        [&indent] (const IntegerLiteralExpr& node) {
             return indent + std::format("IntLiteral [{}]", node.value_); 
         },
 
-        [&indent](const FloatLiteralExpr node) {
+        [&indent] (const FloatLiteralExpr node) {
             return indent + std::format("FloatLiteral [{}]", node.value_); 
         },
 
-        [&indent](const CharLiteralExpr& node) {
+        [&indent] (const CharLiteralExpr& node) {
             return indent + std::format("CharLiteral [{}]", node.value_); 
         },
 
-        [&indent](const StringLiteralExpr node) {
+        [&indent] (const StringLiteralExpr node) {
             return indent + std::format("StrLiteral [{}]", node.value_); 
         },
 
-        [&indent](const BooleanExpr node) {
+        [&indent] (const BooleanLiteralExpr node) {
             return indent + std::format("BoolLiteral [{}]", node.value_); 
         },
 
-        [this, &indent](const UnaryExpr& node) { 
+        [this, &indent] (const UnaryExpr& node) { 
             if (node.is_postfix_) {
                 return indent + std::format("PostfixUnaryOp ['{}']\n{}", node.op_, expr_to_str(node.operand_, indent + "    "));
             } else {
@@ -152,22 +152,24 @@ std::string AST::expr_to_str(ExprRef ref, std::string indent) const noexcept
             }
         },
 
-        [this, &indent](const BinaryExpr& node) {
+        [this, &indent] (const BinaryExpr& node) {
             return indent + std::format("BinOp ['{}']\n{}\n{}",
                 node.op_,
                 expr_to_str(node.left_, indent + "    "),
                 expr_to_str(node.right_, indent + "    "));
         },
 
-        [&indent](const ReferenceExpr& node) {
+        [&indent] (const ReferenceExpr& node) {
             return indent + std::format("RefExpr ['{}']", node.name_);
         },
 
-        [this, &indent](const ArraySubscriptExpr& node) {
-            return indent + std::format("ArraySubscriptExpr\n{}\n{}", expr_to_str(node.base_, indent + "    "), expr_to_str(node.index_, indent + "    "));
+        [this, &indent] (const ArraySubscriptExpr& node) {
+            return indent + std::format("ArraySubscriptExpr\n{}\n{}", 
+                expr_to_str(node.base_, indent + "    "),
+                expr_to_str(node.index_, indent + "    "));
         },
 
-        [this, &indent](const CallExpr& node)  {
+        [this, &indent] (const CallExpr& node)  {
             std::string args_str;
             for (size_t i = 0; i < node.args_.size(); i++) {
                 args_str += expr_to_str(node.args_[i], indent + "    ");
@@ -176,6 +178,12 @@ std::string AST::expr_to_str(ExprRef ref, std::string indent) const noexcept
             }
 
             return indent + std::format("CallExpr\n{}\n{}", expr_to_str(node.callee_, indent + "    "), args_str);
+        },
+
+        [this, &indent] (const MemberExpr& node) {
+            return indent + std::format("MemberExpr ['.{}']\n{}", 
+                expr_to_str(node.member_, ""), 
+                expr_to_str(node.base_, indent + "    "));
         }
 
     }, exprs_[ref]);
