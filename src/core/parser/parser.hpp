@@ -36,17 +36,18 @@ struct Parser
         return std::tuple{ match(token_types)... };
     }
 
-    std::expected<DeclRef, ParseError> parse_compilation_unit() noexcept;
-    std::expected<DeclRef, ParseError> parse_decl() noexcept;
-    std::expected<DeclRef, ParseError> parse_field() noexcept;
-    std::expected<DeclRef, ParseError> parse_var_decl(Constness constness) noexcept;
-    std::expected<DeclRef, ParseError> parse_param_decl() noexcept;
-    std::expected<DeclRef, ParseError> parse_func_decl(Constness constness) noexcept;
-    std::expected<DeclRef, ParseError> parse_struct(Constness constness) noexcept;
-    std::expected<DeclRef, ParseError> parse_struct_decl(Constness constness) noexcept;
-    std::expected<DeclRef, ParseError> parse_struct_def() noexcept;
-    std::expected<ExprRef, ParseError> nud(const Token token);
-    std::expected<ExprRef, ParseError> led(const Token token, const ExprRef left);
-    std::expected<ExprRef, ParseError> parse_expr(int min_prec = 0) noexcept;
-    std::expected<ExprRef, ParseError> parse_compound_stmt() noexcept;
+    std::expected<NodeRef, ParseError> parse_compilation_unit() noexcept;
+    std::expected<NodeRef, ParseError> parse_var_decl(Constness constness) noexcept;
+    std::expected<NodeRef, ParseError> parse_param_decl() noexcept;
+    std::expected<NodeRef, ParseError> parse_func_decl(Constness constness) noexcept;
+    std::expected<NodeRef, ParseError> parse_compound_stmt() noexcept;
+    std::expected<NodeRef, ParseError> parse_struct(Constness constness) noexcept;
+    std::expected<NodeRef, ParseError> parse_struct_decl(Constness constness) noexcept;
+    std::expected<NodeRef, ParseError> parse_struct_def() noexcept;
+    std::expected<NodeRef, ParseError> parse_decl() noexcept;
+    std::expected<NodeRef, ParseError> parse_field() noexcept;
+    std::expected<NodeRef, ParseError> nud(const Token token) noexcept;
+    std::expected<NodeRef, ParseError> led(const Token token, const NodeRef left) noexcept;
+    std::expected<NodeRef, ParseError> parse_expr(int min_prec = 0) noexcept;
+    std::expected<NodeRef, ParseError> parse_init_list_expr() noexcept;
 };

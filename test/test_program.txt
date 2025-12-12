@@ -1,7 +1,12 @@
-int& ref = x;
 
-struct Foo& x;
+struct Foo
+{
+    int x;
+    int y;
+    int z;
+}
 
-int x = arr[3];
-
-int z = func(x+y, x-y);
+fn main(int a, int b) -> int
+{
+    int c = a + b;
+}
