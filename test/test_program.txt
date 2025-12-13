@@ -1,12 +1,13 @@
-
-struct Foo
+struct Point
 {
     int x;
     int y;
-    int z;
 }
 
-fn main(int a, int b) -> int
-{
-    int c = a + b;
-}
+struct Point p1;
+
+struct Point p2{a, b, c};
+
+struct Point& p3 = p2;
+
+struct Point* p4 = &p3;

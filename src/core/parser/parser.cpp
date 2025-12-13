@@ -6,8 +6,8 @@
 
 #include "lexer/token.hpp"
 #include "lexer/lexer.hpp"
+#include "ast/ast.hpp"
 #include "parser/parser.hpp"
-#include "parser/ast.hpp"
 #include "utils/macros.hpp"
 #include "utils/string_utils.hpp"
 
@@ -77,7 +77,7 @@ std::expected<NodeRef, ParseError> Parser::parse_compilation_unit() noexcept
         if (!decl)
             panic(decl.error());
         else
-            std::get<CompilationUnitDecl>(ast_.nodes_[comp_unit]).decls_.push_back(*decl);
+            ast_[comp_unit].as<CompilationUnitDecl>()->decls_.push_back(*decl);
     }
 
     return comp_unit;
@@ -161,7 +161,6 @@ std::expected<NodeRef, ParseError> Parser::parse_init_list_expr() noexcept
     return ast_.emplace<InitListExpr>(std::move(init_values));
 }
 
-// must now accept var = {...}, do this later, array init and constructors
 std::expected<NodeRef, ParseError> Parser::parse_var_decl(Constness constness) noexcept
 {
     auto [type] = expect(TokenType::TYPE);
@@ -296,8 +295,6 @@ std::expected<NodeRef, ParseError> Parser::parse_func_decl(Constness constness) 
 
     auto body = parse_compound_stmt();
     if (!body) return std::unexpected{ body.error() };
-
-    EXPECT_SEMICOLON();
 
     return ast_.emplace<FuncDecl>(constness, std::string{ *name }, std::move(full_return_type), std::move(params), *body);
 }
@@ -469,22 +466,28 @@ std::expected<NodeRef, ParseError> Parser::parse_struct_decl(Constness constness
     }
 }
 
-// compoundstmt is most general node type
 std::expected<NodeRef, ParseError> Parser::parse_compound_stmt() noexcept
 {
-    // std::vector<NodeRef> decls;
-    std::vector<NodeRef> exprs;
+    std::vector<NodeRef> children; // better identifier?
+
+    /*
+
+    Since compoundstmt is most general node type we
+    basically need to check cur token, either dispatch
+    parse_decl() or parse_expr() until closing brace
 
     while (!is_cur_token(TokenType::RBRACE)) {
+        auto decl = parse_decl();
         auto expr = parse_expr();
-        if (!expr) return std::unexpected{ expr.error() };
 
         exprs.push_back(*expr);
     }
+    
+    */
 
     EXPECT_RBRACE();
 
-    return ast_.emplace<CompoundStmt>(std::move(exprs));
+    return ast_.emplace<CompoundStmt>(std::move(children));
 }
 
 namespace prec 
@@ -566,7 +569,7 @@ auto infix_lbp(Token token) noexcept {
     }
 }
 
-std::expected<NodeRef, ParseError> Parser::nud(const Token token)
+std::expected<NodeRef, ParseError> Parser::nud(const Token token) noexcept
 {
     eat_token();
 
@@ -627,7 +630,7 @@ std::expected<NodeRef, ParseError> Parser::nud(const Token token)
     }
 }
 
-std::expected<NodeRef, ParseError> Parser::led(const Token token, const NodeRef left)
+std::expected<NodeRef, ParseError> Parser::led(const Token token, NodeRef left) noexcept
 {
     eat_token();
     

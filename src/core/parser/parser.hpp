@@ -4,7 +4,7 @@
 #include <tuple>
 
 #include "lexer/lexer.hpp"
-#include "parser/ast.hpp"
+#include "ast/ast.hpp"
 #include "parser/error.hpp"
 
 struct Parser 
@@ -47,7 +47,7 @@ struct Parser
     std::expected<NodeRef, ParseError> parse_decl() noexcept;
     std::expected<NodeRef, ParseError> parse_field() noexcept;
     std::expected<NodeRef, ParseError> nud(const Token token) noexcept;
-    std::expected<NodeRef, ParseError> led(const Token token, const NodeRef left) noexcept;
+    std::expected<NodeRef, ParseError> led(const Token token, NodeRef left) noexcept;
     std::expected<NodeRef, ParseError> parse_expr(int min_prec = 0) noexcept;
     std::expected<NodeRef, ParseError> parse_init_list_expr() noexcept;
 };

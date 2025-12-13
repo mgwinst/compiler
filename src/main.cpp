@@ -1,7 +1,7 @@
+#include "ast/print.hpp"
+#include "parser/parser.hpp"
 #include "utils/utils.hpp"
 #include "utils/string_utils.hpp"
-#include "parser/parser.hpp"
-#include "parser/print.hpp"
 
 void test_lexer()
 {
@@ -26,6 +26,7 @@ void test_parser()
 
     auto printer = Printer{ parser.ast_ };
     printer.print();
+    
 
     parser.diagnostics_.dump_errors();
 }
