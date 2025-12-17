@@ -217,12 +217,12 @@ struct CallExpr
 struct MemberExpr
 {
     NodeRef base_;
-    NodeRef member_;
+    std::string member_;
     bool is_arrow_ = false;
     
-    MemberExpr(NodeRef base, NodeRef member, bool is_arrow = false) :
+    MemberExpr(NodeRef base, StringLike auto&& member, bool is_arrow = false) :
         base_{ base },
-        member_{ member },
+        member_{ std::forward<decltype(member)>(member) },
         is_arrow_{ is_arrow } {}
 };
 
@@ -300,7 +300,6 @@ enum class NodeKind : uint8_t {
     MemberExpr,
     ArraySubscriptExpr,
     InitListExpr,
-
     ExplicitCastExpr,
     ImplicitCastExpr,
     NewExpr,

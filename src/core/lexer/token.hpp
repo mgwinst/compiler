@@ -81,7 +81,7 @@ inline const std::unordered_set<std::string_view> lang_types {
     "int", "int8", "int16", "int32", "int64",
     "uint", "uint8", "uint16", "uint32", "uint64",
     "float", "float16", "float32", "float64",
-    "char", "string", "bool", "void", "union", "enum",
+    "byte", "string", "bool", "void", "union", "enum",
 };
 
 inline const std::unordered_map<std::string_view, TokenType> keywords {
@@ -94,7 +94,7 @@ inline const std::unordered_map<std::string_view, TokenType> keywords {
     {"return",  TokenType::KEYWORD_RETURN},
     {"const",   TokenType::KEYWORD_CONST},
     {"mut",     TokenType::KEYWORD_MUT},
-    {"typedef", TokenType::KEYWORD_TYPEDEF},
+    {"typedef", TokenType::KEYWORD_TYPEDEF}, // using instead?
     {"static",  TokenType::KEYWORD_STATIC},
     {"true",    TokenType::KEYWORD_TRUE},
     {"false",   TokenType::KEYWORD_FALSE},

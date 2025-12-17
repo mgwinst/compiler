@@ -1,13 +1,17 @@
-struct Point
+fn func() -> int
 {
-    int x;
-    int y;
+
 }
 
-struct Point p1;
+struct Foo x{1, 2, 3};
+struct Foo x = {1, 2, 3};
+const struct Foo x{a, b, c};
+struct Foo& y = x;
 
-struct Point p2{a, b, c};
+const int size = 10;
 
-struct Point& p3 = p2;
+int arr[];
 
-struct Point* p4 = &p3;
+int arr[size];
+
+int arr[3] = {5, 2, 9};

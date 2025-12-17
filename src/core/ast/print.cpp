@@ -181,7 +181,7 @@ std::string Printer::node_to_str(NodeRef ref, std::string indent) const noexcept
             const auto* m = node.as<MemberExpr>();           
 
             return indent + std::format("MemberExpr ['.{}']\n{}", 
-                node_to_str(m->member_, ""), 
+                m->member_,
                 node_to_str(m->base_, indent + "    "));
         }
 
