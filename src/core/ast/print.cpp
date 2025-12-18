@@ -13,7 +13,7 @@ void Printer::print() const noexcept
 
 std::string Printer::node_to_str(NodeRef ref, std::string indent) const noexcept
 {
-    const auto& node = ast_[ref];
+    const auto& node = ast_.nodes_[ref];
 
     switch (node.get_kind()) {
         case NodeKind::CompilationUnitDecl: {
@@ -22,7 +22,7 @@ std::string Printer::node_to_str(NodeRef ref, std::string indent) const noexcept
 
             std::string decls_str{};
 
-            for (size_t i{}; i < comp_unit->decls_.size(); i++) {
+            for (auto i = 0uz; i < comp_unit->decls_.size(); i++) {
                 decls_str += node_to_str(comp_unit->decls_[i], indent + "    ");
                 if (i != comp_unit->decls_.size() - 1)
                     decls_str += "\n\n";
@@ -57,7 +57,7 @@ std::string Printer::node_to_str(NodeRef ref, std::string indent) const noexcept
             std::string param_decls_str{};
             
             if (func->params_.size() > 0) {
-                for (size_t i = 0; i < func->params_.size(); i++) {
+                for (auto i = 0uz; i < func->params_.size(); i++) {
                     param_list_str += ast_[func->params_[i]].as<ParamDecl>()->type_;
 
                     param_decls_str += node_to_str(func->params_[i], indent + "    ");
@@ -85,7 +85,7 @@ std::string Printer::node_to_str(NodeRef ref, std::string indent) const noexcept
             const auto* s = node.as<StructDecl>();
 
             std::string field_list_str{};
-            for (size_t i = 0; i < s->fields_.size(); i++) {
+            for (auto i = 0uz; i < s->fields_.size(); i++) {
                 field_list_str += node_to_str(s->fields_[i], indent + "    ");
                 if (i != s->fields_.size() - 1)
                     field_list_str += '\n';
@@ -98,7 +98,7 @@ std::string Printer::node_to_str(NodeRef ref, std::string indent) const noexcept
             const auto* cstmt = node.as<CompoundStmt>();  
 
             std::string expr_strs{};
-            for (size_t i = 0; i < cstmt->exprs_.size(); i++) {
+            for (auto i = 0uz; i < cstmt->exprs_.size(); i++) {
                 expr_strs += node_to_str(cstmt->exprs_[i], indent + "    ");
                 if (i != cstmt->exprs_.size() - 1)
                     expr_strs += '\n';
@@ -168,7 +168,7 @@ std::string Printer::node_to_str(NodeRef ref, std::string indent) const noexcept
             const auto* call = node.as<CallExpr>();           
 
             std::string args_str{};
-            for (size_t i = 0; i < call->args_.size(); i++) {
+            for (auto i = 0uz; i < call->args_.size(); i++) {
                 args_str += node_to_str(call->args_[i], indent + "    ");
                 if (i != call->args_.size() - 1)
                     args_str += '\n';
@@ -197,7 +197,7 @@ std::string Printer::node_to_str(NodeRef ref, std::string indent) const noexcept
             const auto* init_list = node.as<InitListExpr>();
 
             std::string init_list_str{};
-            for (size_t i{}; i < init_list->init_values_.size(); i++) {
+            for (auto i = 0uz; i < init_list->init_values_.size(); i++) {
                 init_list_str += node_to_str(init_list->init_values_[i], indent + "    ");
                 if (i != init_list->init_values_.size() - 1) {
                     init_list_str += "\n";

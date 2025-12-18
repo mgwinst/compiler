@@ -46,7 +46,7 @@
 
             if (auto kw = keywords.find(value); kw != keywords.end()) {
                 return Token{kw->second, std::string_view{start, end}, line_num_, col_num_ - (end-start), static_cast<std::size_t>(end-start)};
-            } else if (auto t = lang_types.find(value); t != lang_types.end()) {
+            } else if (auto t = built_in_types.find(value); t != built_in_types.end()) {
                 return Token{TokenType::TYPE, std::string_view{start, end}, line_num_, col_num_ - (end-start), static_cast<std::size_t>(end-start)};
             } else {
                 return Token{TokenType::IDENTIFIER, std::string_view{start, end}, line_num_, col_num_ - (end-start), static_cast<std::size_t>(end-start)};
@@ -99,7 +99,7 @@
 
             if (auto kw = keywords.find(value); kw != keywords.end()) {
                 return Token{kw->second, std::string_view{start, end}};
-            } else if (auto t = lang_types.find(value); t != lang_types.end()) {
+            } else if (auto t = built_in_types.find(value); t != built_in_types.end()) {
                 return Token{TokenType::TYPE, std::string_view{start, end}};
             } else {
                 return Token{TokenType::IDENTIFIER, std::string_view{start, end}};

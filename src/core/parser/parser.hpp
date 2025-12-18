@@ -7,6 +7,9 @@
 #include "ast/ast.hpp"
 #include "parser/error.hpp"
 
+#define CONST (true)
+#define NON_CONST (false)
+
 struct Parser 
 {
     SourceFile source_file_;
@@ -37,12 +40,12 @@ struct Parser
     }
 
     std::expected<NodeRef, ParseError> parse_compilation_unit() noexcept;
-    std::expected<NodeRef, ParseError> parse_var_decl(Constness constness) noexcept;
+    std::expected<NodeRef, ParseError> parse_var_decl(bool is_const) noexcept;
     std::expected<NodeRef, ParseError> parse_param_decl() noexcept;
-    std::expected<NodeRef, ParseError> parse_func_decl(Constness constness) noexcept;
+    std::expected<NodeRef, ParseError> parse_func_decl(bool is_const) noexcept;
     std::expected<NodeRef, ParseError> parse_compound_stmt() noexcept;
-    std::expected<NodeRef, ParseError> parse_struct(Constness constness) noexcept;
-    std::expected<NodeRef, ParseError> parse_struct_decl(Constness constness) noexcept;
+    std::expected<NodeRef, ParseError> parse_struct(bool is_const) noexcept;
+    std::expected<NodeRef, ParseError> parse_struct_decl(bool is_const) noexcept;
     std::expected<NodeRef, ParseError> parse_struct_def() noexcept;
     std::expected<NodeRef, ParseError> parse_decl() noexcept;
     std::expected<NodeRef, ParseError> parse_field() noexcept;

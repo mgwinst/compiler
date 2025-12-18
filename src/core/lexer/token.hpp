@@ -77,31 +77,33 @@ enum class TokenType : uint16_t
     INVALID,
 };
 
-inline const std::unordered_set<std::string_view> lang_types {
+inline const std::unordered_set<std::string_view> built_in_types {
     "int", "int8", "int16", "int32", "int64",
     "uint", "uint8", "uint16", "uint32", "uint64",
     "float", "float16", "float32", "float64",
-    "byte", "string", "bool", "void", "union", "enum",
+    "byte", "bool", "void", "union", "enum",
 };
 
 inline const std::unordered_map<std::string_view, TokenType> keywords {
-    {"fn",      TokenType::KEYWORD_FUNCTION},
-    {"struct",  TokenType::KEYWORD_STRUCT},
-    {"if",      TokenType::KEYWORD_IF},
-    {"else",    TokenType::KEYWORD_ELSE},
-    {"while",   TokenType::KEYWORD_WHILE},
-    {"for",     TokenType::KEYWORD_FOR},
-    {"return",  TokenType::KEYWORD_RETURN},
-    {"const",   TokenType::KEYWORD_CONST},
-    {"mut",     TokenType::KEYWORD_MUT},
-    {"typedef", TokenType::KEYWORD_TYPEDEF}, // using instead?
-    {"static",  TokenType::KEYWORD_STATIC},
-    {"true",    TokenType::KEYWORD_TRUE},
-    {"false",   TokenType::KEYWORD_FALSE},
-    {"lambda",  TokenType::KEYWORD_LAMBDA},
-    {"null",    TokenType::KEYWORD_NULL},
-    {"sizeof",  TokenType::KEYWORD_SIZEOF},
-    {"alignof", TokenType::KEYWORD_ALIGNOF},
+    {"fn",       TokenType::KEYWORD_FUNCTION},
+    {"struct",   TokenType::KEYWORD_STRUCT},
+    {"if",       TokenType::KEYWORD_IF},
+    {"else",     TokenType::KEYWORD_ELSE},
+    {"while",    TokenType::KEYWORD_WHILE},
+    {"for",      TokenType::KEYWORD_FOR},
+    {"return",   TokenType::KEYWORD_RETURN},
+    {"break",    TokenType::KEYWORD_RETURN},
+    {"continue", TokenType::KEYWORD_RETURN},
+    {"const",    TokenType::KEYWORD_CONST},
+    {"mut",      TokenType::KEYWORD_MUT},
+    {"typedef",  TokenType::KEYWORD_TYPEDEF}, // using instead?
+    {"static",   TokenType::KEYWORD_STATIC},
+    {"true",     TokenType::KEYWORD_TRUE},
+    {"false",    TokenType::KEYWORD_FALSE},
+    {"lambda",   TokenType::KEYWORD_LAMBDA},
+    {"null",     TokenType::KEYWORD_NULL},
+    {"sizeof",   TokenType::KEYWORD_SIZEOF},
+    {"alignof",  TokenType::KEYWORD_ALIGNOF},
 };
 
 inline const std::unordered_map<char, TokenType> single_symbol_map {

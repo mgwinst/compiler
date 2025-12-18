@@ -1,10 +1,10 @@
 #include "ast.hpp"
 
-#define INIT_LIMIT (1 << 18)
+#define NODE_LIMIT (1 << 18)
 
 AST::AST() noexcept
 {
-    nodes_.reserve(INIT_LIMIT);
+    nodes_.reserve(NODE_LIMIT);
 }
 
 NodeRef AST::root() const noexcept

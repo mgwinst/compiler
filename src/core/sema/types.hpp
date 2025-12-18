@@ -2,7 +2,10 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <variant>
+#include <functional>
+#include <vector>
+
+using TypeRef = std::size_t;
 
 namespace Sema
 {
@@ -38,7 +41,6 @@ namespace Sema
 
     };
  
-
     struct ArrayType
     {
 
@@ -104,9 +106,50 @@ namespace Sema
 
     struct Type
     {
-        TypeKind kind;
-
-        alignas(64) std::byte buffer_[128];
+        TypeKind kind_;
+        alignas(64) std::byte data_[128];
     };
 
+    struct TypePool
+    {
+        std::vector<Type> types_; 
+    };
+
+    
+
+    // construct type objects from parsed full type string in each AST Node. Simple for now... implement proper parse handlers for types in Parser later.
+    struct TypeParser
+    {
+        static TypeRef parse_type(std::string_view type_string);
+        static TypeRef parse_built_in_type(std::string_view type_string);
+        static TypeRef parse_ref_type(std::string_view type_string);
+        static TypeRef parse_pointer_type(std::string_view type_string);
+        static TypeRef parse_array_type(std::string_view type_string);
+        static TypeRef parse_func_type(std::string_view type_string);
+        static TypeRef parse_struct_type(std::string_view type_string);
+        static TypeRef parse_union_type(std::string_view type_string);
+        static TypeRef parse_enum_type(std::string_view type_string);
+        static TypeRef parse_qual_type(std::string_view type_string);
+    };
+
+    /*
+    TypeRef intern_type(std::string_view type_string)
+    {
+        // check to see if type in table. if not, construct it and return index into type pool
+    }
+    */
+
 }
+
+// reserve common types in a separate buffer (built-in types + pointers/arrays to built-ins buffer) ?
+
+// tagged pointers? (prob not as we aren't using pointers to heap allocated Type objects...)
+    
+
+// const int arr[10];
+// struct Foo arr[1024];
+// byte buffer[10];
+// const int x;
+// float64 value;
+    
+    
