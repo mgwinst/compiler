@@ -8,7 +8,7 @@
 struct AST
 {   
     std::vector<Node> nodes_;
-    Sema::TypePool types_;
+    TypePool types_;
 
     AST() noexcept;
 

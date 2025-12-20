@@ -197,6 +197,8 @@ std::expected<NodeRef, ParseError> Parser::parse_var_decl(bool is_const) noexcep
         } 
 
 
+        // ...
+
 
     }
 
@@ -210,6 +212,7 @@ std::expected<NodeRef, ParseError> Parser::parse_var_decl(bool is_const) noexcep
 
             EXPECT_SEMICOLON();
 
+            // auto type_ref = type_pool_.intern_type(type_string);
 
             return ast_.emplace<VarDecl>(type_ref, std::string{ *name }, *expr);
         }
