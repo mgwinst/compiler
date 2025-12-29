@@ -344,10 +344,9 @@ class Node
 {
 public:
     template <typename T>
+        requires (node_kind_v<T> != NodeKind::Invalid)
     Node(std::in_place_type_t<T>, auto&&... args) : kind_{ node_kind_v<T> }
     {
-        static_assert(node_kind_v<T> != NodeKind::Invalid, "undefined node type T");
-
         ::new (data_) T{ std::forward<decltype(args)>(args)... };
     }
 
@@ -393,21 +392,18 @@ public:
     }
 
     template <typename T>
-    [[nodiscard]] const T* as() const
+    [[nodiscard]] const T& as() const
     {
         if (kind_ == node_kind_v<T>)
-            return std::launder(reinterpret_cast<const T*>(data_));
+            return *std::launder(reinterpret_cast<const T*>(data_));
         
-        return nullptr;
     }
 
     template <typename T>
-    [[nodiscard]] T* as()
+    [[nodiscard]] T& as()
     {
         if (kind_ == node_kind_v<T>)
-            return std::launder(reinterpret_cast<T*>(data_));
-
-        return nullptr;
+            return *std::launder(reinterpret_cast<T*>(data_));
     }
 
 private:

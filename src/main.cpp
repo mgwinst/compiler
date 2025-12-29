@@ -1,37 +1,23 @@
-#include "ast/print.hpp"
-#include "parser/parser.hpp"
-#include "utils/utils.hpp"
-#include "utils/string_utils.hpp"
+#include "core/sema/type_pool.hpp"
 
-void test_lexer()
+void test_type_pool()
 {
-    auto source = get_source_file("../../test/test_program.txt");
-    auto lexer = Lexer{ source.data };
+    constexpr std::array types = {
+        "int32[]"sv,
+    };
 
-    while (1) {
-        Token tok = lexer.get_token();
-        if (tok.type_ == TokenType::END_OF_FILE) 
-            break;
+    Sema::TypePool type_pool{};
 
-        std::println("{}", tok.to_string());
-    }
-}
+    for (const auto& type : types)
+        std::println("{}", type_pool.intern_type(type));
 
-void test_parser()
-{
-    auto source = get_source_file("../../test/test_program.txt");
-
-    auto parser = Parser{ source };
-    parser.parse_compilation_unit();
-
-    auto printer = Printer{ parser.ast_ };
-    printer.print();
-    
-
-    parser.diagnostics_.dump_errors();
 }
 
 int main(int argc, char** argv)
 {
-    test_parser();
+    test_type_pool();   
+
 }
+
+
+

@@ -21,7 +21,6 @@ struct AST
     }
 
     NodeRef root() const noexcept;
-
 };
 
 

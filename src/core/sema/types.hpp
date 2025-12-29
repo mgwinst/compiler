@@ -1,160 +1,198 @@
 #pragma once
 
-#include <cstdint>
 #include <cstddef>
-#include <optional>
+#include <type_traits>
+#include <utility>
+#include <new>
 #include <vector>
-#include <string_view>
-#include <algorithm>
-#include <array>
+
+#include "../utils/macros.hpp"
+#include "../utils/concepts.hpp"
 
 using namespace std::string_view_literals;
 
 using TypeRef = std::size_t;
 using NodeRef = std::size_t;
 
-struct ByteType
+namespace Sema
 {
-
-};
-
-struct BoolType
-{
-
-};
-
-struct IntegerType
-{
-    int16_t bit_width_;
-    bool signedness_;
-};
-
-struct FloatType
-{
-    int16_t bit_width_;
-    bool signedness_;
-};
-
-struct ReferenceType
-{
-    TypeRef inner_type_;
-};
-
-struct PointerType
-{
-    TypeRef inner_type_;
-};
-
-struct ArrayType
-{
-    NodeRef size_;
-    TypeRef inner_type_;
-};
-
-struct FunctionType
-{
-    TypeRef return_type_;
-    std::vector<TypeRef> param_types_;
-};
-
-struct StructType
-{
-
-};
-
-struct UnionType
-{
-
-};
-
-struct EnumType
-{
-
-};
-
-struct QualType
-{
-    enum class QualKind : uint8_t
+    struct ByteType
     {
-        Const,
-        Restrict
 
-    } qualifier_;
+    };
 
-    TypeRef inner_type_;
+    struct BoolType
+    {
 
-    QualType(QualKind qualifier, TypeRef inner_type) :
-        qualifier_{ qualifier },
-        inner_type_{ inner_type } {}
-};
+    };
 
-enum class TypeKind : uint8_t
-{
-    Byte,
-    Bool,
-    Integer,
-    Float,
-    Reference,
-    Pointer,
-    Array,
-    Function,
-    Struct,
-    Union,
-    Enumeration,
-    Qualifier,
-    Invalid
-};
+    struct IntegerType
+    {
+        uint16_t bit_width_;
+        bool signedness_;
+    };
 
-template <typename T>
-inline constexpr TypeKind type_kind_v = TypeKind::Invalid;
+    struct FloatType
+    {
+        uint16_t bit_width_;
+        bool signedness_;
+    };
 
-template <> inline constexpr TypeKind type_kind_v<ByteType>      = TypeKind::Byte;
-template <> inline constexpr TypeKind type_kind_v<BoolType>      = TypeKind::Bool;
-template <> inline constexpr TypeKind type_kind_v<IntegerType>   = TypeKind::Integer;
-template <> inline constexpr TypeKind type_kind_v<FloatType>     = TypeKind::Float;
-template <> inline constexpr TypeKind type_kind_v<ReferenceType> = TypeKind::Reference;
-template <> inline constexpr TypeKind type_kind_v<PointerType>   = TypeKind::Pointer;
-template <> inline constexpr TypeKind type_kind_v<ArrayType>     = TypeKind::Array;
-template <> inline constexpr TypeKind type_kind_v<FunctionType>  = TypeKind::Function;
-template <> inline constexpr TypeKind type_kind_v<StructType>    = TypeKind::Struct;
-template <> inline constexpr TypeKind type_kind_v<UnionType>     = TypeKind::Union;
-template <> inline constexpr TypeKind type_kind_v<EnumType>      = TypeKind::Enumeration;
-template <> inline constexpr TypeKind type_kind_v<QualType>      = TypeKind::Qualifier;
+    struct ReferenceType
+    {
+        TypeRef inner_type_;
+    };
 
-struct Type
-{
-    TypeKind kind_;
-    alignas(64) std::byte data_[128];
+    struct PointerType
+    {
+        TypeRef inner_type_;
+    };
+
+    struct ArrayType
+    {
+        NodeRef size_;
+        TypeRef inner_type_;
+    };
+
+    struct QualifierType
+    {
+        enum class QualKind : uint8_t
+        {
+            Const
+
+        } qualifier_;
+
+        TypeRef inner_type_;
+
+        QualifierType(QualKind qualifier, TypeRef inner_type) :
+            qualifier_{ qualifier },
+            inner_type_{ inner_type } {}
+    };
+
+    struct FunctionType
+    {
+        std::vector<TypeRef> param_types_;
+        TypeRef return_type_;
+
+        FunctionType(Contiguous auto&& param_types, TypeRef return_type) :
+            param_types_{ std::forward<decltype(param_types)>(param_types) },
+            return_type_{ return_type } {}
+    };
+
+    struct StructType
+    {
+        std::vector<TypeRef> field_types_;
+        
+        StructType(Contiguous auto&& field_types) :
+            field_types_{ std::forward<decltype(field_types)>(field_types) } {}
+    };
+
+    struct UnionType
+    {
+
+    };
+
+    struct EnumType
+    {
+
+    };
+
+    enum class TypeKind : uint8_t
+    {
+        Byte,
+        Bool,
+        Integer,
+        Float,
+        Reference,
+        Pointer,
+        Array,
+        Qualifier,
+        Function,
+        Struct,
+        Union,
+        Enumeration,
+        Invalid
+    };
 
     template <typename T>
-    Type(std::in_place_type_t<T>, auto&&... args) : kind_{ type_kind_v<T> }
+    inline constexpr TypeKind type_kind_v = TypeKind::Invalid;
+
+    template <> inline constexpr TypeKind type_kind_v<ByteType>      = TypeKind::Byte;
+    template <> inline constexpr TypeKind type_kind_v<BoolType>      = TypeKind::Bool;
+    template <> inline constexpr TypeKind type_kind_v<IntegerType>   = TypeKind::Integer;
+    template <> inline constexpr TypeKind type_kind_v<FloatType>     = TypeKind::Float;
+    template <> inline constexpr TypeKind type_kind_v<ReferenceType> = TypeKind::Reference;
+    template <> inline constexpr TypeKind type_kind_v<PointerType>   = TypeKind::Pointer;
+    template <> inline constexpr TypeKind type_kind_v<ArrayType>     = TypeKind::Array;
+    template <> inline constexpr TypeKind type_kind_v<QualifierType> = TypeKind::Qualifier;
+    template <> inline constexpr TypeKind type_kind_v<FunctionType>  = TypeKind::Function;
+    template <> inline constexpr TypeKind type_kind_v<StructType>    = TypeKind::Struct;
+    template <> inline constexpr TypeKind type_kind_v<UnionType>     = TypeKind::Union;
+    template <> inline constexpr TypeKind type_kind_v<EnumType>      = TypeKind::Enumeration;
+
+    struct Type
     {
-        static_assert(type_kind_v<T> != TypeKind::Invalid, "undefined type T");
+        TypeKind kind_;
+        alignas(64) std::byte data_[128];
 
-        ::new (data_) T{ std::forward<decltype(args)>(args)... };
-    }
-};
+        template <typename T>
+            requires (type_kind_v<T> != TypeKind::Invalid)
+        Type(std::in_place_type_t<T>, auto&&... args) : kind_{ type_kind_v<T> }
+        {
+            ::new (data_) T{ std::forward<decltype(args)>(args)... };
+        }
 
-class TypePool
-{
-public:
-    auto intern_type(std::string_view type_str) -> TypeRef;
+        ~Type()
+        {
+            switch (kind_) {
+                case TypeKind::Byte:        destroy<ByteType>();      break;
+                case TypeKind::Bool:        destroy<BoolType>();      break;
+                case TypeKind::Integer:     destroy<IntegerType>();   break;
+                case TypeKind::Float:       destroy<FloatType>();     break;
+                case TypeKind::Reference:   destroy<ReferenceType>(); break;
+                case TypeKind::Pointer:     destroy<PointerType>();   break;
+                case TypeKind::Array:       destroy<ArrayType>();     break;
+                case TypeKind::Qualifier:   destroy<QualifierType>(); break;
+                case TypeKind::Function:    destroy<FunctionType>();  break;
+                case TypeKind::Struct:      destroy<StructType>();    break;
+                case TypeKind::Union:       destroy<UnionType>();     break;
+                case TypeKind::Enumeration: destroy<EnumType>();      break;
+                case TypeKind::Invalid: [[fallthrough]];
+                default: break;
+            }
+        }
 
-    template <typename T, typename... Args>
-        requires std::is_constructible_v<T, Args...>
-    [[nodiscard]] auto create_type(std::string_view type_str, Args&&... args)
-    {
-        types_.emplace_back(std::in_place_type_t<T>, args...);
-        type_to_index_.emplace{type_str, types_.size() - 1};
+        TypeKind get_kind() const
+        {
+            return kind_;
+        }
 
-        return TypeRef{ types_.size() - 1 };
-    }
+        template <typename T>
+        [[nodiscard]] const T& as() const
+        {
+            if (kind_ != type_kind_v<T>) [[unlikely]]
+                error_exit("types don't match");
 
-private:
-    std::vector<Type> types_; 
-    std::unordered_map<std::string, TypeRef> type_to_index_;
+            return *std::launder(reinterpret_cast<const T*>(data_));
+        }
 
-    auto lookup_type(std::string_view type_str) -> std::optional<TypeRef>;
-    auto parse_type(std::string_view type_str) -> TypeRef;
-};
+        template <typename T>
+        [[nodiscard]] T& as()
+        {
+            if (kind_ != type_kind_v<T>) [[unlikely]]
+                error_exit("types don't match");
+
+            return *std::launder(reinterpret_cast<T*>(data_));
+        }
+
+        template <typename T>
+        void destroy()
+        {
+            if constexpr (!std::is_trivially_destructible_v<T>)
+                std::launder(reinterpret_cast<T*>(data_))->~T();
+        }
+    };
+
+} // namespace Sema
+
 
