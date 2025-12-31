@@ -39,9 +39,10 @@ namespace Sema
     {
         static constexpr std::size_t magic = 0x3e6d8f9ab1c2d4e7ULL;
         
-        static std::size_t hash(TypeRef inner_type)
+        static std::size_t hash(NodeRef size, TypeRef inner_type)
         {
-            return hash_combine(magic, inner_type);
+            auto h = hash_combine(magic, size);
+            return hash_combine(h, inner_type);
         }
     };
 
@@ -50,12 +51,15 @@ namespace Sema
     {
         static constexpr std::size_t magic = 0x4f7e9a0bc1d2e3f8ULL;
         
-        static std::size_t hash(TypeRef inner_type)
+        static std::size_t hash(QualifierType::QualKind q, TypeRef inner_type)
         {
-            return hash_combine(magic, inner_type);
+            auto h = hash_combine(magic, static_cast<std::size_t>(q));
+            return hash_combine(h, inner_type);
         }
     };
 
+    /*
+    
     template <>
     struct TypeHasher<FunctionType>
     {
@@ -100,5 +104,6 @@ namespace Sema
         }
     };
 
+    */
     
 } // namespace Sema

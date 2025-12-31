@@ -1,11 +1,8 @@
 #pragma once
 
-#include <cstdint>
-#include <utility>
-#include <string>
 #include <print>
 
-#include "lexer/token.hpp"
+#include "token.hpp"
 
 struct Lexer {
     std::string_view source_;

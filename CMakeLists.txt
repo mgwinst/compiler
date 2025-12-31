@@ -12,7 +12,7 @@ add_library(compiler_lib STATIC
     #src/core/ast/print.cpp
     #src/core/parser/parser.cpp 
     #src/core/parser/error.cpp
-    src/core/sema/types.cpp
+    src/core/sema/type_pool.cpp
 )
 
 target_include_directories(compiler_lib PUBLIC

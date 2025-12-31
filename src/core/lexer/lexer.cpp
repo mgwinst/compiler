@@ -1,11 +1,6 @@
-#include <string>
-#include <vector>
-#include <unordered_set>
-#include <unordered_map>
-#include <iostream>
 #include <cassert>
 
-#include "lexer/lexer.hpp"
+#include "lexer.hpp"
 
 [[nodiscard]] Token Lexer::get_token() noexcept
 {

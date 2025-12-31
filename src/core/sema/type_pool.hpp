@@ -40,7 +40,6 @@ namespace Sema
 
             for (TypeRef ref : bucket) {
                 if (types_[ref].get_kind() == type_kind_v<T>) {
-                    // if (types_[ref].as<T>() == std::tie(args...))
                     if (types_[ref].as<T>() == T{ args... })
                         return ref;
                 }

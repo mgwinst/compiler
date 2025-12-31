@@ -3,6 +3,7 @@
 #include <source_location>
 #include <cstring>
 #include <print>
+#include <iostream>
 
 #define ASSERT(cond, msg) \
     { \

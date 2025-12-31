@@ -84,13 +84,13 @@ namespace Sema
         }
 
         if (auto rest = match_prefix("struct "sv)) // you need to capture the struct identifier too! 
-            return get_or_create<StructType>();
+            return 10000;
 
         if (auto rest = match_prefix("enum "sv))
-            return get_or_create<EnumType>();
+            return 10000;
 
         if (auto rest = match_prefix("union "sv))
-            return get_or_create<UnionType>();
+            return 10000;
 
         static std::unordered_map<std::string_view, std::function<TypeRef()>> builtin_factory = {
             {"byte"sv,    [] { return INT32_INDEX;   }},

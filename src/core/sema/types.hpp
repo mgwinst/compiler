@@ -41,17 +41,22 @@ namespace Sema
     struct ReferenceType
     {
         TypeRef inner_type_;
+
+        bool operator==(const ReferenceType& other) const = default;
     };
 
     struct PointerType
     {
         TypeRef inner_type_;
+
+        bool operator==(const PointerType& other) const = default;
     };
 
     struct ArrayType
     {
         NodeRef size_;
         TypeRef inner_type_;
+        bool operator==(const ArrayType& other) const = default;
     };
 
     struct QualifierType
@@ -67,6 +72,8 @@ namespace Sema
         QualifierType(QualKind qualifier, TypeRef inner_type) :
             qualifier_{ qualifier },
             inner_type_{ inner_type } {}
+
+        bool operator==(const QualifierType& other) const = default;
     };
 
     struct FunctionType
