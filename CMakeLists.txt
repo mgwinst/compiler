@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # don't silently fall back to older standard
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+find_package(Boost REQUIRED)
+
 add_library(compiler_lib STATIC
     #src/core/lexer/lexer.cpp 
     #src/core/ast/ast.cpp 
@@ -18,6 +20,8 @@ add_library(compiler_lib STATIC
 target_include_directories(compiler_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core
 )
+
+target_link_libraries(compiler_lib PUBLIC Boost::boost)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE compiler_lib)

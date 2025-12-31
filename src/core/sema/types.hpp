@@ -30,12 +30,16 @@ namespace Sema
     {
         uint16_t bit_width_;
         bool signedness_;
+
+        bool operator==(const IntegerType& other) const = default;
     };
 
     struct FloatType
     {
         uint16_t bit_width_;
         bool signedness_;
+
+        bool operator==(const FloatType& other) const = default;
     };
 
     struct ReferenceType

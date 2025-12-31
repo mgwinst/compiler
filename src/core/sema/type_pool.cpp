@@ -1,5 +1,4 @@
 #include <functional>
-#include <print>
 
 #include "type_pool.hpp"
 
