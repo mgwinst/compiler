@@ -3,9 +3,9 @@
 #include <expected>
 #include <tuple>
 
-#include "lexer/lexer.hpp"
-#include "ast/ast.hpp"
-#include "parser/error.hpp"
+#include "error.hpp"
+#include "../lexer/lexer.hpp"
+#include "../ast/ast.hpp"
 
 #define CONST (true)
 #define NON_CONST (false)
@@ -39,18 +39,21 @@ struct Parser
         return std::tuple{ match(token_types)... };
     }
 
-    std::expected<NodeRef, ParseError> parse_compilation_unit() noexcept;
-    std::expected<NodeRef, ParseError> parse_var_decl(bool is_const) noexcept;
-    std::expected<NodeRef, ParseError> parse_param_decl() noexcept;
-    std::expected<NodeRef, ParseError> parse_func_decl(bool is_const) noexcept;
-    std::expected<NodeRef, ParseError> parse_compound_stmt() noexcept;
-    std::expected<NodeRef, ParseError> parse_struct(bool is_const) noexcept;
-    std::expected<NodeRef, ParseError> parse_struct_decl(bool is_const) noexcept;
-    std::expected<NodeRef, ParseError> parse_struct_def() noexcept;
-    std::expected<NodeRef, ParseError> parse_decl() noexcept;
-    std::expected<NodeRef, ParseError> parse_field() noexcept;
-    std::expected<NodeRef, ParseError> nud(const Token token) noexcept;
-    std::expected<NodeRef, ParseError> led(const Token token, NodeRef left) noexcept;
-    std::expected<NodeRef, ParseError> parse_expr(int min_prec = 0) noexcept;
-    std::expected<NodeRef, ParseError> parse_init_list_expr() noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_compilation_unit() noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_decl() noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_var_decl(bool is_const) noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_param_decl() noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_func_decl() noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_struct(bool is_const) noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_struct_decl(bool is_const) noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_struct_def() noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_field() noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_compound_stmt() noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_while_loop() noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_for_loop() noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_if_stmt() noexcept;
+    std::expected<ASTNodeRef, ParseError> nud(const Token token) noexcept;
+    std::expected<ASTNodeRef, ParseError> led(const Token token, ASTNodeRef left) noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_expr(int min_prec = 0) noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_init_list_expr() noexcept;
 };

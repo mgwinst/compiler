@@ -6,7 +6,7 @@
 #include <charconv>
 #include <print>
 
-#include "utils/concepts.hpp"
+#include "concepts.hpp"
 
 template <Numeric T>
 std::optional<T> sv_to_numeric(std::string_view str)

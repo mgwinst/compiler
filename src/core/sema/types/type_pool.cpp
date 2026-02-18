@@ -1,56 +1,74 @@
-#include <functional>
+#include <array>
 
 #include "type_pool.hpp"
 
-std::optional<std::string_view> find_built_in(std::string_view type_str)
-{
-    static constexpr std::array built_ins = {
-        "int"sv, "int8"sv, "int16"sv, "int32"sv, "int64"sv,
-        "uint"sv, "uint8"sv, "uint16"sv, "uint32"sv, "uint64"sv,
-        "float"sv, "float16"sv, "float32"sv, "float64"sv,
-        "byte"sv, "bool"sv, "void"sv
-    };
-
-    auto trim = [](std::string_view sv) {
-        auto start = sv.find_first_not_of(" \t");
-        if (start == sv.npos) return std::string_view{};
-        auto end = sv.find_last_not_of(" \t");
-        return sv.substr(start, end - start + 1);
-    };
-
-    type_str = trim(type_str);
-
-    for (auto built_in : built_ins) {
-        if (type_str == built_in)
-            return built_in;
-    }
-
-    return std::nullopt;
-}
-
 namespace Sema
 {
-    TypePool::TypePool()
+    std::unordered_map<std::string_view, TypeRef> builtin_index_map = {
+        {"void"sv,    VOID_INDEX},
+        {"byte"sv,    INT8_INDEX},
+        {"bool"sv,    INT8_INDEX},
+        {"int"sv,     INT32_INDEX},
+        {"int8"sv,    INT8_INDEX},
+        {"int16"sv,   INT16_INDEX},
+        {"int32"sv,   INT32_INDEX},
+        {"int64"sv,   INT64_INDEX},
+        {"uint"sv,    UINT32_INDEX},
+        {"uint8"sv,   UINT8_INDEX},
+        {"uint16"sv,  UINT16_INDEX},
+        {"uint32"sv,  UINT32_INDEX},
+        {"uint64"sv,  UINT64_INDEX},
+        {"float"sv,   FLOAT32_INDEX},
+        {"float16"sv, FLOAT16_INDEX},
+        {"float32"sv, FLOAT32_INDEX},
+        {"float64"sv, FLOAT64_INDEX}
+    };
+
+    std::optional<std::string_view> find_built_in(std::string_view type_str)
     {
+        static constexpr std::array built_ins = {
+            "int"sv, "int8"sv, "int16"sv, "int32"sv, "int64"sv,
+            "uint"sv, "uint8"sv, "uint16"sv, "uint32"sv, "uint64"sv,
+            "float"sv, "float16"sv, "float32"sv, "float64"sv,
+            "byte"sv, "bool"sv, "void"sv
+        };
+
+        auto trim = [](std::string_view sv) {
+            auto start = sv.find_first_not_of(" \t");
+            if (start == sv.npos) return std::string_view{};
+            auto end = sv.find_last_not_of(" \t");
+            return sv.substr(start, end - start + 1);
+        };
+
+        type_str = trim(type_str);
+
+        for (auto built_in : built_ins) {
+            if (type_str == built_in)
+                return built_in;
+        }
+
+        return std::nullopt;
+    }
+
+    TypePool::TypePool() noexcept
+    {
+        types_.emplace_back(std::in_place_type<VoidType>);
         types_.emplace_back(std::in_place_type<ByteType>);
         types_.emplace_back(std::in_place_type<BoolType>);
-
         types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 8 }, true);
         types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 16 }, true);
         types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 32 }, true);
         types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 64 }, true);
-
         types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 8 }, false);
         types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 16 }, false);
         types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 32 }, false);
         types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 64 }, false);
-
         types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 16 }, true);
         types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 32 }, true);
         types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 64 }, true);
     }
 
-    TypeRef TypePool::intern_type(std::string_view type_str)
+    TypeRef TypePool::get_type(std::string_view type_str) noexcept
     {
         return parse_type(type_str);
     }
@@ -91,28 +109,8 @@ namespace Sema
         if (auto rest = match_prefix("union "sv))
             return 10000;
 
-        static std::unordered_map<std::string_view, std::function<TypeRef()>> builtin_factory = {
-            {"byte"sv,    [] { return INT32_INDEX;   }},
-            {"bool"sv,    [] { return INT32_INDEX;   }},
-            {"int"sv,     [] { return INT32_INDEX;   }},
-            {"int8"sv,    [] { return INT8_INDEX;    }},
-            {"int16"sv,   [] { return INT16_INDEX;   }},
-            {"int32"sv,   [] { return INT32_INDEX;   }},
-            {"int64"sv,   [] { return INT64_INDEX;   }},
-            {"uint"sv,    [] { return UINT32_INDEX;  }},
-            {"uint8"sv,   [] { return UINT8_INDEX;   }},
-            {"uint16"sv,  [] { return UINT16_INDEX;  }},
-            {"uint32"sv,  [] { return UINT32_INDEX;  }},
-            {"uint64"sv,  [] { return UINT64_INDEX;  }},
-            {"float"sv,   [] { return FLOAT32_INDEX; }},
-            {"float16"sv, [] { return FLOAT16_INDEX; }},
-            {"float32"sv, [] { return FLOAT32_INDEX; }},
-            {"float64"sv, [] { return FLOAT64_INDEX; }}
-        };
-
         if (auto built_in = find_built_in(type_str); built_in)
-            return builtin_factory[*built_in]();
+            return builtin_index_map[*built_in];
     }
 
 } // namespace Sema
-

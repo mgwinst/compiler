@@ -1,17 +1,1 @@
-fn func() -> int
-{
-
-}
-
-struct Foo x{1, 2, 3};
-struct Foo x = {1, 2, 3};
-const struct Foo x{a, b, c};
-struct Foo& y = x;
-
-const int size = 10;
-
-int arr[];
-
-int arr[size];
-
-int arr[3] = {5, 2, 9};
+int32 x = 1;

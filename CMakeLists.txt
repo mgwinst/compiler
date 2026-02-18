@@ -9,12 +9,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(Boost REQUIRED)
 
 add_library(compiler_lib STATIC
-    #src/core/lexer/lexer.cpp 
-    #src/core/ast/ast.cpp 
-    #src/core/ast/print.cpp
-    #src/core/parser/parser.cpp 
-    #src/core/parser/error.cpp
-    src/core/sema/type_pool.cpp
+    src/core/lexer/lexer.cpp 
+    src/core/ast/ast.cpp 
+    src/core/parser/parser.cpp 
+    src/core/parser/error.cpp
+    #src/core/sema/type_pool.cpp
 )
 
 target_include_directories(compiler_lib PUBLIC

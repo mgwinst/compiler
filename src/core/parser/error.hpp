@@ -7,8 +7,8 @@
 #include <variant>
 #include <iostream>
 
-#include "lexer/token.hpp"
-#include "utils/utils.hpp"
+#include "../lexer/token.hpp"
+#include "../utils/utils.hpp"
 
 struct SyntaxError
 {

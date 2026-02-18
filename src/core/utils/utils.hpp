@@ -6,7 +6,6 @@
 #include <filesystem>
 #include <iterator>
 #include <print>
-#include <ranges>
 
 struct SourceFile
 {

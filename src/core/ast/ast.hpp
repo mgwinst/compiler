@@ -1,14 +1,10 @@
 #pragma once
 
-#include <unordered_map>
-
-#include "ast/node.hpp"
-#include "sema/types.hpp"
+#include "ast_node.hpp"
 
 struct AST
 {   
-    std::vector<Node> nodes_;
-    TypePool types_;
+    std::vector<ASTNode> nodes_;
 
     AST() noexcept;
 
@@ -17,11 +13,11 @@ struct AST
     [[nodiscard]] auto emplace(Args&&... args) noexcept
     {
         nodes_.emplace_back(std::in_place_type<T>, std::forward<Args>(args)...);
-        return NodeRef{ nodes_.size() - 1 };
+        return ASTNodeRef{ nodes_.size() - 1 };
     }
 
-    NodeRef root() const noexcept;
+    ASTNodeRef root() const noexcept;
+
+    void print() const noexcept;
+    std::string node_to_str(ASTNodeRef ref, std::string indent) const noexcept;
 };
-
-
-

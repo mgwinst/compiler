@@ -2,6 +2,10 @@
 
 #include "types.hpp"
 
+// potential issue, if we are writing a polymorphic interface for external types,
+// that use the constructor args for those types, how can we ensure that the args we are hashing with,
+// are the exact match for the underlying type it represents? How can we enforce this at compile time?
+
 namespace Sema
 {
     inline std::size_t hash_combine(std::size_t seed, std::size_t value)
@@ -39,7 +43,7 @@ namespace Sema
     {
         static constexpr std::size_t magic = 0x3e6d8f9ab1c2d4e7ULL;
         
-        static std::size_t hash(NodeRef size, TypeRef inner_type)
+        static std::size_t hash(ASTNodeRef size, TypeRef inner_type)
         {
             auto h = hash_combine(magic, size);
             return hash_combine(h, inner_type);
@@ -58,8 +62,7 @@ namespace Sema
         }
     };
 
-    /*
-    
+
     template <>
     struct TypeHasher<FunctionType>
     {
@@ -67,10 +70,12 @@ namespace Sema
         
         static std::size_t hash()
         {
-            return hash_combine();
+            return hash_combine(magic, );
         }
     };
 
+    /*
+    
     template <>
     struct TypeHasher<StructType>
     {

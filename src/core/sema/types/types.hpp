@@ -6,16 +6,21 @@
 #include <new>
 #include <vector>
 
-#include "../utils/macros.hpp"
-#include "../utils/concepts.hpp"
+#include "../../utils/macros.hpp"
+#include "../../utils/concepts.hpp"
 
 using namespace std::string_view_literals;
 
 using TypeRef = std::size_t;
-using NodeRef = std::size_t;
+using ASTNodeRef = std::size_t;
 
 namespace Sema
 {
+    struct VoidType
+    {
+
+    };
+
     struct ByteType
     {
 
@@ -58,8 +63,9 @@ namespace Sema
 
     struct ArrayType
     {
-        NodeRef size_;
+        uint64_t size_;
         TypeRef inner_type_;
+
         bool operator==(const ArrayType& other) const = default;
     };
 
@@ -85,7 +91,7 @@ namespace Sema
         std::vector<TypeRef> param_types_;
         TypeRef return_type_;
 
-        FunctionType(Contiguous auto&& param_types, TypeRef return_type) :
+        FunctionType(StringLike auto&& name, Contiguous auto&& param_types, TypeRef return_type) :
             param_types_{ std::forward<decltype(param_types)>(param_types) },
             return_type_{ return_type } {}
     };
@@ -94,7 +100,7 @@ namespace Sema
     {
         std::vector<TypeRef> field_types_;
         
-        StructType(Contiguous auto&& field_types) :
+        StructType(StringLike auto&& name, Contiguous auto&& field_types) :
             field_types_{ std::forward<decltype(field_types)>(field_types) } {}
     };
 
@@ -110,6 +116,7 @@ namespace Sema
 
     enum class TypeKind : uint8_t
     {
+        Void,
         Byte,
         Bool,
         Integer,
@@ -128,6 +135,7 @@ namespace Sema
     template <typename T>
     inline constexpr TypeKind type_kind_v = TypeKind::Invalid;
 
+    template <> inline constexpr TypeKind type_kind_v<VoidType>      = TypeKind::Void;
     template <> inline constexpr TypeKind type_kind_v<ByteType>      = TypeKind::Byte;
     template <> inline constexpr TypeKind type_kind_v<BoolType>      = TypeKind::Bool;
     template <> inline constexpr TypeKind type_kind_v<IntegerType>   = TypeKind::Integer;
@@ -143,19 +151,20 @@ namespace Sema
 
     struct Type
     {
+        alignas(64) std::byte data_[63];
         TypeKind kind_;
-        alignas(64) std::byte data_[128];
 
         template <typename T>
             requires (type_kind_v<T> != TypeKind::Invalid)
         Type(std::in_place_type_t<T>, auto&&... args) : kind_{ type_kind_v<T> }
         {
-            ::new (data_) T{ std::forward<decltype(args)>(args)... };
+            ::new (reinterpret_cast<T*>(data_)) T{ std::forward<decltype(args)>(args)... };
         }
 
         ~Type()
         {
             switch (kind_) {
+                case TypeKind::Void:        destroy<VoidType>();      break;
                 case TypeKind::Byte:        destroy<ByteType>();      break;
                 case TypeKind::Bool:        destroy<BoolType>();      break;
                 case TypeKind::Integer:     destroy<IntegerType>();   break;

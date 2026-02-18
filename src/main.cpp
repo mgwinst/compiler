@@ -1,36 +1,20 @@
-#include <cassert>
-#include <print>
-#include <ranges>
-#include <boost/container/small_vector.hpp>
+#include "core/parser/parser.hpp"
+#include "core/utils/utils.hpp"
+// #include "core/sema/semtree.hpp"
 
-#include "core/sema/type_pool.hpp"
-
-namespace views = std::views;
-
-void test_type_pool()
+int main()
 {
-    constexpr std::array types = {
-        "int[]"sv,
-    };
+    auto source_file = get_source_file("../../test/test_program.txt");
+    Parser parser{ source_file };
+    parser.parse_compilation_unit(); // return the AST?
 
-    Sema::TypePool type_pool{};
+    const auto& ast = parser.ast_;
+    ast.print();
+    parser.diagnostics_.dump_errors();
 
-    auto v = types | views::transform([&](auto sv) { return type_pool.intern_type(sv); });
-    auto vec = std::vector(begin(v), end(v));
+    // auto& sem_tree = Sema::SemTree(ast);
+    // sem_tree.print();
 
-    assert(type_pool.types_.back().get_kind() == Sema::TypeKind::Array);
-    assert(type_pool.types_.back().as<Sema::ArrayType>().inner_type_ == 4);
-}
-
-int main(int argc, char** argv)
-{
-    // test_type_pool();
- 
-
-    boost::container::small_vector<int, 10> v;
-
-    std::println("{}", v.internal_capacity());
-    
 }
 
 
