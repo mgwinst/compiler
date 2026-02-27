@@ -3,14 +3,14 @@
 #include <expected>
 #include <tuple>
 
-#include "error.hpp"
+#include "../error/error.hpp"
 #include "../lexer/lexer.hpp"
 #include "../ast/ast.hpp"
 
-#define CONST (true)
-#define NON_CONST (false)
+#define CONST true
+#define NON_CONST false
 
-struct Parser 
+struct ParseContext 
 {
     SourceFile source_file_;
     ParseDiagnostics diagnostics_;
@@ -18,13 +18,13 @@ struct Parser
     Token prev_token_, cur_token_;
     AST ast_;
 
-    Parser(SourceFile& source_file) noexcept;
+    ParseContext(SourceFile& source_file) noexcept;
 
-    Parser(const Parser&) = delete;
-    Parser& operator=(const Parser&) = delete;
-    Parser(Parser&&) = delete;
-    Parser& operator=(Parser&&) = delete;
-    ~Parser() = default;
+    ParseContext(const ParseContext&) = delete;
+    ParseContext& operator=(const ParseContext&) = delete;
+    ParseContext(ParseContext&&) = delete;
+    ParseContext& operator=(ParseContext&&) = delete;
+    ~ParseContext() = default;
 
     const Token next_token() const noexcept;
     void eat_token() noexcept;
@@ -41,7 +41,7 @@ struct Parser
 
     std::expected<ASTNodeRef, ParseError> parse_compilation_unit() noexcept;
     std::expected<ASTNodeRef, ParseError> parse_decl() noexcept;
-    std::expected<ASTNodeRef, ParseError> parse_var_decl(bool is_const) noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_var_decl() noexcept;
     std::expected<ASTNodeRef, ParseError> parse_param_decl() noexcept;
     std::expected<ASTNodeRef, ParseError> parse_func_decl() noexcept;
     std::expected<ASTNodeRef, ParseError> parse_struct(bool is_const) noexcept;
@@ -56,4 +56,5 @@ struct Parser
     std::expected<ASTNodeRef, ParseError> led(const Token token, ASTNodeRef left) noexcept;
     std::expected<ASTNodeRef, ParseError> parse_expr(int min_prec = 0) noexcept;
     std::expected<ASTNodeRef, ParseError> parse_init_list_expr() noexcept;
+    std::expected<ASTNodeRef, ParseError> parse_type() noexcept;
 };

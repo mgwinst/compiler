@@ -7,7 +7,7 @@ namespace Sema
     struct CompilationUnitDecl
     {
         std::string name_;
-        std::vector<ASTNodeRef> decls_;
+        std::vector<SemaNodeRef> decls_;
         SymbolRef symbol_;
         TypeRef type_;
 
@@ -19,7 +19,40 @@ namespace Sema
     {
         SymbolRef symbol_;
         TypeRef type_;
-        std::optional<ASTNodeRef> init_; // single expr or init_list
+        std::optional<SemaNodeRef> init_; // single expr or init_list
+    };
+
+    struct ParamDecl
+    {
+        SymbolRef symbol_;
+        TypeRef type_;
+        //std::optional<SemaNodeRef> init_; // single expr or init_list
+    };
+
+    struct FuncDecl
+    {
+        SymbolRef symbol_;
+        TypeRef type_;
+        std::vector<SemaNodeRef> params_;
+        SemaNodeRef body_;
+
+        FuncDecl(SymbolRef symbol, TypeRef type, Contiguous auto&& params, ASTNodeRef body) noexcept :
+            symbol_{ symbol },
+            type_{ type },
+            params_{ std::forward<decltype(params)>(params) },
+            body_{ body } {}
+    };
+
+    struct RecordDecl 
+    {
+        SymbolRef symbol_;
+        TypeRef type_;
+        std::vector<SemaNodeRef> fields_;
+        
+        RecordDecl(SymbolRef symbol, TypeRef type, Contiguous auto&& fields) :
+            symbol_{ symbol }, 
+            type_{ type }, 
+            fields_{ std::forward<decltype(fields)>(fields) } {}
     };
 
 } // namespace Sema
@@ -30,7 +63,7 @@ enum class SemaNodeKind : uint8_t
     VarDecl,
     ParamDecl,
     FuncDecl,
-    StructDecl,
+    RecordDecl,
 
     CompoundStmt,
     ReturnStmt,
@@ -65,6 +98,9 @@ inline constexpr SemaNodeKind sema_node_kind_v = SemaNodeKind::Invalid;
 
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::CompilationUnitDecl>   = SemaNodeKind::CompilationUnitDecl;
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::VarDecl>               = SemaNodeKind::VarDecl;
+template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::ParamDecl>             = SemaNodeKind::ParamDecl;
+template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::FuncDecl>              = SemaNodeKind::FuncDecl;
+template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::RecordDecl>            = SemaNodeKind::RecordDecl;
 
 class SemaNode
 {
@@ -79,8 +115,11 @@ public:
     ~SemaNode()
     {
         switch (kind_) {
-            case SemaNodeKind::CompilationUnitDecl:  destroy<Sema::CompilationUnitDecl>();  break;
-            case SemaNodeKind::VarDecl:              destroy<Sema::VarDecl>();              break;
+            case SemaNodeKind::CompilationUnitDecl:      destroy<Sema::CompilationUnitDecl>();  break;
+            case SemaNodeKind::VarDecl:                  destroy<Sema::VarDecl>();              break;
+            case SemaNodeKind::ParamDecl:                destroy<Sema::ParamDecl>();            break;
+            case SemaNodeKind::FuncDecl:                 destroy<Sema::FuncDecl>();             break;
+            case SemaNodeKind::RecordDecl:               destroy<Sema::RecordDecl>();           break;
             case SemaNodeKind::Invalid: [[fallthrough]];
             default: break;
         }
@@ -95,15 +134,20 @@ public:
     template <typename T>
     [[nodiscard]] const T& as() const
     {
-        if (kind_ == sema_node_kind_v<T>)
-            return *std::launder(reinterpret_cast<const T*>(data_));
+        if (kind_ != sema_node_kind_v<T>)
+            error_exit("types don't match");
+
+        return *std::launder(reinterpret_cast<const T*>(data_));
+
     }
 
     template <typename T>
     [[nodiscard]] T& as()
     {
-        if (kind_ == sema_node_kind_v<T>)
-            return *std::launder(reinterpret_cast<T*>(data_));
+        if (kind_ != sema_node_kind_v<T>)
+            error_exit("types don't match");
+
+        return *std::launder(reinterpret_cast<T*>(data_));
     }
 
 private:

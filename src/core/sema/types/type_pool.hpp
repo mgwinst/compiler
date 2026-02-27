@@ -5,6 +5,7 @@
 
 #include "type_hash.hpp"
 #include "types.hpp"
+#include "../../ast/ast.hpp"
 
 inline constexpr std::size_t VOID_INDEX = 0;
 inline constexpr std::size_t BYTE_INDEX = 1;
@@ -21,23 +22,41 @@ inline constexpr std::size_t FLOAT16_INDEX = 11;
 inline constexpr std::size_t FLOAT32_INDEX = 12;
 inline constexpr std::size_t FLOAT64_INDEX = 13;
 
-inline constexpr std::size_t INLINE_VEC_SIZE = 8;
+inline constexpr std::size_t INLINE_VEC_SIZE{ 16 };
 
 namespace Sema
 {
     struct TypePool
     {
         std::vector<Type> types_;
-        std::unordered_map<std::size_t, boost::container::small_vector<TypeRef, INLINE_VEC_SIZE>> buckets_;
+        std::unordered_map<TypeRef, boost::container::small_vector<TypeRef, INLINE_VEC_SIZE>> buckets_;
 
-        TypePool() noexcept;
+        TypePool()
+        {
+            types_.emplace_back(std::in_place_type<VoidType>);
+            types_.emplace_back(std::in_place_type<ByteType>);
+            types_.emplace_back(std::in_place_type<BoolType>);
 
-        TypeRef get_type(std::string_view type_str) noexcept;
-        TypeRef parse_type(std::string_view type_str) noexcept;
-        
+            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 8 }, true);
+            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 16 }, true);
+            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 32 }, true);
+            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 64 }, true);
+
+            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 8 }, false);
+            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 16 }, false);
+            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 32 }, false);
+            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 64 }, false);
+
+            types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 16 }, true);
+            types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 32 }, true);
+            types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 64 }, true);
+        }
+
+        TypeRef resolve_type(const ASTNodeRef type_expr, const AST& ast) noexcept;
+
         template <typename T, typename... Args>
             requires std::is_constructible_v<T, Args...>
-        [[nodiscard]] TypeRef get_or_create(Args&&... args) noexcept
+        [[nodiscard]] TypeRef get_or_create(Args&&... args)
         {
             auto& bucket = buckets_[TypeHasher<T>::hash(args...)];
 
@@ -57,5 +76,3 @@ namespace Sema
     };
 
 } // namespace Sema
-
-

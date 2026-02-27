@@ -2,15 +2,21 @@
 
 #include "types.hpp"
 
-// potential issue, if we are writing a polymorphic interface for external types,
-// that use the constructor args for those types, how can we ensure that the args we are hashing with,
-// are the exact match for the underlying type it represents? How can we enforce this at compile time?
-
 namespace Sema
 {
     inline std::size_t hash_combine(std::size_t seed, std::size_t value)
     {
         return seed ^ (value + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+    }
+
+    inline std::size_t hash_vector(std::size_t seed, const std::vector<TypeRef>& vec) 
+    {
+        auto h = seed;
+        for (auto v : vec) {
+            h = hash_combine(h, v);
+        }
+
+        return h;
     }
 
     template <typename T>
@@ -43,10 +49,10 @@ namespace Sema
     {
         static constexpr std::size_t magic = 0x3e6d8f9ab1c2d4e7ULL;
         
-        static std::size_t hash(ASTNodeRef size, TypeRef inner_type)
+        static std::size_t hash(TypeRef inner_type, ASTNodeRef size)
         {
-            auto h = hash_combine(magic, size);
-            return hash_combine(h, inner_type);
+            auto h = hash_combine(magic, inner_type);
+            return hash_combine(h, size);
         }
     };
 
@@ -62,20 +68,46 @@ namespace Sema
         }
     };
 
+    template <>
+    struct TypeHasher<RecordType>
+    {
+        static std::size_t hash(const std::string& name)
+        {
+            return std::hash<std::string>{}(name);
+        }
+    };
+
+    /*
+    // since there is only going to be one of these, why intern a funciton definition?
+    // why not since we are already interning everything else?
+    template <>
+    struct TypeHasher<FunctionType>
+    {
+        static constexpr std::size_t magic = 0x5a8cb9d0e1f20364ULL;
+        
+        static std::size_t hash(std::vector<TypeRef> params, TypeRef ret)
+        {
+            auto h = hash_vector(magic, params);
+            return hash_combine(h, ret);
+        }
+    };
+    */
 
     template <>
     struct TypeHasher<FunctionType>
     {
         static constexpr std::size_t magic = 0x5a8cb9d0e1f20364ULL;
         
-        static std::size_t hash()
+        static std::size_t hash(const std::string& name, TypeRef ret)
         {
-            return hash_combine(magic, );
+            auto h = std::hash<std::string>{}(name);
+            h = hash_combine(magic, h);
+            return hash_combine(h, ret);
         }
+
     };
 
     /*
-    
     template <>
     struct TypeHasher<StructType>
     {

@@ -31,6 +31,12 @@
         if (!semi_colon) return std::unexpected{ SyntaxError{prev_token_, "missing ';'"} }; \
     } while (0)
 
+#define EXPECT_COLON() \
+    do { \
+        auto [colon] = expect(TokenType::COLON); \
+        if (!colon) return std::unexpected{ SyntaxError{prev_token_, "missing ':'"} }; \
+    } while (0)
+
 #define EXPECT_LBRACE() \
     do { \
         auto [lbrace] = expect(TokenType::LBRACE); \
@@ -65,4 +71,10 @@
     do { \
         auto [rbracket] = expect(TokenType::RBRACKET); \
         if (!rbracket) return std::unexpected{ SyntaxError{prev_token_, "missing ']'"} }; \
+    } while (0)
+
+#define EXPECT_VAR() \
+    do { \
+        auto [v] = expect(TokenType::KEYWORD_VAR); \
+        if (!v) return std::unexpected{ SyntaxError{prev_token_, "missing 'var'"} }; \
     } while (0)

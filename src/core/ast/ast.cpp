@@ -21,6 +21,7 @@ ASTNodeRef AST::root() const noexcept
     }
 }
 
+/*
 void AST::print() const noexcept
 {
     std::println("{}", node_to_str(root(), ""));
@@ -51,9 +52,9 @@ std::string AST::node_to_str(ASTNodeRef ref, std::string indent) const noexcept
             auto decl_type = (var.is_const_ ? "ConstVarDecl" : "VarDecl");
 
             if (!var.init_) {
-                return indent + std::format("{} ['{}', {}]", decl_type, var.name_, var.type_);
+                return indent + std::format("{} ['{}', {}]", decl_type, var.name_, var.type_string_);
             } else {
-                return indent + std::format("{} ['{}', {}]\n{}", decl_type, var.name_, var.type_, node_to_str(*var.init_, indent + "  "));
+                return indent + std::format("{} ['{}', {}]\n{}", decl_type, var.name_, var.type_string_, node_to_str(*var.init_, indent + "  "));
             }
         }
 
@@ -61,7 +62,7 @@ std::string AST::node_to_str(ASTNodeRef ref, std::string indent) const noexcept
             const auto& param = node.as<SyntaxTree::ParamDecl>();           
 
             auto decl_type = (param.is_const_ ? "ConstParamDecl" : "ParamDecl");
-            return indent + std::format("{} ['{}', {}]", decl_type, param.name_, param.type_);
+            return indent + std::format("{} ['{}', {}]", decl_type, param.name_, param.type_string_);
         }
 
         case ASTNodeKind::FuncDecl: {
@@ -72,7 +73,7 @@ std::string AST::node_to_str(ASTNodeRef ref, std::string indent) const noexcept
             
             if (func.params_.size() > 0) {
                 for (auto i = 0uz; i < func.params_.size(); i++) {
-                    param_list_str += nodes_[func.params_[i]].as<SyntaxTree::ParamDecl>().type_;
+                    param_list_str += nodes_[func.params_[i]].as<SyntaxTree::ParamDecl>().type_string_;
 
                     param_decls_str += node_to_str(func.params_[i], indent + "  ");
                     if (i != func.params_.size() - 1) {
@@ -84,14 +85,14 @@ std::string AST::node_to_str(ASTNodeRef ref, std::string indent) const noexcept
                 return indent + std::format("FuncDecl '{}' ({}) -> ({})\n{}\n{}", 
                     func.name_, 
                     param_list_str, 
-                    func.return_type_, 
+                    func.return_type_string_, 
                     param_decls_str, 
                     node_to_str(func.body_, indent + "  "));
             } 
 
             return indent + std::format("FuncDecl '{}' () . ({})\n{}",
                 func.name_, 
-                func.return_type_, 
+                func.return_type_string_, 
                 node_to_str(func.body_, indent + "  "));
         }
 
@@ -105,7 +106,7 @@ std::string AST::node_to_str(ASTNodeRef ref, std::string indent) const noexcept
                     field_list_str += '\n';
             }
             
-            return indent + std::format("StructDef ['{}']\n{}", s.type_, field_list_str);
+            return indent + std::format("StructDef ['{}']\n{}", s.type_string_, field_list_str);
         }
 
         case ASTNodeKind::CompoundStmt: {
@@ -266,3 +267,4 @@ std::string AST::node_to_str(ASTNodeRef ref, std::string indent) const noexcept
             return "parse error";
     }
 }
+    */

@@ -1,116 +1,87 @@
-#include <array>
+#include <algorithm>
+#include <string_view>
 
 #include "type_pool.hpp"
+#include "types.hpp"
+
+static std::unordered_map<std::string_view, TypeRef> builtin_map = {
+    {"void",    VOID_INDEX   },
+    {"byte",    BYTE_INDEX   },
+    {"bool",    BOOL_INDEX   },
+    {"int8",    INT8_INDEX   },
+    {"int16",   INT16_INDEX  },
+    {"int32",   INT32_INDEX  },
+    {"int",     INT32_INDEX  },
+    {"int64",   INT64_INDEX  },
+    {"uint8",   UINT8_INDEX  },
+    {"uint16",  UINT16_INDEX },
+    {"uint32",  UINT32_INDEX },
+    {"uint",    UINT32_INDEX },
+    {"uint64",  UINT64_INDEX },
+    {"float16", FLOAT16_INDEX},
+    {"float32", FLOAT32_INDEX},
+    {"float",   FLOAT32_INDEX},
+    {"float64", FLOAT64_INDEX}
+};
 
 namespace Sema
 {
-    std::unordered_map<std::string_view, TypeRef> builtin_index_map = {
-        {"void"sv,    VOID_INDEX},
-        {"byte"sv,    INT8_INDEX},
-        {"bool"sv,    INT8_INDEX},
-        {"int"sv,     INT32_INDEX},
-        {"int8"sv,    INT8_INDEX},
-        {"int16"sv,   INT16_INDEX},
-        {"int32"sv,   INT32_INDEX},
-        {"int64"sv,   INT64_INDEX},
-        {"uint"sv,    UINT32_INDEX},
-        {"uint8"sv,   UINT8_INDEX},
-        {"uint16"sv,  UINT16_INDEX},
-        {"uint32"sv,  UINT32_INDEX},
-        {"uint64"sv,  UINT64_INDEX},
-        {"float"sv,   FLOAT32_INDEX},
-        {"float16"sv, FLOAT16_INDEX},
-        {"float32"sv, FLOAT32_INDEX},
-        {"float64"sv, FLOAT64_INDEX}
-    };
-
-    std::optional<std::string_view> find_built_in(std::string_view type_str)
+    TypeRef TypePool::resolve_type(const ASTNodeRef type_expr, const AST& ast) noexcept
     {
-        static constexpr std::array built_ins = {
-            "int"sv, "int8"sv, "int16"sv, "int32"sv, "int64"sv,
-            "uint"sv, "uint8"sv, "uint16"sv, "uint32"sv, "uint64"sv,
-            "float"sv, "float16"sv, "float32"sv, "float64"sv,
-            "byte"sv, "bool"sv, "void"sv
-        };
-
-        auto trim = [](std::string_view sv) {
-            auto start = sv.find_first_not_of(" \t");
-            if (start == sv.npos) return std::string_view{};
-            auto end = sv.find_last_not_of(" \t");
-            return sv.substr(start, end - start + 1);
-        };
-
-        type_str = trim(type_str);
-
-        for (auto built_in : built_ins) {
-            if (type_str == built_in)
-                return built_in;
-        }
-
-        return std::nullopt;
-    }
-
-    TypePool::TypePool() noexcept
-    {
-        types_.emplace_back(std::in_place_type<VoidType>);
-        types_.emplace_back(std::in_place_type<ByteType>);
-        types_.emplace_back(std::in_place_type<BoolType>);
-        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 8 }, true);
-        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 16 }, true);
-        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 32 }, true);
-        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 64 }, true);
-        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 8 }, false);
-        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 16 }, false);
-        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 32 }, false);
-        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 64 }, false);
-        types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 16 }, true);
-        types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 32 }, true);
-        types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 64 }, true);
-    }
-
-    TypeRef TypePool::get_type(std::string_view type_str) noexcept
-    {
-        return parse_type(type_str);
-    }
-
-    TypeRef TypePool::parse_type(std::string_view type_str) noexcept
-    {
-        auto match_prefix = [&](std::string_view prefix) -> std::optional<std::string_view> {
-            if (type_str.starts_with(prefix))
-                return type_str.substr(prefix.size());
-            return std::nullopt;
-        };
-
-        if (auto rest = match_prefix("const "sv))
-            return get_or_create<QualifierType>(QualifierType::QualKind::Const, parse_type(*rest));
-
-        switch (type_str.back()) {
-            case (']'): {
-                auto pos = type_str.find_first_of('[');
-                return get_or_create<ArrayType>(NodeRef{ 0 }, parse_type(type_str.substr(0, pos))); // fix the size issue
+        const auto& node = ast.nodes_[type_expr];
+        
+        switch (node.get_kind()) {
+            case ASTNodeKind::QualifierTypeExpr: {
+                const auto& qual = node.as<SyntaxTree::QualifierTypeExpr>();
+                // if (qual.qualifier_ == SyntaxTree::QualifierTypeExpr::QualType::Const)
+                    return get_or_create<QualifierType>(QualifierType::QualKind::Const, resolve_type(qual.inner_, ast)); // only qualifier right now
             }
 
-            case ('*'):
-                return get_or_create<PointerType>(parse_type(type_str.substr(0, type_str.length() - 1)));
+            case ASTNodeKind::PointerTypeExpr: {
+                const auto& ptr = node.as<SyntaxTree::PointerTypeExpr>();
+                return get_or_create<PointerType>(resolve_type(ptr.inner_, ast));
+            }
 
-            case ('&'):
-                return get_or_create<ReferenceType>(parse_type(type_str.substr(0, type_str.length() - 1)));
+            case ASTNodeKind::ReferenceTypeExpr: {
+                const auto& ref = node.as<SyntaxTree::ReferenceTypeExpr>();
+                return get_or_create<ReferenceType>(resolve_type(ref.inner_, ast));
+            }
 
-            default:
-                break;
+            // size might be wrong here
+            case ASTNodeKind::ArrayTypeExpr: {
+                const auto& arr = node.as<SyntaxTree::ArrayTypeExpr>();
+
+                // temporary
+                if (!arr.size_)
+                    error_exit("array must have a size");
+
+                return get_or_create<ArrayType>(resolve_type(arr.inner_, ast), *arr.size_);
+            }
+
+            case ASTNodeKind::NamedTypeExpr: {
+                const auto& named = node.as<SyntaxTree::NamedTypeExpr>();
+
+                if (auto it = builtin_map.find(named.name_); it != builtin_map.end())
+                    return it->second;
+
+                return get_or_create<RecordType>(named.name_);
+            }
+
+            // should this be here??
+            case ASTNodeKind::FuncDecl: {
+                const auto& func = node.as<SyntaxTree::FuncDecl>();
+
+                auto ret_type = resolve_type(func.return_type_, ast);
+                
+                return get_or_create<FunctionType>(func.name_, ret_type);
+            }
+
+            default: {
+                std::println("{}", (int)node.get_kind());
+                error_exit("type mismatch during type resolution");
+
+            }
         }
-
-        if (auto rest = match_prefix("struct "sv)) // you need to capture the struct identifier too! 
-            return 10000;
-
-        if (auto rest = match_prefix("enum "sv))
-            return 10000;
-
-        if (auto rest = match_prefix("union "sv))
-            return 10000;
-
-        if (auto built_in = find_built_in(type_str); built_in)
-            return builtin_index_map[*built_in];
     }
 
 } // namespace Sema

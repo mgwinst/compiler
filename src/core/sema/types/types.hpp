@@ -8,27 +8,24 @@
 
 #include "../../utils/macros.hpp"
 #include "../../utils/concepts.hpp"
+#include "../../utils/alias.hpp"
 
-using namespace std::string_view_literals;
-
-using TypeRef = std::size_t;
-using ASTNodeRef = std::size_t;
 
 namespace Sema
 {
     struct VoidType
     {
-
+        bool operator==(const VoidType&) const { return true; }
     };
 
     struct ByteType
     {
-
+        bool operator==(const ByteType&) const { return true; }
     };
 
     struct BoolType
     {
-
+        bool operator==(const BoolType&) const { return true; }
     };
 
     struct IntegerType
@@ -63,8 +60,8 @@ namespace Sema
 
     struct ArrayType
     {
-        uint64_t size_;
         TypeRef inner_type_;
+        uint64_t size_;
 
         bool operator==(const ArrayType& other) const = default;
     };
@@ -86,32 +83,49 @@ namespace Sema
         bool operator==(const QualifierType& other) const = default;
     };
 
+    /*
     struct FunctionType
     {
         std::vector<TypeRef> param_types_;
         TypeRef return_type_;
 
-        FunctionType(StringLike auto&& name, Contiguous auto&& param_types, TypeRef return_type) :
+        FunctionType(Contiguous auto&& param_types, TypeRef return_type) :
             param_types_{ std::forward<decltype(param_types)>(param_types) },
             return_type_{ return_type } {}
-    };
-
-    struct StructType
-    {
-        std::vector<TypeRef> field_types_;
         
-        StructType(StringLike auto&& name, Contiguous auto&& field_types) :
-            field_types_{ std::forward<decltype(field_types)>(field_types) } {}
+        bool operator==(const FunctionType& other) const {
+            return return_type_ == other.return_type_ &&
+                   param_types_ == other.param_types_;
+        }
+    };
+    */
+
+    // nominally type functions over name for now...
+    // include return type tho?
+
+    struct FunctionType
+    {
+        std::string name_;
+        TypeRef return_type_;
+
+        FunctionType(StringLike auto&& name, TypeRef return_type) :
+            name_{ std::forward<decltype(name)>(name) },
+            return_type_{ return_type } {}
+
+        bool operator==(const FunctionType& other) const {
+            return return_type_ == other.return_type_ &&
+                   name_        == other.name_;
+        }
     };
 
-    struct UnionType
+    struct RecordType 
     {
+        std::string name_;
 
-    };
+        RecordType(StringLike auto&& name) :
+            name_{ std::forward<decltype(name)>(name) } {}
 
-    struct EnumType
-    {
-
+        bool operator==(const RecordType& other) const = default;
     };
 
     enum class TypeKind : uint8_t
@@ -126,9 +140,7 @@ namespace Sema
         Array,
         Qualifier,
         Function,
-        Struct,
-        Union,
-        Enumeration,
+        Record,
         Invalid
     };
 
@@ -145,9 +157,7 @@ namespace Sema
     template <> inline constexpr TypeKind type_kind_v<ArrayType>     = TypeKind::Array;
     template <> inline constexpr TypeKind type_kind_v<QualifierType> = TypeKind::Qualifier;
     template <> inline constexpr TypeKind type_kind_v<FunctionType>  = TypeKind::Function;
-    template <> inline constexpr TypeKind type_kind_v<StructType>    = TypeKind::Struct;
-    template <> inline constexpr TypeKind type_kind_v<UnionType>     = TypeKind::Union;
-    template <> inline constexpr TypeKind type_kind_v<EnumType>      = TypeKind::Enumeration;
+    template <> inline constexpr TypeKind type_kind_v<RecordType>    = TypeKind::Record;
 
     struct Type
     {
@@ -174,9 +184,7 @@ namespace Sema
                 case TypeKind::Array:       destroy<ArrayType>();     break;
                 case TypeKind::Qualifier:   destroy<QualifierType>(); break;
                 case TypeKind::Function:    destroy<FunctionType>();  break;
-                case TypeKind::Struct:      destroy<StructType>();    break;
-                case TypeKind::Union:       destroy<UnionType>();     break;
-                case TypeKind::Enumeration: destroy<EnumType>();      break;
+                case TypeKind::Record:      destroy<RecordType>();    break;
                 case TypeKind::Invalid: [[fallthrough]];
                 default: break;
             }

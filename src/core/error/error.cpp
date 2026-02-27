@@ -1,4 +1,4 @@
-#include "parser/error.hpp"
+#include "error.hpp"
 
 void ParseDiagnostics::add_error(const ParseError& error)
 {

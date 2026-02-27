@@ -12,8 +12,9 @@ add_library(compiler_lib STATIC
     src/core/lexer/lexer.cpp 
     src/core/ast/ast.cpp 
     src/core/parser/parser.cpp 
-    src/core/parser/error.cpp
-    #src/core/sema/type_pool.cpp
+    src/core/error/error.cpp
+    src/core/sema/types/type_pool.cpp
+    src/core/sema/sematree.cpp
 )
 
 target_include_directories(compiler_lib PUBLIC

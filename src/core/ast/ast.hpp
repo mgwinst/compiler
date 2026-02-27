@@ -13,7 +13,7 @@ struct AST
     [[nodiscard]] auto emplace(Args&&... args) noexcept
     {
         nodes_.emplace_back(std::in_place_type<T>, std::forward<Args>(args)...);
-        return ASTNodeRef{ nodes_.size() - 1 };
+        return nodes_.size() - 1;
     }
 
     ASTNodeRef root() const noexcept;

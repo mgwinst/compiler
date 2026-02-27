@@ -1,1 +1,6 @@
-int32 x = 1;
+var x: uint32 = 42;
+
+fn func(x: int, y: int) -> void
+{
+    
+}
