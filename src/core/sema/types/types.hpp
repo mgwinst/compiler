@@ -4,11 +4,11 @@
 #include <type_traits>
 #include <utility>
 #include <new>
-#include <vector>
 
 #include "../../utils/macros.hpp"
 #include "../../utils/concepts.hpp"
 #include "../../utils/alias.hpp"
+#include "../../utils/enums.hpp"
 
 
 namespace Sema
@@ -31,7 +31,7 @@ namespace Sema
     struct IntegerType
     {
         uint16_t bit_width_;
-        bool signedness_;
+        bool is_signed_;
 
         bool operator==(const IntegerType& other) const = default;
     };
@@ -39,7 +39,6 @@ namespace Sema
     struct FloatType
     {
         uint16_t bit_width_;
-        bool signedness_;
 
         bool operator==(const FloatType& other) const = default;
     };
@@ -68,40 +67,15 @@ namespace Sema
 
     struct QualifierType
     {
-        enum class QualKind : uint8_t
-        {
-            Const
-
-        } qualifier_;
-
+        QualifierKind kind_;
         TypeRef inner_type_;
 
-        QualifierType(QualKind qualifier, TypeRef inner_type) :
-            qualifier_{ qualifier },
+        QualifierType(QualifierKind kind, TypeRef inner_type) :
+            kind_{ kind },
             inner_type_{ inner_type } {}
 
         bool operator==(const QualifierType& other) const = default;
     };
-
-    /*
-    struct FunctionType
-    {
-        std::vector<TypeRef> param_types_;
-        TypeRef return_type_;
-
-        FunctionType(Contiguous auto&& param_types, TypeRef return_type) :
-            param_types_{ std::forward<decltype(param_types)>(param_types) },
-            return_type_{ return_type } {}
-        
-        bool operator==(const FunctionType& other) const {
-            return return_type_ == other.return_type_ &&
-                   param_types_ == other.param_types_;
-        }
-    };
-    */
-
-    // nominally type functions over name for now...
-    // include return type tho?
 
     struct FunctionType
     {
@@ -112,36 +86,19 @@ namespace Sema
             name_{ std::forward<decltype(name)>(name) },
             return_type_{ return_type } {}
 
-        bool operator==(const FunctionType& other) const {
-            return return_type_ == other.return_type_ &&
-                   name_        == other.name_;
-        }
+        bool operator==(const FunctionType& other) const = default;
     };
 
     struct RecordType 
     {
+        RecordKind kind_;
         std::string name_;
 
-        RecordType(StringLike auto&& name) :
+        RecordType(RecordKind kind, StringLike auto&& name) :
+            kind_{ kind },
             name_{ std::forward<decltype(name)>(name) } {}
 
         bool operator==(const RecordType& other) const = default;
-    };
-
-    enum class TypeKind : uint8_t
-    {
-        Void,
-        Byte,
-        Bool,
-        Integer,
-        Float,
-        Reference,
-        Pointer,
-        Array,
-        Qualifier,
-        Function,
-        Record,
-        Invalid
     };
 
     template <typename T>

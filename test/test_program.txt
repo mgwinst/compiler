@@ -1,6 +1,8 @@
-var x: uint32 = 42;
+var y: int&;
 
-fn func(x: int, y: int) -> void
+struct S
 {
-    
+    var x: int;
+    var y: int*;
+    var z: int&;
 }

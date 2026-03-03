@@ -8,11 +8,6 @@
 #include "sema_node.hpp"
 #include "../utils/alias.hpp"
 
-// should type/symbol tables be in a global compilation context object?
-// should the subsystems query this context? What are the consequences of such design?
-
-// think about the appropriate relationship between those things and the SemaTree itself... SemaContext object maybe for smaller granularity?
-
 namespace Sema
 {
     struct SemaContext;

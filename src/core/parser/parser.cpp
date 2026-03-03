@@ -63,7 +63,7 @@ std::expected<std::string_view, ParseError> ParseContext::match(TokenType token_
 
 std::expected<ASTNodeRef, ParseError> ParseContext::parse_compilation_unit() noexcept
 {
-    auto comp_unit = ast_.emplace<SyntaxTree::CompilationUnitDecl>(std::move(source_file_.file_path));
+    auto comp_unit = ast_.emplace<Syntax::CompilationUnitDecl>(std::move(source_file_.file_path));
 
     eat_token();
 
@@ -73,7 +73,7 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_compilation_unit() noe
         if (!decl)
             panic(decl.error());
         else
-            ast_.nodes_[comp_unit].as<SyntaxTree::CompilationUnitDecl>().decls_.push_back(*decl);
+            ast_.nodes_[comp_unit].as<Syntax::CompilationUnitDecl>().decls_.push_back(*decl);
     }
 
     return comp_unit;
@@ -95,7 +95,7 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_type() noexcept
 
     if (is_cur_token(TokenType::IDENTIFIER) || is_cur_token(TokenType::TYPE)) {
         auto name = std::string{ cur_token_.lexeme_ };
-        base_type = ast_.emplace<SyntaxTree::NamedTypeExpr>(std::move(name));
+        base_type = ast_.emplace<Syntax::NamedTypeExpr>(std::move(name));
         eat_token();
     } else {
         return std::unexpected{ SyntaxError{} };
@@ -107,25 +107,25 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_type() noexcept
 
             if (is_cur_token(TokenType::RBRACKET)) {
                 eat_token();
-                return ast_.emplace<SyntaxTree::ArrayTypeExpr>(base_type);
+                return ast_.emplace<Syntax::ArrayTypeExpr>(base_type);
             }
 
             auto size = parse_expr();
             if (!size) return std::unexpected{ size.error() };
 
             expect(TokenType::RBRACKET);
-            return ast_.emplace<SyntaxTree::ArrayTypeExpr>(base_type, *size);
+            return ast_.emplace<Syntax::ArrayTypeExpr>(base_type, *size);
 
         }
 
         case TokenType::STAR: {
             eat_token();
-            return ast_.emplace<SyntaxTree::PointerTypeExpr>(base_type);
+            return ast_.emplace<Syntax::PointerTypeExpr>(base_type);
         }
 
         case TokenType::AMPERSAND: {
             eat_token();
-            return ast_.emplace<SyntaxTree::ReferenceTypeExpr>(base_type);
+            return ast_.emplace<Syntax::ReferenceTypeExpr>(base_type);
         }
 
         default:
@@ -165,8 +165,7 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_decl() noexcept
         }
 
         default: {
-            eat_token(); // eat the unexpected token
-            return std::unexpected{ SyntaxError{ prev_token_ } };
+            return std::unexpected{ SyntaxError{ cur_token_ } };
         }
     }
 }
@@ -201,7 +200,7 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_var_decl() noexcept
 
             EXPECT_SEMICOLON();
 
-            return ast_.emplace<SyntaxTree::VarDecl>(std::string{ *name }, *type, *expr);
+            return ast_.emplace<Syntax::VarDecl>(std::string{ *name }, *type, *expr);
         }
 
         eat_token();
@@ -211,11 +210,11 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_var_decl() noexcept
 
         EXPECT_SEMICOLON();
 
-        return ast_.emplace<SyntaxTree::VarDecl>(std::string{ *name }, *type, *expr);
+        return ast_.emplace<Syntax::VarDecl>(std::string{ *name }, *type, *expr);
     } else {
         EXPECT_SEMICOLON();
         
-        return ast_.emplace<SyntaxTree::VarDecl>(std::string{ *name }, *type);
+        return ast_.emplace<Syntax::VarDecl>(std::string{ *name }, *type);
     }
 }
 
@@ -250,7 +249,7 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_func_decl() noexcept
     auto body = parse_compound_stmt();
     if (!body) return std::unexpected{ body.error() };
 
-    return ast_.emplace<SyntaxTree::FuncDecl>(std::string{ *name }, std::move(params), *return_type, *body);
+    return ast_.emplace<Syntax::FuncDecl>(std::string{ *name }, std::move(params), *return_type, *body);
 }
 
 std::expected<ASTNodeRef, ParseError> ParseContext::parse_param_decl() noexcept
@@ -263,12 +262,12 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_param_decl() noexcept
     auto type = parse_type();
     if (!type) return std::unexpected{ type.error() };
 
-    return ast_.emplace<SyntaxTree::ParamDecl>(std::string{ *name }, *type);
+    return ast_.emplace<Syntax::ParamDecl>(std::string{ *name }, *type);
 }
 
 std::expected<ASTNodeRef, ParseError> ParseContext::parse_struct_def() noexcept
 {
-    auto [name] = (expect(TokenType::IDENTIFIER));
+    auto [name] = expect(TokenType::IDENTIFIER);
     if (!name) return std::unexpected{SyntaxError{cur_token_, "missing struct identifier"}};
 
     EXPECT_LBRACE();
@@ -284,9 +283,8 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_struct_def() noexcept
     }
 
     EXPECT_RBRACE();
-    EXPECT_SEMICOLON();
 
-    return ast_.emplace<SyntaxTree::RecordDecl>(SyntaxTree::RecordDecl::Kind::Struct, std::string{ *name }, std::move(fields));
+    return ast_.emplace<Syntax::RecordDecl>(RecordKind::Struct, std::string{ *name }, std::move(fields));
 }
 
 std::expected<ASTNodeRef, ParseError> ParseContext::parse_field() noexcept
@@ -358,7 +356,7 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_compound_stmt() noexce
 
     EXPECT_RBRACE();
 
-    return ast_.emplace<SyntaxTree::CompoundStmt>(std::move(children));
+    return ast_.emplace<Syntax::CompoundStmt>(std::move(children));
 }
 
 std::expected<ASTNodeRef, ParseError> ParseContext::parse_while_loop() noexcept
@@ -375,7 +373,7 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_while_loop() noexcept
     auto compound_stmt = parse_compound_stmt();
     if (!compound_stmt) return std::unexpected{ compound_stmt.error() };
 
-    return ast_.emplace<SyntaxTree::WhileStmt>(*expr, *compound_stmt);
+    return ast_.emplace<Syntax::WhileStmt>(*expr, *compound_stmt);
 }
 
 std::expected<ASTNodeRef, ParseError> ParseContext::parse_for_loop() noexcept
@@ -400,7 +398,7 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_for_loop() noexcept
     auto body = parse_compound_stmt();
     if (!body) return std::unexpected{ body.error() };
 
-    return ast_.emplace<SyntaxTree::ForStmt>(*init, *cond, *update, *body);
+    return ast_.emplace<Syntax::ForStmt>(*init, *cond, *update, *body);
 }
 
 std::expected<ASTNodeRef, ParseError> ParseContext::parse_if_stmt() noexcept
@@ -424,10 +422,10 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_if_stmt() noexcept
         auto else_branch_body = parse_compound_stmt();
         if (!else_branch_body) return std::unexpected{ else_branch_body.error() };
 
-        return ast_.emplace<SyntaxTree::IfStmt>(*cond, *then_branch_body, *else_branch_body);
+        return ast_.emplace<Syntax::IfStmt>(*cond, *then_branch_body, *else_branch_body);
     }
 
-    return ast_.emplace<SyntaxTree::IfStmt>(*cond, *then_branch_body);
+    return ast_.emplace<Syntax::IfStmt>(*cond, *then_branch_body);
 }
 
 namespace prec 
@@ -527,18 +525,18 @@ std::expected<ASTNodeRef, ParseError> ParseContext::nud(const Token token) noexc
             auto op = parse_expr(prec::unary);
             if (!op) return std::unexpected{ op.error() };
 
-            return ast_.emplace<SyntaxTree::UnaryExpr>(std::string{ token.lexeme_ }, *op); // postfix = false (default value)
+            return ast_.emplace<Syntax::UnaryExpr>(std::string{ token.lexeme_ }, *op); // postfix = false (default value)
         }
 
         case TokenType::IDENTIFIER: {
-            return ast_.emplace<SyntaxTree::ReferenceExpr>(std::string{ token.lexeme_ });
+            return ast_.emplace<Syntax::ReferenceExpr>(std::string{ token.lexeme_ });
         }
 
         case TokenType::NUMERIC_LITERAL: {
             auto value = sv_to_numeric<int64_t>(token.lexeme_);
             if (!value) return std::unexpected{ cur_token_ };
 
-            return ast_.emplace<SyntaxTree::IntegerLiteralExpr>(*value);
+            return ast_.emplace<Syntax::IntegerLiteralExpr>(*value);
         }
 
         case TokenType::CHAR_LITERAL: {
@@ -546,15 +544,15 @@ std::expected<ASTNodeRef, ParseError> ParseContext::nud(const Token token) noexc
         }
 
         case TokenType::STRING_LITERAL: {
-            return ast_.emplace<SyntaxTree::StringLiteralExpr>(std::string{ token.lexeme_ });
+            return ast_.emplace<Syntax::StringLiteralExpr>(std::string{ token.lexeme_ });
         }
 
         case TokenType::KEYWORD_TRUE: {
-            return ast_.emplace<SyntaxTree::BooleanLiteralExpr>(true);
+            return ast_.emplace<Syntax::BooleanLiteralExpr>(true);
         }
 
         case TokenType::KEYWORD_FALSE: {
-            return ast_.emplace<SyntaxTree::BooleanLiteralExpr>(false);
+            return ast_.emplace<Syntax::BooleanLiteralExpr>(false);
         }
 
         case TokenType::LPAREN: {
@@ -603,12 +601,12 @@ std::expected<ASTNodeRef, ParseError> ParseContext::led(const Token token, ASTNo
             auto right = parse_expr(infix_lbp(token));
             if (!right) return std::unexpected{ right.error() };
 
-            return ast_.emplace<SyntaxTree::BinaryExpr>(std::string{ token.lexeme_ }, left, *right);
+            return ast_.emplace<Syntax::BinaryExpr>(std::string{ token.lexeme_ }, left, *right);
         }
 
         case TokenType::PLUS_PLUS:
         case TokenType::MINUS_MINUS: {
-            return ast_.emplace<SyntaxTree::UnaryExpr>(std::string{token.lexeme_}, left, true);  // postfix = true, since this is only time true, bool seems okay for now, move to clear enum later
+            return ast_.emplace<Syntax::UnaryExpr>(std::string{token.lexeme_}, left, true);  // postfix = true, since this is only time true, bool seems okay for now, move to clear enum later
         }
 
         // func(x)
@@ -625,7 +623,7 @@ std::expected<ASTNodeRef, ParseError> ParseContext::led(const Token token, ASTNo
             }
 
             EXPECT_RPAREN();
-            return ast_.emplace<SyntaxTree::CallExpr>(left, std::move(args));
+            return ast_.emplace<Syntax::CallExpr>(left, std::move(args));
         }
 
         // arr[x]
@@ -634,7 +632,7 @@ std::expected<ASTNodeRef, ParseError> ParseContext::led(const Token token, ASTNo
             if (!index) return std::unexpected{ index.error() };
 
             EXPECT_RBRACKET();
-            return ast_.emplace<SyntaxTree::ArraySubscriptExpr>(left, *index);
+            return ast_.emplace<Syntax::ArraySubscriptExpr>(left, *index);
         }
 
         case TokenType::DOT:
@@ -644,7 +642,7 @@ std::expected<ASTNodeRef, ParseError> ParseContext::led(const Token token, ASTNo
 
             auto is_arrow = token.type_ == TokenType::ARROW ? true : false;
 
-            return ast_.emplace<SyntaxTree::MemberExpr>(left, std::string{ *member_name }, is_arrow);
+            return ast_.emplace<Syntax::MemberExpr>(left, std::string{ *member_name }, is_arrow);
         }
 
         default:
@@ -688,5 +686,5 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_init_list_expr() noexc
 
     EXPECT_RBRACE();
 
-    return ast_.emplace<SyntaxTree::InitListExpr>(std::move(init_values)); 
+    return ast_.emplace<Syntax::InitListExpr>(std::move(init_values)); 
 }

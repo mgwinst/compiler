@@ -10,13 +10,15 @@
 #include "../utils/macros.hpp"
 #include "../utils/concepts.hpp"
 #include "../utils/alias.hpp"
+#include "../utils/enums.hpp"
+
 
 // nodes should contain std::span<const char> source_span_ for errors
 // nodes should have TypeExpr node instead of string to store type info?
 
 // ************** DECLARATIONS **************
 
-namespace SyntaxTree
+namespace Syntax
 {
     struct CompilationUnitDecl
     {
@@ -65,22 +67,13 @@ namespace SyntaxTree
             body_{ body } {}
     };
 
-    struct FieldDecl
-    {
-        std::string name_;
-        ASTNodeRef type_expr_;
-
-        FieldDecl(StringLike auto&& name, ASTNodeRef type_expr) :
-            name_{ std::forward<decltype(name)>(name) }, type_expr_{ type_expr } {}
-    };
-
     struct RecordDecl
     {
-        enum class Kind { Struct, Union, Enum } kind_;
+        RecordKind kind_;
         std::string name_;
         std::vector<ASTNodeRef> fields_;
 
-        RecordDecl(Kind kind, StringLike auto&& name, Contiguous auto&& fields) noexcept :
+        RecordDecl(RecordKind kind, StringLike auto&& name, Contiguous auto&& fields) noexcept :
             kind_{ kind },
             name_{ std::forward<decltype(name)>(name) },
             fields_{ std::forward<decltype(fields)>(fields) } {}
@@ -179,7 +172,7 @@ namespace SyntaxTree
     {
         std::string op_;
         ASTNodeRef operand_;
-        bool is_postfix_ = false;
+        bool is_postfix_;
 
         UnaryExpr(StringLike auto&& op, ASTNodeRef operand, bool is_postfix = false) noexcept :
             op_{ std::forward<decltype(op)>(op) },
@@ -201,7 +194,6 @@ namespace SyntaxTree
     struct ReferenceExpr
     {
         std::string name_;
-        // symbol to entity that it is referring to
 
         ReferenceExpr(StringLike auto&& name) noexcept : 
             name_{ std::forward<decltype(name)>(name) } {}
@@ -209,7 +201,7 @@ namespace SyntaxTree
 
     struct CallExpr
     {
-        ASTNodeRef callee_; // either callee is a reference expression, and if so that would hold a symbol pointer or 
+        ASTNodeRef callee_; // callee is a reference expression ^
         std::vector<ASTNodeRef> args_;
 
         CallExpr(ASTNodeRef callee, Contiguous auto&& args) noexcept :
@@ -271,16 +263,11 @@ namespace SyntaxTree
 
     struct QualifierTypeExpr
     {
-        enum class QualType : uint8_t
-        {
-            Const
-
-        } qualifier_;
-
+        QualifierKind kind_;
         ASTNodeRef inner_;
 
-        QualifierTypeExpr(QualType qualifier, ASTNodeRef inner) :
-            qualifier_{ qualifier }, inner_{ inner } {}
+        QualifierTypeExpr(QualifierKind kind, ASTNodeRef inner) :
+            kind_{ kind }, inner_{ inner } {}
     };
     
     struct PointerTypeExpr
@@ -307,83 +294,40 @@ namespace SyntaxTree
             name_{ std::forward<decltype(name)>(name) } {}
     };
 
-} // namespace SyntaxTree
-
-enum class ASTNodeKind : uint8_t 
-{
-    CompilationUnitDecl,
-    VarDecl,
-    ParamDecl,
-    FuncDecl,
-    RecordDecl,
-
-    CompoundStmt,
-    ReturnStmt,
-    IfStmt,
-    WhileStmt,
-    ForStmt,
-
-    IntegerLiteralExpr,
-    FloatLiteralExpr,
-    CharLiteralExpr,
-    StringLiteralExpr,
-    BooleanLiteralExpr,
-
-    UnaryExpr,
-    BinaryExpr,
-    ReferenceExpr,
-    CallExpr,
-    MemberExpr,
-    ArraySubscriptExpr,
-    InitListExpr,
-    ExplicitCastExpr,
-    ImplicitCastExpr,
-    NewExpr,
-    DeleteExpr,
-
-    QualifierTypeExpr,
-    PointerTypeExpr,
-    ReferenceTypeExpr,
-    ArrayTypeExpr,
-    NamedTypeExpr,
-
-    Invalid
-};
+} // namespace Syntax
 
 template <typename T>
 inline constexpr ASTNodeKind ast_node_kind_v = ASTNodeKind::Invalid;
 
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::CompilationUnitDecl> = ASTNodeKind::CompilationUnitDecl;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::VarDecl>             = ASTNodeKind::VarDecl;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::ParamDecl>           = ASTNodeKind::ParamDecl;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::FuncDecl>            = ASTNodeKind::FuncDecl;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::RecordDecl>          = ASTNodeKind::RecordDecl;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::CompoundStmt>        = ASTNodeKind::CompoundStmt;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::ReturnStmt>          = ASTNodeKind::ReturnStmt;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::IfStmt>              = ASTNodeKind::IfStmt;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::WhileStmt>           = ASTNodeKind::WhileStmt;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::ForStmt>             = ASTNodeKind::ForStmt;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::IntegerLiteralExpr>  = ASTNodeKind::IntegerLiteralExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::FloatLiteralExpr>    = ASTNodeKind::FloatLiteralExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::CharLiteralExpr>     = ASTNodeKind::CharLiteralExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::StringLiteralExpr>   = ASTNodeKind::StringLiteralExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::BooleanLiteralExpr>  = ASTNodeKind::BooleanLiteralExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::UnaryExpr>           = ASTNodeKind::UnaryExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::BinaryExpr>          = ASTNodeKind::BinaryExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::ReferenceExpr>       = ASTNodeKind::ReferenceExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::CallExpr>            = ASTNodeKind::CallExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::MemberExpr>          = ASTNodeKind::MemberExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::ArraySubscriptExpr>  = ASTNodeKind::ArraySubscriptExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::InitListExpr>        = ASTNodeKind::InitListExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::ExplicitCastExpr>    = ASTNodeKind::ExplicitCastExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::ImplicitCastExpr>    = ASTNodeKind::ImplicitCastExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::NewExpr>             = ASTNodeKind::NewExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::DeleteExpr>          = ASTNodeKind::DeleteExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::QualifierTypeExpr>   = ASTNodeKind::QualifierTypeExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::PointerTypeExpr>     = ASTNodeKind::PointerTypeExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::ReferenceTypeExpr>   = ASTNodeKind::ReferenceTypeExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::ArrayTypeExpr>       = ASTNodeKind::ArrayTypeExpr;
-template <> inline constexpr ASTNodeKind ast_node_kind_v<SyntaxTree::NamedTypeExpr>       = ASTNodeKind::NamedTypeExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::CompilationUnitDecl> = ASTNodeKind::CompilationUnitDecl;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::VarDecl>             = ASTNodeKind::VarDecl;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ParamDecl>           = ASTNodeKind::ParamDecl;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::FuncDecl>            = ASTNodeKind::FuncDecl;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::RecordDecl>          = ASTNodeKind::RecordDecl;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::CompoundStmt>        = ASTNodeKind::CompoundStmt;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ReturnStmt>          = ASTNodeKind::ReturnStmt;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::IfStmt>              = ASTNodeKind::IfStmt;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::WhileStmt>           = ASTNodeKind::WhileStmt;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ForStmt>             = ASTNodeKind::ForStmt;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::IntegerLiteralExpr>  = ASTNodeKind::IntegerLiteralExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::FloatLiteralExpr>    = ASTNodeKind::FloatLiteralExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::CharLiteralExpr>     = ASTNodeKind::CharLiteralExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::StringLiteralExpr>   = ASTNodeKind::StringLiteralExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::BooleanLiteralExpr>  = ASTNodeKind::BooleanLiteralExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::UnaryExpr>           = ASTNodeKind::UnaryExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::BinaryExpr>          = ASTNodeKind::BinaryExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ReferenceExpr>       = ASTNodeKind::ReferenceExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::CallExpr>            = ASTNodeKind::CallExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::MemberExpr>          = ASTNodeKind::MemberExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ArraySubscriptExpr>  = ASTNodeKind::ArraySubscriptExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::InitListExpr>        = ASTNodeKind::InitListExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ExplicitCastExpr>    = ASTNodeKind::ExplicitCastExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ImplicitCastExpr>    = ASTNodeKind::ImplicitCastExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::QualifierTypeExpr>   = ASTNodeKind::QualifierTypeExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::PointerTypeExpr>     = ASTNodeKind::PointerTypeExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ReferenceTypeExpr>   = ASTNodeKind::ReferenceTypeExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ArrayTypeExpr>       = ASTNodeKind::ArrayTypeExpr;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::NamedTypeExpr>       = ASTNodeKind::NamedTypeExpr;
 
 class ASTNode
 {
@@ -398,37 +342,35 @@ public:
     ~ASTNode()
     {
         switch (kind_) {
-            case ASTNodeKind::CompilationUnitDecl:  destroy<SyntaxTree::CompilationUnitDecl>();  break;
-            case ASTNodeKind::VarDecl:              destroy<SyntaxTree::VarDecl>();              break;
-            case ASTNodeKind::ParamDecl:            destroy<SyntaxTree::ParamDecl>();            break;
-            case ASTNodeKind::FuncDecl:             destroy<SyntaxTree::FuncDecl>();             break;
-            case ASTNodeKind::RecordDecl:           destroy<SyntaxTree::RecordDecl>();           break;
-            case ASTNodeKind::CompoundStmt:         destroy<SyntaxTree::CompoundStmt>();         break;
-            case ASTNodeKind::ReturnStmt:           destroy<SyntaxTree::ReturnStmt>();           break;
-            case ASTNodeKind::IfStmt:               destroy<SyntaxTree::IfStmt>();               break;
-            case ASTNodeKind::WhileStmt:            destroy<SyntaxTree::WhileStmt>();            break;
-            case ASTNodeKind::ForStmt:              destroy<SyntaxTree::ForStmt>();              break;
-            case ASTNodeKind::IntegerLiteralExpr:   destroy<SyntaxTree::IntegerLiteralExpr>();   break;
-            case ASTNodeKind::FloatLiteralExpr:     destroy<SyntaxTree::FloatLiteralExpr>();     break;
-            case ASTNodeKind::CharLiteralExpr:      destroy<SyntaxTree::CharLiteralExpr>();      break;
-            case ASTNodeKind::StringLiteralExpr:    destroy<SyntaxTree::StringLiteralExpr>();    break;
-            case ASTNodeKind::BooleanLiteralExpr:   destroy<SyntaxTree::BooleanLiteralExpr>();   break;
-            case ASTNodeKind::UnaryExpr:            destroy<SyntaxTree::UnaryExpr>();            break;
-            case ASTNodeKind::BinaryExpr:           destroy<SyntaxTree::BinaryExpr>();           break;
-            case ASTNodeKind::ReferenceExpr:        destroy<SyntaxTree::ReferenceExpr>();        break;
-            case ASTNodeKind::CallExpr:             destroy<SyntaxTree::CallExpr>();             break;
-            case ASTNodeKind::MemberExpr:           destroy<SyntaxTree::MemberExpr>();           break;
-            case ASTNodeKind::ArraySubscriptExpr:   destroy<SyntaxTree::ArraySubscriptExpr>();   break;
-            case ASTNodeKind::InitListExpr:         destroy<SyntaxTree::InitListExpr>();         break;
-            case ASTNodeKind::ExplicitCastExpr:     destroy<SyntaxTree::ExplicitCastExpr>();     break;
-            case ASTNodeKind::ImplicitCastExpr:     destroy<SyntaxTree::ImplicitCastExpr>();     break;
-            case ASTNodeKind::NewExpr:              destroy<SyntaxTree::NewExpr>();              break;
-            case ASTNodeKind::DeleteExpr:           destroy<SyntaxTree::DeleteExpr>();           break;
-            case ASTNodeKind::QualifierTypeExpr:    destroy<SyntaxTree::QualifierTypeExpr>();    break;
-            case ASTNodeKind::PointerTypeExpr:      destroy<SyntaxTree::PointerTypeExpr>();      break;
-            case ASTNodeKind::ReferenceTypeExpr:    destroy<SyntaxTree::ReferenceTypeExpr>();    break;
-            case ASTNodeKind::ArrayTypeExpr:        destroy<SyntaxTree::ArrayTypeExpr>();        break;
-            case ASTNodeKind::NamedTypeExpr:        destroy<SyntaxTree::NamedTypeExpr>();        break;
+            case ASTNodeKind::CompilationUnitDecl:  destroy<Syntax::CompilationUnitDecl>();  break;
+            case ASTNodeKind::VarDecl:              destroy<Syntax::VarDecl>();              break;
+            case ASTNodeKind::ParamDecl:            destroy<Syntax::ParamDecl>();            break;
+            case ASTNodeKind::FuncDecl:             destroy<Syntax::FuncDecl>();             break;
+            case ASTNodeKind::RecordDecl:           destroy<Syntax::RecordDecl>();           break;
+            case ASTNodeKind::CompoundStmt:         destroy<Syntax::CompoundStmt>();         break;
+            case ASTNodeKind::ReturnStmt:           destroy<Syntax::ReturnStmt>();           break;
+            case ASTNodeKind::IfStmt:               destroy<Syntax::IfStmt>();               break;
+            case ASTNodeKind::WhileStmt:            destroy<Syntax::WhileStmt>();            break;
+            case ASTNodeKind::ForStmt:              destroy<Syntax::ForStmt>();              break;
+            case ASTNodeKind::IntegerLiteralExpr:   destroy<Syntax::IntegerLiteralExpr>();   break;
+            case ASTNodeKind::FloatLiteralExpr:     destroy<Syntax::FloatLiteralExpr>();     break;
+            case ASTNodeKind::CharLiteralExpr:      destroy<Syntax::CharLiteralExpr>();      break;
+            case ASTNodeKind::StringLiteralExpr:    destroy<Syntax::StringLiteralExpr>();    break;
+            case ASTNodeKind::BooleanLiteralExpr:   destroy<Syntax::BooleanLiteralExpr>();   break;
+            case ASTNodeKind::UnaryExpr:            destroy<Syntax::UnaryExpr>();            break;
+            case ASTNodeKind::BinaryExpr:           destroy<Syntax::BinaryExpr>();           break;
+            case ASTNodeKind::ReferenceExpr:        destroy<Syntax::ReferenceExpr>();        break;
+            case ASTNodeKind::CallExpr:             destroy<Syntax::CallExpr>();             break;
+            case ASTNodeKind::MemberExpr:           destroy<Syntax::MemberExpr>();           break;
+            case ASTNodeKind::ArraySubscriptExpr:   destroy<Syntax::ArraySubscriptExpr>();   break;
+            case ASTNodeKind::InitListExpr:         destroy<Syntax::InitListExpr>();         break;
+            case ASTNodeKind::ExplicitCastExpr:     destroy<Syntax::ExplicitCastExpr>();     break;
+            case ASTNodeKind::ImplicitCastExpr:     destroy<Syntax::ImplicitCastExpr>();     break;
+            case ASTNodeKind::QualifierTypeExpr:    destroy<Syntax::QualifierTypeExpr>();    break;
+            case ASTNodeKind::PointerTypeExpr:      destroy<Syntax::PointerTypeExpr>();      break;
+            case ASTNodeKind::ReferenceTypeExpr:    destroy<Syntax::ReferenceTypeExpr>();    break;
+            case ASTNodeKind::ArrayTypeExpr:        destroy<Syntax::ArrayTypeExpr>();        break;
+            case ASTNodeKind::NamedTypeExpr:        destroy<Syntax::NamedTypeExpr>();        break;
             case ASTNodeKind::Invalid: [[fallthrough]];
             default: break;
         }

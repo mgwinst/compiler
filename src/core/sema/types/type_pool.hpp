@@ -31,26 +31,7 @@ namespace Sema
         std::vector<Type> types_;
         std::unordered_map<TypeRef, boost::container::small_vector<TypeRef, INLINE_VEC_SIZE>> buckets_;
 
-        TypePool()
-        {
-            types_.emplace_back(std::in_place_type<VoidType>);
-            types_.emplace_back(std::in_place_type<ByteType>);
-            types_.emplace_back(std::in_place_type<BoolType>);
-
-            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 8 }, true);
-            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 16 }, true);
-            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 32 }, true);
-            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 64 }, true);
-
-            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 8 }, false);
-            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 16 }, false);
-            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 32 }, false);
-            types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 64 }, false);
-
-            types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 16 }, true);
-            types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 32 }, true);
-            types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 64 }, true);
-        }
+        TypePool();
 
         TypeRef resolve_type(const ASTNodeRef type_expr, const AST& ast) noexcept;
 
@@ -73,6 +54,8 @@ namespace Sema
 
             return id;
         }
+
+        void print() const noexcept;
     };
 
 } // namespace Sema

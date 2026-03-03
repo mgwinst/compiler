@@ -14,7 +14,9 @@ add_library(compiler_lib STATIC
     src/core/parser/parser.cpp 
     src/core/error/error.cpp
     src/core/sema/types/type_pool.cpp
+    src/core/sema/symbol.cpp
     src/core/sema/sematree.cpp
+    src/core/utils/print/print.cpp
 )
 
 target_include_directories(compiler_lib PUBLIC

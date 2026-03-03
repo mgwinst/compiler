@@ -1,34 +1,18 @@
 #pragma once
 
+#include <format>
 #include <ranges>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
-#include "types/types.hpp"
+#include "../utils/alias.hpp"
+#include "../utils/enums.hpp"
 
 using SymbolRef = int64_t;
 
 namespace Sema
 {
-    enum class SymbolKind
-    {
-
-    };
-
-    enum class StorageClass
-    {
-        Auto,
-        Static,
-    };
-
-    enum class Linkage
-    {
-        Internal,
-        External,
-        Weak,
-        None
-    };
-
     // where will these go? size, alignment, offset (layout related info), is_const, 
     // (declaring scope useful?), linkage, storage type...
 
@@ -41,6 +25,11 @@ namespace Sema
         TypeRef type_;
         StorageClass storage_;
         Linkage linkage_;
+
+        auto to_string() const 
+        {
+            return std::format("Symbol: [Identifier: '{}'], [Type: {}]]", identifier_, type_);
+        }
     };
 
     template <typename T>
@@ -50,6 +39,9 @@ namespace Sema
 
     struct SymbolTable
     {
+        std::vector<std::unordered_map<std::string, SymbolRef>> scopes_;
+        std::vector<Symbol> symbol_pool_;
+
         SymbolRef insert(const HasName auto& node, TypeRef type) noexcept
         {
             Symbol symbol{ 
@@ -64,41 +56,16 @@ namespace Sema
             
             cur_scope().emplace(node.name_, idx);
 
-            return idx;
+            return static_cast<SymbolRef>(idx);
         }
 
-        bool exists_in_scope(const std::string& ident)
-        {
-            return cur_scope().contains(ident);           
-        }       
+        bool exists_in_scope(const std::string& ident) noexcept;
+        SymbolRef lookup(const std::string& ident) noexcept;
+        std::unordered_map<std::string, SymbolRef>& cur_scope() noexcept;
+        void enter_scope() noexcept;
+        void exit_scope() noexcept;
 
-        SymbolRef lookup(const std::string& ident) noexcept {
-            for (auto& scope : scopes_ | std::views::reverse) {
-                if (scope.contains(ident)) {
-                    return scope[ident];
-                }
-            }
-
-            return -1;
-        }
-
-        void enter_scope() noexcept
-        {
-            scopes_.push_back({ });
-        }
-
-        void exit_scope() noexcept
-        {
-            scopes_.pop_back();
-        }
-
-        std::vector<std::unordered_map<std::string, SymbolRef>> scopes_;
-        std::vector<Symbol> symbol_pool_;
-
-        std::unordered_map<std::string, SymbolRef>& cur_scope() 
-        { 
-            return scopes_.back();
-        }
+        void print() const noexcept;
     };
 
 } // namespace Sema

@@ -2,7 +2,7 @@
 #include "core/parser/parser.hpp"
 #include "core/sema/sematree.hpp"
 #include "core/utils/utils.hpp"
-// #include "core/sema/semtree.hpp"
+#include "core/utils/print/print.hpp"
 
 int main()
 {
@@ -14,15 +14,23 @@ int main()
     parse_ctx.diagnostics_.dump_errors();
     
     const auto& ast = parse_ctx.ast_;
-    // ast.print();
 
     Sema::SemaContext sema_ctx;
-    std::println("pre: {}", sema_ctx.type_pool_->types_.size());
 
     sema_ctx.build_sema_tree(ast);
 
-    //std::println("{}", sema_ctx.symbol_table_->symbol_pool_.size());
-    std::println("post: {}", sema_ctx.type_pool_->types_.size());
+    std::println("new types: {}\n", sema_ctx.type_pool_->types_.size() - 14);
+    
+    sema_ctx.type_pool_->print();
+
+    std::println();
+
+    std::println("symbol table size: {}\n", sema_ctx.symbol_table_->symbol_pool_.size());
+    sema_ctx.symbol_table_->print();
+
+    std::println();
+
+    print(*sema_ctx.sema_tree_, sema_ctx);
 
 }
 

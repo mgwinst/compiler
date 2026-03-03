@@ -1,5 +1,7 @@
 #pragma once   
 
+#include <vector>
+
 #include "types.hpp"
 
 namespace Sema
@@ -61,37 +63,12 @@ namespace Sema
     {
         static constexpr std::size_t magic = 0x4f7e9a0bc1d2e3f8ULL;
         
-        static std::size_t hash(QualifierType::QualKind q, TypeRef inner_type)
+        static std::size_t hash(QualifierKind q, TypeRef inner_type)
         {
             auto h = hash_combine(magic, static_cast<std::size_t>(q));
             return hash_combine(h, inner_type);
         }
     };
-
-    template <>
-    struct TypeHasher<RecordType>
-    {
-        static std::size_t hash(const std::string& name)
-        {
-            return std::hash<std::string>{}(name);
-        }
-    };
-
-    /*
-    // since there is only going to be one of these, why intern a funciton definition?
-    // why not since we are already interning everything else?
-    template <>
-    struct TypeHasher<FunctionType>
-    {
-        static constexpr std::size_t magic = 0x5a8cb9d0e1f20364ULL;
-        
-        static std::size_t hash(std::vector<TypeRef> params, TypeRef ret)
-        {
-            auto h = hash_vector(magic, params);
-            return hash_combine(h, ret);
-        }
-    };
-    */
 
     template <>
     struct TypeHasher<FunctionType>
@@ -100,47 +77,21 @@ namespace Sema
         
         static std::size_t hash(const std::string& name, TypeRef ret)
         {
-            auto h = std::hash<std::string>{}(name);
-            h = hash_combine(magic, h);
+            auto h = hash_combine(magic, std::hash<std::string>{}(name));
             return hash_combine(h, ret);
         }
-
-    };
-
-    /*
-    template <>
-    struct TypeHasher<StructType>
-    {
-        static constexpr std::size_t magic = 0x6b9dc0e1f2034567ULL;
-        
-        static std::size_t hash()
-        {
-            return hash_combine();
-        }
     };
 
     template <>
-    struct TypeHasher<UnionType>
+    struct TypeHasher<RecordType>
     {
-        static constexpr std::size_t magic = 0x7c8ed1f203456789ULL;
-        
-        static std::size_t hash()
+        static constexpr std::size_t magic = 0x6e2fb3d9a3f20581ULL;
+
+        static std::size_t hash(RecordKind kind, const std::string& name)
         {
-            return hash_combine();
+            auto h = hash_combine(magic, static_cast<std::size_t>(kind));
+            return hash_combine(h, std::hash<std::string>{}(name));
         }
     };
 
-    template <>
-    struct TypeHasher<EnumType>
-    {
-        static constexpr std::size_t magic = 0x8d9fe0f112345678ULL;
-        
-        static std::size_t hash()
-        {
-            return hash_combine();
-        }
-    };
-
-    */
-    
 } // namespace Sema

@@ -1,8 +1,10 @@
-#include <algorithm>
 #include <string_view>
 
 #include "type_pool.hpp"
 #include "types.hpp"
+#include "../../utils/print/print.hpp"
+
+#define NODE_LIMIT (1 << 18)
 
 static std::unordered_map<std::string_view, TypeRef> builtin_map = {
     {"void",    VOID_INDEX   },
@@ -26,30 +28,59 @@ static std::unordered_map<std::string_view, TypeRef> builtin_map = {
 
 namespace Sema
 {
+    TypePool::TypePool()
+    {
+        types_.reserve(NODE_LIMIT);
+
+        types_.emplace_back(std::in_place_type<VoidType>);
+        types_.emplace_back(std::in_place_type<ByteType>);
+        types_.emplace_back(std::in_place_type<BoolType>);
+
+        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 8 }, true);
+        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 16 }, true);
+        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 32 }, true);
+        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 64 }, true);
+
+        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 8 }, false);
+        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 16 }, false);
+        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 32 }, false);
+        types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 64 }, false);
+
+        types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 16 });
+        types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 32 });
+        types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 64 });
+    }
+
     TypeRef TypePool::resolve_type(const ASTNodeRef type_expr, const AST& ast) noexcept
     {
         const auto& node = ast.nodes_[type_expr];
         
         switch (node.get_kind()) {
             case ASTNodeKind::QualifierTypeExpr: {
-                const auto& qual = node.as<SyntaxTree::QualifierTypeExpr>();
-                // if (qual.qualifier_ == SyntaxTree::QualifierTypeExpr::QualType::Const)
-                    return get_or_create<QualifierType>(QualifierType::QualKind::Const, resolve_type(qual.inner_, ast)); // only qualifier right now
+                const auto& qual = node.as<Syntax::QualifierTypeExpr>();
+                switch(qual.kind_) {
+                    case QualifierKind::Const: {
+                        return get_or_create<QualifierType>(QualifierKind::Const, resolve_type(qual.inner_, ast));
+                    }
+
+                    default:
+                        error_exit("qualifier not supported");
+                }
             }
 
             case ASTNodeKind::PointerTypeExpr: {
-                const auto& ptr = node.as<SyntaxTree::PointerTypeExpr>();
+                const auto& ptr = node.as<Syntax::PointerTypeExpr>();
                 return get_or_create<PointerType>(resolve_type(ptr.inner_, ast));
             }
 
             case ASTNodeKind::ReferenceTypeExpr: {
-                const auto& ref = node.as<SyntaxTree::ReferenceTypeExpr>();
+                const auto& ref = node.as<Syntax::ReferenceTypeExpr>();
                 return get_or_create<ReferenceType>(resolve_type(ref.inner_, ast));
             }
 
             // size might be wrong here
             case ASTNodeKind::ArrayTypeExpr: {
-                const auto& arr = node.as<SyntaxTree::ArrayTypeExpr>();
+                const auto& arr = node.as<Syntax::ArrayTypeExpr>();
 
                 // temporary
                 if (!arr.size_)
@@ -59,28 +90,56 @@ namespace Sema
             }
 
             case ASTNodeKind::NamedTypeExpr: {
-                const auto& named = node.as<SyntaxTree::NamedTypeExpr>();
+                const auto& named = node.as<Syntax::NamedTypeExpr>();
 
                 if (auto it = builtin_map.find(named.name_); it != builtin_map.end())
                     return it->second;
 
-                return get_or_create<RecordType>(named.name_);
+                return get_or_create<RecordType>(RecordKind::Unknown, named.name_); // resolves during type checking (we shouldn't know its struct/enum/union yet, check the symbol table)
             }
 
-            // should this be here??
+            // should these be here?
+            // function and record defintions are exceptions because they "define their own types"
+            
             case ASTNodeKind::FuncDecl: {
-                const auto& func = node.as<SyntaxTree::FuncDecl>();
+                const auto& func = node.as<Syntax::FuncDecl>();
 
                 auto ret_type = resolve_type(func.return_type_, ast);
                 
                 return get_or_create<FunctionType>(func.name_, ret_type);
             }
 
-            default: {
-                std::println("{}", (int)node.get_kind());
-                error_exit("type mismatch during type resolution");
+            case ASTNodeKind::RecordDecl: {
+                const auto& rec = node.as<Syntax::RecordDecl>();
 
+                switch (rec.kind_) {
+                    case RecordKind::Struct: {
+                        return get_or_create<RecordType>(RecordKind::Struct, rec.name_);
+                    }
+
+                    case RecordKind::Union: {
+                        return get_or_create<RecordType>(RecordKind::Union, rec.name_);
+                    }
+
+                    case RecordKind::Enum: {
+                        return get_or_create<RecordType>(RecordKind::Enum, rec.name_);
+                    }
+
+                    default:
+                        error_exit("Record type must be struct/union/enum");
+                }
             }
+
+            default: {
+                error_exit("type mismatch during type resolution");
+            }
+        }
+    }
+
+    void TypePool::print() const noexcept
+    {
+        for (auto i = 0uz; i < types_.size(); i++) {
+            std::println("{}", type_to_str(*this, i));
         }
     }
 
