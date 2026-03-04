@@ -1,5 +1,12 @@
 #include "print.hpp"
 
+namespace
+{
+    std::unordered_map<QualifierKind, std::string> qualkind_to_str {
+        {QualifierKind::Const, "const"}
+    };
+}
+
 std::string type_to_str(const Sema::TypePool& type_pool, TypeRef type_ref)
 {
     const auto& type = type_pool.types_[type_ref];
@@ -44,6 +51,11 @@ std::string type_to_str(const Sema::TypePool& type_pool, TypeRef type_ref)
         case TypeKind::Array: {
             const auto& t = type.as<Sema::ArrayType>();
             return std::format("{}[]", type_to_str(type_pool, t.inner_type_));
+        }
+
+        case TypeKind::Qualifier: {
+            const auto& t = type.as<Sema::QualifierType>();
+            return std::format("{} {}", qualkind_to_str[t.kind_], type_to_str(type_pool, t.inner_type_));
         }
 
         case TypeKind::Function: {
@@ -110,33 +122,44 @@ std::string sema_node_to_str(const Sema::SemaContext& sema_ctx, const Sema::Sema
             return indent + std::format("ParamDecl ['{}', {}]", name, type_to_str(*sema_ctx.type_pool_, type));
         }
 
-        /*
         // FuncDecl 'f' (int, int) -> (int)
         case SemaNodeKind::FuncDecl: {
             const auto& func = node.as<Sema::FuncDecl>();
 
-            std::string param_list_str{};
+            auto [func_name, func_type] = query_symbol(sema_ctx, func.symbol_);
+            auto ret_type = sema_ctx.type_pool_->types_[func_type].as<Sema::FunctionType>().return_type_;
+            auto ret_type_str = type_to_str(*sema_ctx.type_pool_, ret_type);
+
+            std::string param_type_list_str{};
             std::string param_decls_str{};
             
             if (func.params_.size() > 0) {
-                for (auto p : func.params_) {
-                    auto [name, type] = query_symbol(sema_ctx, )
+                for (auto i = 0uz; i < func.params_.size(); i++) {
+                    const auto& param = sema_ctx.sema_tree_->nodes_[func.params_[i]].as<Sema::ParamDecl>();
+                    auto [name, type] = query_symbol(sema_ctx, param.symbol_);
+                    param_type_list_str += type_to_str(*sema_ctx.type_pool_, type);
 
+                    param_decls_str += sema_node_to_str(sema_ctx, sema_tree, func.params_[i], indent + "  ");
+
+                    if (i < func.params_.size() - 1) {
+                        param_type_list_str += ", ";
+                        param_decls_str += '\n';
+                    }
                 }
-                auto [name, _] = query_symbol(sema_ctx, func.symbol_);
+
                 return indent + std::format("FuncDecl '{}' ({}) -> ({})\n{}\n{}",
-                    name,
-                    // return type,
-                    // sema_node_to_str(body..))
+                    func_name,
+                    param_type_list_str,
+                    ret_type_str,
+                    param_decls_str,
+                    sema_node_to_str(sema_ctx, sema_tree, func.body_, indent + "  "));
             }
 
-            auto [name, _] = query_symbol(sema_ctx, func.symbol_);
             return indent + std::format("FuncDecl '{}' () -> ({})\n{}",
-                name, 
-                // return type
-                node_to_str(func.body_, indent + "  "));
+                func_name,
+                ret_type_str,
+                sema_node_to_str(sema_ctx, sema_tree, func.body_, indent + "  "));
         }
-        */
 
 
         case SemaNodeKind::RecordDecl: {

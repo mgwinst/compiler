@@ -89,48 +89,54 @@ std::expected<ASTNodeRef, ParseError> ParseContext::parse_compilation_unit() noe
 // call this after encountering 'var <ident>:'
 std::expected<ASTNodeRef, ParseError> ParseContext::parse_type() noexcept
 {
-    // build outer qualifier type here
-
-    ASTNodeRef base_type;
-
-    if (is_cur_token(TokenType::IDENTIFIER) || is_cur_token(TokenType::TYPE)) {
-        auto name = std::string{ cur_token_.lexeme_ };
-        base_type = ast_.emplace<Syntax::NamedTypeExpr>(std::move(name));
+    bool is_const = false;
+    if (is_cur_token(TokenType::KEYWORD_CONST)) {
+        is_const = true;
         eat_token();
-    } else {
-        return std::unexpected{ SyntaxError{} };
     }
 
+    if (!is_cur_token(TokenType::IDENTIFIER) && !is_cur_token(TokenType::TYPE))
+        return std::unexpected{ SyntaxError{cur_token_, "Expecting built-in or user-defined type"} }; 
+
+
+    auto type_name = std::string{ cur_token_.lexeme_ };
+    auto type = ast_.emplace<Syntax::NamedTypeExpr>(std::move(type_name));
+    eat_token();
+
+    if (is_const) {
+        type = ast_.emplace<Syntax::QualifierTypeExpr>(QualifierKind::Const, type);
+    }
+    
     switch (cur_token_.type_) {
         case TokenType::LBRACKET: {
             eat_token();
 
             if (is_cur_token(TokenType::RBRACKET)) {
                 eat_token();
-                return ast_.emplace<Syntax::ArrayTypeExpr>(base_type);
+                return ast_.emplace<Syntax::ArrayTypeExpr>(type);
             }
 
             auto size = parse_expr();
             if (!size) return std::unexpected{ size.error() };
 
             expect(TokenType::RBRACKET);
-            return ast_.emplace<Syntax::ArrayTypeExpr>(base_type, *size);
-
+            return ast_.emplace<Syntax::ArrayTypeExpr>(type, *size);
         }
 
         case TokenType::STAR: {
             eat_token();
-            return ast_.emplace<Syntax::PointerTypeExpr>(base_type);
+            return ast_.emplace<Syntax::PointerTypeExpr>(type);
         }
 
         case TokenType::AMPERSAND: {
             eat_token();
-            return ast_.emplace<Syntax::ReferenceTypeExpr>(base_type);
+            return ast_.emplace<Syntax::ReferenceTypeExpr>(type);
         }
 
         default:
-            return base_type;
+            return type;
     }
+
 }
 
 // fn, struct, var -> all decls possible

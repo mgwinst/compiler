@@ -6,25 +6,28 @@
 
 #define NODE_LIMIT (1 << 18)
 
-static std::unordered_map<std::string_view, TypeRef> builtin_map = {
-    {"void",    VOID_INDEX   },
-    {"byte",    BYTE_INDEX   },
-    {"bool",    BOOL_INDEX   },
-    {"int8",    INT8_INDEX   },
-    {"int16",   INT16_INDEX  },
-    {"int32",   INT32_INDEX  },
-    {"int",     INT32_INDEX  },
-    {"int64",   INT64_INDEX  },
-    {"uint8",   UINT8_INDEX  },
-    {"uint16",  UINT16_INDEX },
-    {"uint32",  UINT32_INDEX },
-    {"uint",    UINT32_INDEX },
-    {"uint64",  UINT64_INDEX },
-    {"float16", FLOAT16_INDEX},
-    {"float32", FLOAT32_INDEX},
-    {"float",   FLOAT32_INDEX},
-    {"float64", FLOAT64_INDEX}
-};
+namespace
+{
+    std::unordered_map<std::string_view, TypeRef> builtin_map = {
+        {"void",    VOID_INDEX   },
+        {"byte",    BYTE_INDEX   },
+        {"bool",    BOOL_INDEX   },
+        {"int8",    INT8_INDEX   },
+        {"int16",   INT16_INDEX  },
+        {"int32",   INT32_INDEX  },
+        {"int",     INT32_INDEX  },
+        {"int64",   INT64_INDEX  },
+        {"uint8",   UINT8_INDEX  },
+        {"uint16",  UINT16_INDEX },
+        {"uint32",  UINT32_INDEX },
+        {"uint",    UINT32_INDEX },
+        {"uint64",  UINT64_INDEX },
+        {"float16", FLOAT16_INDEX},
+        {"float32", FLOAT32_INDEX},
+        {"float",   FLOAT32_INDEX},
+        {"float64", FLOAT64_INDEX}
+    };
+}
 
 namespace Sema
 {

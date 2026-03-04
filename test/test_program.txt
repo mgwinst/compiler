@@ -1,8 +1,13 @@
-var y: int&;
+var y: const int&;
 
 struct S
 {
     var x: int;
     var y: int*;
     var z: int&;
+}
+
+fn func(x: int, y: int) -> void
+{
+    x = x + 1;
 }
