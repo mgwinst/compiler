@@ -183,6 +183,6 @@ struct Token {
 
     std::string to_string() const noexcept
     {
-        return std::format("[{}] {}:{} {} ", static_cast<int>(type_), line_number_, column_number_, (lexeme_));
+        return std::format("[{}] {}:{} {} ", static_cast<int>(type_), line_number_, column_number_, lexeme_);
     }
 };

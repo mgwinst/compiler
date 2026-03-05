@@ -2,11 +2,16 @@
 
 #include "ast_node.hpp"
 
+#define NODE_LIMIT (1 << 18)
+
 struct AST
 {   
     std::vector<ASTNode> nodes_;
 
-    AST() noexcept;
+    AST() noexcept
+    {
+        nodes_.reserve(NODE_LIMIT);
+    }
 
     template <typename T, typename... Args>
         requires std::is_constructible_v<T, Args...>
@@ -16,8 +21,11 @@ struct AST
         return nodes_.size() - 1;
     }
 
-    ASTNodeRef root() const noexcept;
-
-    void print() const noexcept;
-    std::string node_to_str(ASTNodeRef ref, std::string indent) const noexcept;
+    ASTNodeRef root() const noexcept
+    {
+        if (nodes_.empty())
+            error_exit("AST is empty");
+        
+        return ASTNodeRef{ 0 };
+    }
 };

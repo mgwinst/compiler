@@ -2,11 +2,11 @@
 
 #include <cstddef>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <new>
 
 #include "../../utils/macros.hpp"
-#include "../../utils/concepts.hpp"
 #include "../../utils/alias.hpp"
 #include "../../utils/enums.hpp"
 
@@ -82,8 +82,8 @@ namespace Sema
         std::string name_;
         TypeRef return_type_;
 
-        FunctionType(StringLike auto&& name, TypeRef return_type) :
-            name_{ std::forward<decltype(name)>(name) },
+        FunctionType(std::string name, TypeRef return_type) :
+            name_{ std::move(name) },
             return_type_{ return_type } {}
 
         bool operator==(const FunctionType& other) const = default;
@@ -94,9 +94,9 @@ namespace Sema
         RecordKind kind_;
         std::string name_;
 
-        RecordType(RecordKind kind, StringLike auto&& name) :
+        RecordType(RecordKind kind, std::string name) :
             kind_{ kind },
-            name_{ std::forward<decltype(name)>(name) } {}
+            name_{ std::move(name) } {}
 
         bool operator==(const RecordType& other) const = default;
     };
@@ -180,4 +180,38 @@ namespace Sema
 
 } // namespace Sema
 
+inline constexpr std::size_t VOID_INDEX = 0;
+inline constexpr std::size_t BYTE_INDEX = 1;
+inline constexpr std::size_t BOOL_INDEX = 2;
+inline constexpr std::size_t INT8_INDEX = 3;
+inline constexpr std::size_t INT16_INDEX = 4;
+inline constexpr std::size_t INT32_INDEX = 5;
+inline constexpr std::size_t INT64_INDEX = 6;
+inline constexpr std::size_t UINT8_INDEX = 7;
+inline constexpr std::size_t UINT16_INDEX = 8;
+inline constexpr std::size_t UINT32_INDEX = 9;
+inline constexpr std::size_t UINT64_INDEX = 10;
+inline constexpr std::size_t FLOAT16_INDEX = 11;
+inline constexpr std::size_t FLOAT32_INDEX = 12;
+inline constexpr std::size_t FLOAT64_INDEX = 13;
+
+enum class TypeCategory
+{
+    INTEGER,
+    FLOATING_POINT
+};
+
+inline std::unordered_map<TypeRef, TypeCategory> type_category {
+    {INT8_INDEX,    TypeCategory::INTEGER},
+    {INT16_INDEX,   TypeCategory::INTEGER},
+    {INT32_INDEX,   TypeCategory::INTEGER},
+    {INT64_INDEX,   TypeCategory::INTEGER},
+    {UINT8_INDEX,   TypeCategory::INTEGER},
+    {UINT16_INDEX,  TypeCategory::INTEGER}, 
+    {UINT32_INDEX,  TypeCategory::INTEGER},
+    {UINT64_INDEX,  TypeCategory::INTEGER},
+    {FLOAT16_INDEX, TypeCategory::FLOATING_POINT},
+    {FLOAT32_INDEX, TypeCategory::FLOATING_POINT},
+    {FLOAT64_INDEX, TypeCategory::FLOATING_POINT}
+};
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "symbol.hpp"
-#include "../utils/concepts.hpp"
+#include "../error/source_span.hpp"
 #include "../utils/macros.hpp"
 #include "../utils/enums.hpp"
 
@@ -16,8 +16,8 @@ namespace Sema
         SymbolRef symbol_;
         TypeRef type_;
 
-        CompilationUnitDecl(StringLike auto&& name) noexcept :
-            name_{ std::forward<decltype(name)>(name) } {}
+        CompilationUnitDecl(std::string name) noexcept :
+            name_{ std::move(name) } {}
     };
 
     struct VarDecl
@@ -25,6 +25,7 @@ namespace Sema
         SymbolRef symbol_;
         TypeRef type_;
         std::optional<SemaNodeRef> init_; // single expr or init_list
+        SourceSpan source_span_;
     };
 
     struct ParamDecl
@@ -41,10 +42,10 @@ namespace Sema
         std::vector<SemaNodeRef> params_;
         SemaNodeRef body_;
 
-        FuncDecl(SymbolRef symbol, TypeRef type, Contiguous auto&& params, SemaNodeRef body) noexcept :
+        FuncDecl(SymbolRef symbol, TypeRef type, std::vector<SemaNodeRef> params, SemaNodeRef body) noexcept :
             symbol_{ symbol },
             type_{ type },
-            params_{ std::forward<decltype(params)>(params) },
+            params_{ std::move(params) },
             body_{ body } {}
     };
 
@@ -54,10 +55,10 @@ namespace Sema
         TypeRef type_;
         std::vector<SemaNodeRef> fields_;
         
-        RecordDecl(SymbolRef symbol, TypeRef type, Contiguous auto&& fields) :
+        RecordDecl(SymbolRef symbol, TypeRef type, std::vector<SemaNodeRef> fields) :
             symbol_{ symbol }, 
             type_{ type }, 
-            fields_{ std::forward<decltype(fields)>(fields) } {}
+            fields_{ std::move(fields) } {}
     };
 
     // ************** EXPRESSIONS **************
@@ -67,8 +68,8 @@ namespace Sema
         std::vector<SemaNodeRef> children_; // both expr/decls
         std::optional<SemaNodeRef> return_stmt_;
 
-        CompoundStmt(Contiguous auto&& children, std::optional<SemaNodeRef> return_stmt = std::nullopt) noexcept :
-            children_{ std::forward<decltype(children)>(children) },
+        CompoundStmt(std::vector<SemaNodeRef> children, std::optional<SemaNodeRef> return_stmt = std::nullopt) noexcept :
+            children_{ std::move(children) },
             return_stmt_{ return_stmt } {}
     };
 
@@ -137,8 +138,8 @@ namespace Sema
     {
         std::string value_;
 
-        StringLiteralExpr(StringLike auto&& value) :
-            value_{ std::forward<decltype(value)>(value) } {}
+        StringLiteralExpr(std::string value) :
+            value_{ std::move(value) } {}
     };
 
     struct BooleanLiteralExpr
@@ -155,8 +156,8 @@ namespace Sema
         SemaNodeRef operand_;
         bool is_postfix_;
 
-        UnaryExpr(StringLike auto&& op, SemaNodeRef operand, bool is_postfix = false) noexcept :
-            op_{ std::forward<decltype(op)>(op) },
+        UnaryExpr(std::string op, SemaNodeRef operand, bool is_postfix = false) noexcept :
+            op_{ std::move(op) },
             operand_{ operand },
             is_postfix_{ is_postfix } {}
     };
@@ -166,8 +167,8 @@ namespace Sema
         std::string op_;
         SemaNodeRef left_, right_;
 
-        BinaryExpr(StringLike auto&& op, SemaNodeRef left, SemaNodeRef right) noexcept :
-            op_{ std::forward<decltype(op)>(op) },
+        BinaryExpr(std::string op, SemaNodeRef left, SemaNodeRef right) noexcept :
+            op_{ std::move(op) },
             left_{ left },
             right_{ right } {}
     };
@@ -178,20 +179,20 @@ namespace Sema
         TypeRef target_type_;
         std::string name_;
 
-        ReferenceExpr(SymbolRef target_symbol, TypeRef target_type, StringLike auto&& name) noexcept : 
-            target_symbol_{ std::forward<decltype(target_symbol)>(target_symbol) },
-            target_type_{ std::forward<decltype(target_type)>(target_type) },
-            name_{ std::forward<decltype(name)>(name) } {}
+        ReferenceExpr(SymbolRef target_symbol, TypeRef target_type, std::string name) noexcept : 
+            target_symbol_{ target_symbol },
+            target_type_{ target_type },
+            name_{ std::move(name) } {}
     };
 
     struct CallExpr
     {
-        SemaNodeRef callee_; // either callee is a reference expression, and if so that would hold a symbol pointer or 
+        SemaNodeRef callee_; // reference expr
         std::vector<SemaNodeRef> args_;
 
-        CallExpr(SemaNodeRef callee, Contiguous auto&& args) noexcept :
+        CallExpr(SemaNodeRef callee, std::vector<SemaNodeRef> args) noexcept :
             callee_{ callee },
-            args_{ std::forward<decltype(args)>(args) } {}
+            args_{ std::move(args) } {}
     };
 
     struct MemberExpr
@@ -200,9 +201,9 @@ namespace Sema
         std::string member_;
         bool is_arrow_ = false;
         
-        MemberExpr(SemaNodeRef base, StringLike auto&& member, bool is_arrow = false) :
+        MemberExpr(SemaNodeRef base, std::string member, bool is_arrow = false) :
             base_{ base },
-            member_{ std::forward<decltype(member)>(member) },
+            member_{ std::move(member) },
             is_arrow_{ is_arrow } {}
     };
 
@@ -220,8 +221,8 @@ namespace Sema
     {
         std::vector<SemaNodeRef> init_values_;
         
-        InitListExpr(Contiguous auto&& init_values) :
-            init_values_{ std::forward<decltype(init_values)>(init_values) } {}
+        InitListExpr(std::vector<SemaNodeRef> init_values) :
+            init_values_{ std::move(init_values) } {}
     };
 
     struct ExplicitCastExpr

@@ -7,21 +7,6 @@
 #include "types.hpp"
 #include "../../ast/ast.hpp"
 
-inline constexpr std::size_t VOID_INDEX = 0;
-inline constexpr std::size_t BYTE_INDEX = 1;
-inline constexpr std::size_t BOOL_INDEX = 2;
-inline constexpr std::size_t INT8_INDEX = 3;
-inline constexpr std::size_t INT16_INDEX = 4;
-inline constexpr std::size_t INT32_INDEX = 5;
-inline constexpr std::size_t INT64_INDEX = 6;
-inline constexpr std::size_t UINT8_INDEX = 7;
-inline constexpr std::size_t UINT16_INDEX = 8;
-inline constexpr std::size_t UINT32_INDEX = 9;
-inline constexpr std::size_t UINT64_INDEX = 10;
-inline constexpr std::size_t FLOAT16_INDEX = 11;
-inline constexpr std::size_t FLOAT32_INDEX = 12;
-inline constexpr std::size_t FLOAT64_INDEX = 13;
-
 inline constexpr std::size_t INLINE_VEC_SIZE{ 16 };
 
 namespace Sema

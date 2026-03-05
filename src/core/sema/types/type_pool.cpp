@@ -85,7 +85,7 @@ namespace Sema
             case ASTNodeKind::ArrayTypeExpr: {
                 const auto& arr = node.as<Syntax::ArrayTypeExpr>();
 
-                // temporary
+                // temporary hack
                 if (!arr.size_)
                     error_exit("array must have a size");
 
@@ -101,9 +101,6 @@ namespace Sema
                 return get_or_create<RecordType>(RecordKind::Unknown, named.name_); // resolves during type checking (we shouldn't know its struct/enum/union yet, check the symbol table)
             }
 
-            // should these be here?
-            // function and record defintions are exceptions because they "define their own types"
-            
             case ASTNodeKind::FuncDecl: {
                 const auto& func = node.as<Syntax::FuncDecl>();
 
@@ -142,7 +139,7 @@ namespace Sema
     void TypePool::print() const noexcept
     {
         for (auto i = 0uz; i < types_.size(); i++) {
-            std::println("{}", type_to_str(*this, i));
+            std::println("{} [{}]", type_to_str(*this, i), i);
         }
     }
 

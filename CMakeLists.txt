@@ -10,12 +10,13 @@ find_package(Boost REQUIRED)
 
 add_library(compiler_lib STATIC
     src/core/lexer/lexer.cpp 
-    src/core/ast/ast.cpp 
     src/core/parser/parser.cpp 
-    src/core/error/error.cpp
+    src/core/error/diagnostics.cpp
     src/core/sema/types/type_pool.cpp
     src/core/sema/symbol.cpp
-    src/core/sema/sematree.cpp
+    src/core/sema/passes/decorate.cpp
+    src/core/sema/passes/type_check.cpp
+    #src/core/sema/passes/desugar.cpp
     src/core/utils/print/print.cpp
 )
 

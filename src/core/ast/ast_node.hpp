@@ -7,14 +7,12 @@
 #include <vector>
 #include <new>
 
+#include "../error/source_span.hpp"
 #include "../utils/macros.hpp"
-#include "../utils/concepts.hpp"
 #include "../utils/alias.hpp"
 #include "../utils/enums.hpp"
 
 
-// nodes should contain std::span<const char> source_span_ for errors
-// nodes should have TypeExpr node instead of string to store type info?
 
 // ************** DECLARATIONS **************
 
@@ -25,8 +23,8 @@ namespace Syntax
         std::string name_;
         std::vector<ASTNodeRef> decls_;
 
-        CompilationUnitDecl(StringLike auto&& name) noexcept :
-            name_{ std::forward<decltype(name)>(name) },
+        CompilationUnitDecl(std::string name) noexcept :
+            name_{ std::move(name) },
             decls_{} {}
     };
 
@@ -34,12 +32,14 @@ namespace Syntax
     {
         std::string name_;
         ASTNodeRef type_expr_;
-        std::optional<ASTNodeRef> init_; // single expr or init_list_expr
+        std::optional<ASTNodeRef> init_{ std::nullopt }; // single expr or init_list_expr
+        SourceSpan source_span_;
 
-        VarDecl(StringLike auto&& name, ASTNodeRef type_expr, std::optional<ASTNodeRef> init = std::nullopt) noexcept :
-            name_{ std::forward<decltype(name)>(name) }, 
+        VarDecl(std::string name, ASTNodeRef type_expr, std::optional<ASTNodeRef> init, SourceSpan source_span) noexcept :
+            name_{ std::move(name) }, 
             type_expr_{ type_expr }, 
-            init_{ std::move(init) } {}
+            init_{ std::move(init) },
+            source_span_{ source_span } {}
     };
 
     // init value (default value) ?
@@ -48,8 +48,8 @@ namespace Syntax
         std::string name_;
         ASTNodeRef type_expr_;
 
-        ParamDecl(StringLike auto&& name, ASTNodeRef type_expr) noexcept :
-            name_{ std::forward<decltype(name)>(name) },
+        ParamDecl(std::string name, ASTNodeRef type_expr) noexcept :
+            name_{ std::move(name) },
             type_expr_{ type_expr } {}
     };
 
@@ -60,9 +60,9 @@ namespace Syntax
         ASTNodeRef return_type_;
         ASTNodeRef body_;
 
-        FuncDecl(StringLike auto&& name, Contiguous auto&& params, ASTNodeRef return_type, ASTNodeRef body) noexcept :
-            name_{ std::forward<decltype(name)>(name) },
-            params_{ std::forward<decltype(params)>(params) },
+        FuncDecl(std::string name, std::vector<ASTNodeRef> params, ASTNodeRef return_type, ASTNodeRef body) noexcept :
+            name_{ std::move(name) },
+            params_{ std::move(params) },
             return_type_{ return_type },
             body_{ body } {}
     };
@@ -73,10 +73,10 @@ namespace Syntax
         std::string name_;
         std::vector<ASTNodeRef> fields_;
 
-        RecordDecl(RecordKind kind, StringLike auto&& name, Contiguous auto&& fields) noexcept :
+        RecordDecl(RecordKind kind, std::string name, std::vector<ASTNodeRef> fields) noexcept :
             kind_{ kind },
-            name_{ std::forward<decltype(name)>(name) },
-            fields_{ std::forward<decltype(fields)>(fields) } {}
+            name_{ std::move(name) },
+            fields_{ std::move(fields) } {}
     };
 
     // ************** EXPRESSIONS **************
@@ -86,8 +86,8 @@ namespace Syntax
         std::vector<ASTNodeRef> children_; // both expr/decls
         std::optional<ASTNodeRef> return_stmt_;
 
-        CompoundStmt(Contiguous auto&& children, std::optional<ASTNodeRef> return_stmt = std::nullopt) noexcept :
-            children_{ std::forward<decltype(children)>(children) },
+        CompoundStmt(std::vector<ASTNodeRef> children, std::optional<ASTNodeRef> return_stmt = std::nullopt) noexcept :
+            children_{ std::move(children) },
             return_stmt_{ return_stmt } {}
     };
 
@@ -156,8 +156,8 @@ namespace Syntax
     {
         std::string value_;
 
-        StringLiteralExpr(StringLike auto&& value) :
-            value_{ std::forward<decltype(value)>(value) } {}
+        StringLiteralExpr(std::string value) :
+            value_{ std::move(value) } {}
     };
 
     struct BooleanLiteralExpr
@@ -174,8 +174,8 @@ namespace Syntax
         ASTNodeRef operand_;
         bool is_postfix_;
 
-        UnaryExpr(StringLike auto&& op, ASTNodeRef operand, bool is_postfix = false) noexcept :
-            op_{ std::forward<decltype(op)>(op) },
+        UnaryExpr(std::string op, ASTNodeRef operand, bool is_postfix = false) noexcept :
+            op_{ std::move(op) },
             operand_{ operand },
             is_postfix_{ is_postfix } {}
     };
@@ -185,8 +185,8 @@ namespace Syntax
         std::string op_;
         ASTNodeRef left_, right_;
 
-        BinaryExpr(StringLike auto&& op, ASTNodeRef left, ASTNodeRef right) noexcept :
-            op_{ std::forward<decltype(op)>(op) },
+        BinaryExpr(std::string op, ASTNodeRef left, ASTNodeRef right) noexcept :
+            op_{ std::move(op) },
             left_{ left },
             right_{ right } {}
     };
@@ -195,8 +195,8 @@ namespace Syntax
     {
         std::string name_;
 
-        ReferenceExpr(StringLike auto&& name) noexcept : 
-            name_{ std::forward<decltype(name)>(name) } {}
+        ReferenceExpr(std::string name) noexcept : 
+            name_{ std::move(name) } {}
     };
 
     struct CallExpr
@@ -204,9 +204,9 @@ namespace Syntax
         ASTNodeRef callee_; // callee is a reference expression ^
         std::vector<ASTNodeRef> args_;
 
-        CallExpr(ASTNodeRef callee, Contiguous auto&& args) noexcept :
+        CallExpr(ASTNodeRef callee, std::vector<ASTNodeRef> args) noexcept :
             callee_{ callee },
-            args_{ std::forward<decltype(args)>(args) } {}
+            args_{ std::move(args) } {}
     };
 
     struct MemberExpr
@@ -215,9 +215,9 @@ namespace Syntax
         std::string member_;
         bool is_arrow_ = false;
         
-        MemberExpr(ASTNodeRef base, StringLike auto&& member, bool is_arrow = false) :
+        MemberExpr(ASTNodeRef base, std::string member, bool is_arrow = false) :
             base_{ base },
-            member_{ std::forward<decltype(member)>(member) },
+            member_{ std::move(member) },
             is_arrow_{ is_arrow } {}
     };
 
@@ -235,8 +235,8 @@ namespace Syntax
     {
         std::vector<ASTNodeRef> init_values_;
         
-        InitListExpr(Contiguous auto&& init_values) :
-            init_values_{ std::forward<decltype(init_values)>(init_values) } {}
+        InitListExpr(std::vector<ASTNodeRef> init_values) :
+            init_values_{ std::move(init_values) } {}
     };
 
     struct ExplicitCastExpr
@@ -245,16 +245,6 @@ namespace Syntax
     };
 
     struct ImplicitCastExpr
-    {
-
-    };
-
-    struct NewExpr
-    {
-
-    };
-
-    struct DeleteExpr
     {
 
     };
@@ -290,8 +280,8 @@ namespace Syntax
     {
         std::string name_;
 
-        NamedTypeExpr(StringLike auto&& name) :
-            name_{ std::forward<decltype(name)>(name) } {}
+        NamedTypeExpr(std::string name) :
+            name_{ std::move(name) } {}
     };
 
 } // namespace Syntax

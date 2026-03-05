@@ -31,13 +31,6 @@ struct SourceFile
     return {file_path, data};
 }
 
-enum class Constness
-{
-    CONST,
-    MUTABLE,
-    NON_CONST = MUTABLE
-};
-
 template<typename... Lambdas>
 struct Overload : Lambdas... 
 { 

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <format>
-#include <ranges>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -28,7 +27,7 @@ namespace Sema
 
         auto to_string() const 
         {
-            return std::format("Symbol: [Identifier: '{}'], [Type: {}]]", identifier_, type_);
+            return std::format("<Symbol: [Identifier: '{}'], [Type: {}]>", identifier_, type_);
         }
     };
 
@@ -64,7 +63,7 @@ namespace Sema
         std::unordered_map<std::string, SymbolRef>& cur_scope() noexcept;
         void enter_scope() noexcept;
         void exit_scope() noexcept;
-
+        Symbol& get_symbol(SymbolRef symbol_ref) noexcept;
         void print() const noexcept;
     };
 

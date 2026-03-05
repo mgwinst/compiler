@@ -1,4 +1,5 @@
 #include <print>
+#include <ranges>
 
 #include "symbol.hpp"
 
@@ -32,6 +33,11 @@ namespace Sema
     void SymbolTable::exit_scope() noexcept
     {
         scopes_.pop_back();
+    }
+
+    Symbol& SymbolTable::get_symbol(SymbolRef symbol_ref) noexcept
+    {
+        return symbol_pool_[symbol_ref];
     }
 
     void SymbolTable::print() const noexcept
