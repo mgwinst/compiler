@@ -7,6 +7,26 @@
 #include "core/ast/ast.hpp"
 #include "core/sema/passes/sema_pass.hpp"
 
+/*
+void test_lexer()
+{
+    SourceFile source_file = get_source_file("../../test/test_program.txt");
+    Lexer lexer{source_file.data};
+
+    int i = 0;
+    while (1) {
+        Token tok = lexer.get_token();
+        if (tok.type_ == TokenType::END_OF_FILE) 
+            break;
+
+        std::print("<{}>     ", tok.source_line_);
+        std::print("[{}]\n", tok.to_string());
+
+        i++;
+    }
+}
+*/
+
 void debug_print(Sema::SemaContext& ctx)
 {
     print_type_pool(ctx);
@@ -36,9 +56,10 @@ void test()
         build_sema_tree(sema_ctx, *ast); // return tree? keep isoloted in ctx?
         check_types(sema_ctx);
 
-        sema_ctx.diagnostics_->dump_errors();
-
-        std::println();
+        if (sema_ctx.diagnostics_->errors_.size() > 0) {
+            sema_ctx.diagnostics_->dump_errors();
+            std::exit(1);
+        }
 
         debug_print(sema_ctx);
     }
@@ -46,7 +67,9 @@ void test()
 
 int main()
 {
+    // test_lexer();
     test();
+
 }
 
 

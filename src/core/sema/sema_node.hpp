@@ -1,7 +1,7 @@
 #pragma once
 
 #include "symbol.hpp"
-#include "../error/source_span.hpp"
+#include "../error/source_location.hpp"
 #include "../utils/macros.hpp"
 #include "../utils/enums.hpp"
 
@@ -25,7 +25,7 @@ namespace Sema
         SymbolRef symbol_;
         TypeRef type_;
         std::optional<SemaNodeRef> init_; // single expr or init_list
-        SourceSpan source_span_;
+        SourceLoc source_loc_;
     };
 
     struct ParamDecl
@@ -33,6 +33,12 @@ namespace Sema
         SymbolRef symbol_;
         TypeRef type_;
         //std::optional<SemaNodeRef> init_; // single expr or init_list
+        SourceLoc source_loc_;
+
+        ParamDecl(SymbolRef symbol, TypeRef type, SourceLoc source_loc) noexcept :
+            symbol_{ symbol },
+            type_{ type },
+            source_loc_{ source_loc } {}
     };
 
     struct FuncDecl
@@ -41,12 +47,14 @@ namespace Sema
         TypeRef type_;
         std::vector<SemaNodeRef> params_;
         SemaNodeRef body_;
+        SourceLoc source_loc_;
 
-        FuncDecl(SymbolRef symbol, TypeRef type, std::vector<SemaNodeRef> params, SemaNodeRef body) noexcept :
+        FuncDecl(SymbolRef symbol, TypeRef type, std::vector<SemaNodeRef> params, SemaNodeRef body, SourceLoc source_loc) noexcept :
             symbol_{ symbol },
             type_{ type },
             params_{ std::move(params) },
-            body_{ body } {}
+            body_{ body },
+            source_loc_{ source_loc } {}
     };
 
     struct RecordDecl 
@@ -54,11 +62,13 @@ namespace Sema
         SymbolRef symbol_;
         TypeRef type_;
         std::vector<SemaNodeRef> fields_;
+        SourceLoc source_loc_;
         
-        RecordDecl(SymbolRef symbol, TypeRef type, std::vector<SemaNodeRef> fields) :
+        RecordDecl(SymbolRef symbol, TypeRef type, std::vector<SemaNodeRef> fields, SourceLoc source_loc) :
             symbol_{ symbol }, 
             type_{ type }, 
-            fields_{ std::move(fields) } {}
+            fields_{ std::move(fields) },
+            source_loc_{ source_loc } {}
     };
 
     // ************** EXPRESSIONS **************
@@ -173,16 +183,20 @@ namespace Sema
             right_{ right } {}
     };
 
+    // invalid state to continue sema passes?
     struct ReferenceExpr
     {
         SymbolRef target_symbol_;
         TypeRef target_type_;
         std::string name_;
+        SourceLoc source_loc_;
+        bool is_valid_;
 
-        ReferenceExpr(SymbolRef target_symbol, TypeRef target_type, std::string name) noexcept : 
+        ReferenceExpr(SymbolRef target_symbol, TypeRef target_type, std::string name, SourceLoc source_loc) noexcept : 
             target_symbol_{ target_symbol },
             target_type_{ target_type },
-            name_{ std::move(name) } {}
+            name_{ std::move(name) },
+            source_loc_{ source_loc } {}
     };
 
     struct CallExpr

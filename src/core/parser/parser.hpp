@@ -2,6 +2,7 @@
 
 #include <expected>
 #include <tuple>
+#include <stack>
 
 #include "../lexer/lexer.hpp"
 #include "../ast/ast.hpp"
@@ -11,7 +12,8 @@ struct Parser
 {
     SourceFile& source_file_; // need this for access in parse_comp_unit()? clean this up...
     Lexer lexer_;
-    Token prev_token_, cur_token_, start_token; // start for source spans
+    Token prev_token_, cur_token_;
+    std::stack<Token, std::vector<Token>> span_tokens_;
     std::unique_ptr<AST> ast_;
     Diagnostics diagnostics_;
 
@@ -28,6 +30,7 @@ struct Parser
     bool is_cur_token(const TokenType token_type) const noexcept;
     bool is_next_token(const TokenType token_type) const noexcept;
     void panic(const Error& error) noexcept;
+    SourceLoc get_source_loc() noexcept;
 
     std::expected<std::string_view, Error> match(TokenType token_type) noexcept;
 

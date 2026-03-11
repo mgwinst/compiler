@@ -161,12 +161,13 @@ inline const std::unordered_map<std::string_view, TokenType> double_symbol_map {
 
 struct Token {
     TokenType type_;
-    std::string_view lexeme_;
+    std::string_view lexeme_, source_line_;
     std::size_t line_number_, column_number_, length_;
 
-    Token(TokenType type, std::string_view lexeme, std::size_t line_number, std::size_t column_number, std::size_t length) noexcept:
+    Token(TokenType type, std::string_view lexeme, std::string_view source_line, std::size_t line_number, std::size_t column_number, std::size_t length) noexcept:
         type_{ type }, 
         lexeme_{ lexeme }, 
+        source_line_{ source_line }, 
         line_number_{ line_number }, 
         column_number_{ column_number },
         length_{ length } {}

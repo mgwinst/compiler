@@ -26,6 +26,7 @@ struct SourceFile
         exit(EXIT_FAILURE);
     }
 
+    // mmap instead?
     auto data = std::string{std::istreambuf_iterator<char>{ file }, std::istreambuf_iterator<char>{}};
 
     return {file_path, data};

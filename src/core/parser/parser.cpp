@@ -1,3 +1,5 @@
+#include <cassert>
+#include <cstdlib>
 #include <expected>
 
 #include "../lexer/token.hpp"
@@ -38,7 +40,7 @@ bool Parser::is_next_token(const TokenType token_type) const noexcept
 
 void Parser::panic(const Error& error) noexcept
 {
-    diagnostics_.add_error(error);
+    diagnostics_.register_error(error);
 
     while (!is_cur_token(TokenType::KEYWORD_STRUCT) &&
            !is_cur_token(TokenType::KEYWORD_FUNCTION) &&
@@ -78,14 +80,7 @@ void Parser::parse_compilation_unit() noexcept
     }
 }
 
-// var x: int
-// var x: const int
-// var x: Foo
-// var x: int[4]
-// var x: int*
-// var x: int**
-
-// call this after encountering 'var <ident>:'
+// var <ident>: parse_type()
 std::expected<ASTNodeRef, Error> Parser::parse_type() noexcept
 {
     bool is_const = false;
@@ -138,8 +133,6 @@ std::expected<ASTNodeRef, Error> Parser::parse_type() noexcept
 // fn, struct, var -> all decls possible
 std::expected<ASTNodeRef, Error> Parser::parse_decl() noexcept
 {
-    start_token = cur_token_; // reinit start char per new decl/expr
-
     switch (cur_token_.type_) {
         case TokenType::KEYWORD_FUNCTION: {
             eat_token();
@@ -190,6 +183,8 @@ std::expected<ASTNodeRef, Error> Parser::parse_var_decl() noexcept
     auto [name] = expect(TokenType::IDENTIFIER);
     if (!name) return std::unexpected{ name.error() };
 
+    SourceLoc source{ prev_token_ };
+
     EXPECT_COLON();
     
     auto type = parse_type();
@@ -204,7 +199,7 @@ std::expected<ASTNodeRef, Error> Parser::parse_var_decl() noexcept
 
             EXPECT_SEMICOLON();
 
-            return ast_->emplace<Syntax::VarDecl>(std::string{ *name }, *type, *expr, SourceSpan{start_token, prev_token_});
+            return ast_->emplace<Syntax::VarDecl>(std::string{ *name }, *type, *expr, source);
         }
 
         eat_token();
@@ -214,11 +209,11 @@ std::expected<ASTNodeRef, Error> Parser::parse_var_decl() noexcept
 
         EXPECT_SEMICOLON();
 
-        return ast_->emplace<Syntax::VarDecl>(std::string{ *name }, *type, *expr, SourceSpan{start_token, prev_token_});
+        return ast_->emplace<Syntax::VarDecl>(std::string{ *name }, *type, *expr, source);
     } else {
         EXPECT_SEMICOLON();
         
-        return ast_->emplace<Syntax::VarDecl>(std::string{ *name }, *type, std::nullopt, SourceSpan{start_token, prev_token_});
+        return ast_->emplace<Syntax::VarDecl>(std::string{ *name }, *type, std::nullopt, source);
     }
 }
 
@@ -226,6 +221,8 @@ std::expected<ASTNodeRef, Error> Parser::parse_func_decl() noexcept
 {
     auto [name] = expect(TokenType::IDENTIFIER);
     if (!name) return std::unexpected{ SyntaxError{cur_token_, "missing function identifier"}}; 
+
+    SourceLoc source{ prev_token_ };
 
     EXPECT_LPAREN();
 
@@ -253,7 +250,7 @@ std::expected<ASTNodeRef, Error> Parser::parse_func_decl() noexcept
     auto body = parse_compound_stmt();
     if (!body) return std::unexpected{ body.error() };
 
-    return ast_->emplace<Syntax::FuncDecl>(std::string{ *name }, std::move(params), *return_type, *body);
+    return ast_->emplace<Syntax::FuncDecl>(std::string{ *name }, std::move(params), *return_type, *body, source);
 }
 
 std::expected<ASTNodeRef, Error> Parser::parse_param_decl() noexcept
@@ -261,18 +258,23 @@ std::expected<ASTNodeRef, Error> Parser::parse_param_decl() noexcept
     auto [name] = expect(TokenType::IDENTIFIER);
     if (!name) return std::unexpected{ name.error() };
 
+    SourceLoc source{ prev_token_ };
+
     EXPECT_COLON();
     
     auto type = parse_type();
     if (!type) return std::unexpected{ type.error() };
 
-    return ast_->emplace<Syntax::ParamDecl>(std::string{ *name }, *type);
+    span_tokens_.push(cur_token_);
+    return ast_->emplace<Syntax::ParamDecl>(std::string{ *name }, *type, source);
 }
 
 std::expected<ASTNodeRef, Error> Parser::parse_struct_def() noexcept
 {
     auto [name] = expect(TokenType::IDENTIFIER);
     if (!name) return std::unexpected{SyntaxError{cur_token_, "missing struct identifier"}};
+
+    SourceLoc source{ prev_token_ };
 
     EXPECT_LBRACE();
 
@@ -288,12 +290,12 @@ std::expected<ASTNodeRef, Error> Parser::parse_struct_def() noexcept
 
     EXPECT_RBRACE();
 
-    return ast_->emplace<Syntax::RecordDecl>(RecordKind::Struct, std::string{ *name }, std::move(fields));
+    return ast_->emplace<Syntax::RecordDecl>(RecordKind::Struct, std::string{ *name }, std::move(fields), source);
 }
 
 std::expected<ASTNodeRef, Error> Parser::parse_field() noexcept
 {
-    EXPECT_VAR(); // because parse_var_decl() expects var token to have already been eaten
+    EXPECT_VAR(); // parse_var_decl() expects var token to have already been eaten
 
     return parse_var_decl();
 }
@@ -360,7 +362,7 @@ std::expected<ASTNodeRef, Error> Parser::parse_compound_stmt() noexcept
 
     EXPECT_RBRACE();
 
-    return ast_->emplace<Syntax::CompoundStmt>(std::move(children));
+    return ast_->emplace<Syntax::CompoundStmt>(std::move(children), std::nullopt); // handle return statements
 }
 
 std::expected<ASTNodeRef, Error> Parser::parse_while_loop() noexcept
@@ -429,7 +431,7 @@ std::expected<ASTNodeRef, Error> Parser::parse_if_stmt() noexcept
         return ast_->emplace<Syntax::IfStmt>(*cond, *then_branch_body, *else_branch_body);
     }
 
-    return ast_->emplace<Syntax::IfStmt>(*cond, *then_branch_body);
+    return ast_->emplace<Syntax::IfStmt>(*cond, *then_branch_body, std::nullopt);
 }
 
 namespace prec 
@@ -529,11 +531,11 @@ std::expected<ASTNodeRef, Error> Parser::nud(const Token token) noexcept
             auto op = parse_expr(prec::unary);
             if (!op) return std::unexpected{ op.error() };
 
-            return ast_->emplace<Syntax::UnaryExpr>(std::string{ token.lexeme_ }, *op); // postfix = false (default value)
+            return ast_->emplace<Syntax::UnaryExpr>(std::string{ token.lexeme_ }, *op, false); // postfix = false (default value)
         }
 
         case TokenType::IDENTIFIER: {
-            return ast_->emplace<Syntax::ReferenceExpr>(std::string{ token.lexeme_ });
+            return ast_->emplace<Syntax::ReferenceExpr>(std::string{ token.lexeme_ }, SourceLoc{ prev_token_ });
         }
 
         case TokenType::NUMERIC_LITERAL: {

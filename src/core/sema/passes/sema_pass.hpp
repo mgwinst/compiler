@@ -2,9 +2,11 @@
 
 #include "../../context/context.hpp"
 
+// namespace passes
+
 namespace Sema
 {
-    SemaTree& build_sema_tree(SemaContext& ctx, const AST& ast);
+    void build_sema_tree(SemaContext& ctx, const AST& ast);
     void check_types(SemaContext& ctx);
     void desugar_tree(Sema::SemaContext& ctx, SemaNodeRef ref);
 

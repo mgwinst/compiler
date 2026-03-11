@@ -1,6 +1,6 @@
 #include "diagnostics.hpp"
 
-void Diagnostics::add_error(const Error& error)
+void Diagnostics::register_error(const Error& error)
 {
     errors_.push_back(error);
 

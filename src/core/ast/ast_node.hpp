@@ -7,12 +7,10 @@
 #include <vector>
 #include <new>
 
-#include "../error/source_span.hpp"
+#include "../error/source_location.hpp"
 #include "../utils/macros.hpp"
 #include "../utils/alias.hpp"
 #include "../utils/enums.hpp"
-
-
 
 // ************** DECLARATIONS **************
 
@@ -33,13 +31,13 @@ namespace Syntax
         std::string name_;
         ASTNodeRef type_expr_;
         std::optional<ASTNodeRef> init_{ std::nullopt }; // single expr or init_list_expr
-        SourceSpan source_span_;
+        SourceLoc source_loc_;
 
-        VarDecl(std::string name, ASTNodeRef type_expr, std::optional<ASTNodeRef> init, SourceSpan source_span) noexcept :
+        VarDecl(std::string name, ASTNodeRef type_expr, std::optional<ASTNodeRef> init, SourceLoc source_loc) noexcept :
             name_{ std::move(name) }, 
             type_expr_{ type_expr }, 
             init_{ std::move(init) },
-            source_span_{ source_span } {}
+            source_loc_{ std::move(source_loc) } {}
     };
 
     // init value (default value) ?
@@ -47,10 +45,12 @@ namespace Syntax
     {
         std::string name_;
         ASTNodeRef type_expr_;
+        SourceLoc source_loc_;
 
-        ParamDecl(std::string name, ASTNodeRef type_expr) noexcept :
+        ParamDecl(std::string name, ASTNodeRef type_expr, SourceLoc source_loc) noexcept :
             name_{ std::move(name) },
-            type_expr_{ type_expr } {}
+            type_expr_{ type_expr },
+            source_loc_{ std::move(source_loc) } {}
     };
 
     struct FuncDecl
@@ -59,12 +59,14 @@ namespace Syntax
         std::vector<ASTNodeRef> params_;
         ASTNodeRef return_type_;
         ASTNodeRef body_;
+        SourceLoc source_loc_;
 
-        FuncDecl(std::string name, std::vector<ASTNodeRef> params, ASTNodeRef return_type, ASTNodeRef body) noexcept :
+        FuncDecl(std::string name, std::vector<ASTNodeRef> params, ASTNodeRef return_type, ASTNodeRef body, SourceLoc source_loc) noexcept :
             name_{ std::move(name) },
             params_{ std::move(params) },
             return_type_{ return_type },
-            body_{ body } {}
+            body_{ body },
+            source_loc_{ std::move(source_loc) } {}
     };
 
     struct RecordDecl
@@ -72,11 +74,13 @@ namespace Syntax
         RecordKind kind_;
         std::string name_;
         std::vector<ASTNodeRef> fields_;
+        SourceLoc source_loc_;
 
-        RecordDecl(RecordKind kind, std::string name, std::vector<ASTNodeRef> fields) noexcept :
+        RecordDecl(RecordKind kind, std::string name, std::vector<ASTNodeRef> fields, SourceLoc source_loc) noexcept :
             kind_{ kind },
             name_{ std::move(name) },
-            fields_{ std::move(fields) } {}
+            fields_{ std::move(fields) },
+            source_loc_{ std::move(source_loc) } {}
     };
 
     // ************** EXPRESSIONS **************
@@ -84,9 +88,9 @@ namespace Syntax
     struct CompoundStmt
     {
         std::vector<ASTNodeRef> children_; // both expr/decls
-        std::optional<ASTNodeRef> return_stmt_;
+        std::optional<ASTNodeRef> return_stmt_ = std::nullopt;
 
-        CompoundStmt(std::vector<ASTNodeRef> children, std::optional<ASTNodeRef> return_stmt = std::nullopt) noexcept :
+        CompoundStmt(std::vector<ASTNodeRef> children, std::optional<ASTNodeRef> return_stmt) noexcept :
             children_{ std::move(children) },
             return_stmt_{ return_stmt } {}
     };
@@ -103,7 +107,12 @@ namespace Syntax
     struct IfStmt {
         ASTNodeRef cond_;
         ASTNodeRef then_stmt_; 
-        std::optional<ASTNodeRef> else_stmt_;
+        std::optional<ASTNodeRef> else_stmt_ = std::nullopt;
+
+        IfStmt(ASTNodeRef cond, ASTNodeRef then_stmt, std::optional<ASTNodeRef> else_stmt) :
+            cond_{ cond },
+            then_stmt_( then_stmt ),
+            else_stmt_( else_stmt ) {}
     };
 
     struct WhileStmt
@@ -111,7 +120,7 @@ namespace Syntax
         ASTNodeRef cond_;
         ASTNodeRef body_;
 
-        WhileStmt(ASTNodeRef cond, ASTNodeRef body) noexcept :
+        WhileStmt(ASTNodeRef cond, ASTNodeRef body) :
             cond_{ cond },
             body_{ body } {}
     };
@@ -172,9 +181,9 @@ namespace Syntax
     {
         std::string op_;
         ASTNodeRef operand_;
-        bool is_postfix_;
+        bool is_postfix_ = false;
 
-        UnaryExpr(std::string op, ASTNodeRef operand, bool is_postfix = false) noexcept :
+        UnaryExpr(std::string op, ASTNodeRef operand, bool is_postfix) noexcept :
             op_{ std::move(op) },
             operand_{ operand },
             is_postfix_{ is_postfix } {}
@@ -194,9 +203,11 @@ namespace Syntax
     struct ReferenceExpr
     {
         std::string name_;
+        SourceLoc source_loc_;
 
-        ReferenceExpr(std::string name) noexcept : 
-            name_{ std::move(name) } {}
+        ReferenceExpr(std::string name, SourceLoc source_loc) noexcept : 
+            name_{ std::move(name) },
+            source_loc_{ source_loc } {}
     };
 
     struct CallExpr

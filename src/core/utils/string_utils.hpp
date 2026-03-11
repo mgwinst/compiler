@@ -1,10 +1,8 @@
 #pragma once
 
-#include <cstdint>
 #include <optional>
 #include <string_view>
 #include <charconv>
-#include <print>
 
 #include "concepts.hpp"
 
@@ -21,4 +19,29 @@ std::optional<T> sv_to_numeric(std::string_view str)
         return value;
 
     return std::nullopt;
+}
+
+inline std::string_view trim(const char* start, const char* end)
+{
+    std::string_view sv{start, end};
+    constexpr auto ws = " \t\n\r\f\v";
+
+    auto b = sv.find_first_not_of(ws);
+    if (b == std::string_view::npos)
+        return {};
+
+    auto e = sv.find_last_not_of(ws);
+    return sv.substr(b, e - b + 1);
+}
+
+inline std::string_view trim(std::string_view sv)
+{
+    constexpr auto ws = " \t\n\r\f\v";
+
+    auto b = sv.find_first_not_of(ws);
+    if (b == std::string_view::npos)
+        return {};
+
+    auto e = sv.find_last_not_of(ws);
+    return sv.substr(b, e - b + 1);
 }

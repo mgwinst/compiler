@@ -1,6 +1,15 @@
-#include <cassert>
-
 #include "lexer.hpp"
+
+void Lexer::find_src_line_bounds(const char* p) noexcept
+{
+    src_ln_beg_ = ++p;
+
+    while (*p != '\n' && *p != '\0') {
+        p++;
+    }
+
+    src_ln_end_ = p;
+}
 
 [[nodiscard]] Token Lexer::get_token() noexcept
 {
@@ -12,6 +21,7 @@
             if (*cur_ == '\n') {
                 line_num_++;
                 col_num_ = 1;
+                find_src_line_bounds(cur_);
             } else {
                 col_num_++;
             }
@@ -26,8 +36,8 @@
                 col_num_++;
             }
             end = cur_;
-            return Token{TokenType::NUMERIC_LITERAL, std::string_view{start, end}, line_num_, start_col_num, static_cast<std::size_t>(end - start)};
-        
+            return Token{TokenType::NUMERIC_LITERAL, std::string_view{start, end}, std::string_view{src_ln_beg_, src_ln_end_}, line_num_, start_col_num, static_cast<std::size_t>(end - start)};
+
         // names, types and keywords
         } else if (std::isalpha(*cur_)) {
             start = cur_;
@@ -40,27 +50,27 @@
             std::string_view value{start, end};
 
             if (auto kw = keywords.find(value); kw != keywords.end()) {
-                return Token{kw->second, std::string_view{start, end}, line_num_, col_num_ - (end-start), static_cast<std::size_t>(end-start)};
+                return Token{kw->second, std::string_view{start, end}, std::string_view{src_ln_beg_, src_ln_end_}, line_num_, col_num_ - static_cast<std::size_t>(end-start), static_cast<std::size_t>(end-start)};
             } else if (auto t = built_in_types.find(value); t != built_in_types.end()) {
-                return Token{TokenType::TYPE, std::string_view{start, end}, line_num_, col_num_ - (end-start), static_cast<std::size_t>(end-start)};
+                return Token{TokenType::TYPE, std::string_view{start, end}, std::string_view{src_ln_beg_, src_ln_end_}, line_num_, col_num_ - static_cast<std::size_t>(end-start), static_cast<std::size_t>(end-start)};
             } else {
-                return Token{TokenType::IDENTIFIER, std::string_view{start, end}, line_num_, col_num_ - (end-start), static_cast<std::size_t>(end-start)};
+                return Token{TokenType::IDENTIFIER, std::string_view{start, end}, std::string_view{src_ln_beg_, src_ln_end_}, line_num_, col_num_ - static_cast<std::size_t>(end-start), static_cast<std::size_t>(end-start)};
             }
 
         // symbols
         } else if (auto double_symbol = double_symbol_map.find(std::string_view{cur_, 2}); double_symbol != double_symbol_map.end()) {
-            Token token{double_symbol->second, std::string_view{cur_, 2}, line_num_, col_num_, 2};
+            Token token{double_symbol->second, std::string_view{cur_, 2}, std::string_view{src_ln_beg_, src_ln_end_}, line_num_, col_num_, 2};
             cur_ += 2; 
             col_num_ += 2;
             return token;
         } else if (auto symbol = single_symbol_map.find(*cur_); symbol != single_symbol_map.end()) {
-            return Token{symbol->second, std::string_view{cur_++, 1}, line_num_, col_num_++, 1};
+            return Token{symbol->second, std::string_view{cur_++, 1}, std::string_view{src_ln_beg_, src_ln_end_}, line_num_, col_num_++, 1};
         } else {
-            return Token{TokenType::INVALID, std::string_view{cur_, 1}, line_num_, col_num_, 1};
+            return Token{TokenType::INVALID, std::string_view{cur_, 1}, std::string_view{src_ln_beg_, src_ln_end_}, line_num_, col_num_, 1};
         }
     }
 
-    return Token{TokenType::END_OF_FILE, {}, line_num_, col_num_, 1};
+    return Token{TokenType::END_OF_FILE, {}, {}, line_num_, col_num_, 1};
 }
 
 [[nodiscard]] Token Lexer::peek_token() const noexcept 

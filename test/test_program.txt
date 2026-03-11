@@ -1,4 +1,6 @@
-var x: int = 10;
-var x: int = 10;
-var x: int = 10;
-var x: int = 10;
+var x: int = 0;
+
+fn func(a: int, a: int) -> void
+{
+    value = x + y;
+}

@@ -58,7 +58,7 @@ namespace Sema
                         if (type_category[var.type_] != type_category[init_type]) {
                             auto type_error = TypeError{ std::format("cannot initialize a variable of type '{}' with '{}'",
                                 type_to_str(*ctx.type_pool_, var.type_), type_to_str(*ctx.type_pool_, init_type)) };
-                            ctx.diagnostics_->add_error(type_error);
+                            ctx.diagnostics_->register_error(type_error);
                         } else {
                             
                         }
@@ -77,7 +77,7 @@ namespace Sema
                     if (type_category[left_type] != type_category[right_type]) {
                         auto type_error = TypeError{ std::format("invalid operands to binary expression ({} and {})", 
                             type_to_str(*ctx.type_pool_, left_type), type_to_str(*ctx.type_pool_, right_type)) };
-                        ctx.diagnostics_->add_error(type_error);
+                        ctx.diagnostics_->register_error(type_error);
                     }
                 }
                 break;
