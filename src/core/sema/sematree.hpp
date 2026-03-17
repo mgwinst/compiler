@@ -2,18 +2,11 @@
 
 #include "sema_node.hpp"
 
-#define NODE_LIMIT (1 << 18)
-
 namespace Sema
 {
     struct SemaTree
     {   
         std::vector<SemaNode> nodes_;
-
-        SemaTree() noexcept
-        {
-            nodes_.reserve(NODE_LIMIT);
-        }
 
         template <typename T, typename... Args>
             requires std::is_constructible_v<T, Args...>

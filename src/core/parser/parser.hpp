@@ -13,7 +13,6 @@ struct Parser
     SourceFile& source_file_; // need this for access in parse_comp_unit()? clean this up...
     Lexer lexer_;
     Token prev_token_, cur_token_;
-    std::stack<Token, std::vector<Token>> span_tokens_;
     std::unique_ptr<AST> ast_;
     Diagnostics diagnostics_;
 
@@ -47,6 +46,7 @@ struct Parser
     std::expected<ASTNodeRef, Error> parse_func_decl() noexcept;
     std::expected<ASTNodeRef, Error> parse_struct_def() noexcept;
     std::expected<ASTNodeRef, Error> parse_field() noexcept;
+    std::expected<ASTNodeRef, Error> parse_return_stmt() noexcept;
     std::expected<ASTNodeRef, Error> parse_compound_stmt() noexcept;
     std::expected<ASTNodeRef, Error> parse_while_loop() noexcept;
     std::expected<ASTNodeRef, Error> parse_for_loop() noexcept;

@@ -45,7 +45,6 @@ namespace Sema
                 for (auto decl : comp_unit.decls_) {
                     check_type(ctx, decl);
                 }
-
                 break;
             }
 

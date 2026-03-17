@@ -9,7 +9,12 @@ struct ImplicitConversionWarning
 
 };
 
-using Warning = std::variant<ImplicitConversionWarning>;
+struct NarrowingConversionWarning
+{
+
+};
+
+using Warning = std::variant<NarrowingConversionWarning>;
 
 template <typename T>
 std::string warning_to_string(const T& warning)

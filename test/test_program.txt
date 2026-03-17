@@ -1,6 +1,7 @@
-var x: int = 0;
-
-fn func(a: int, a: int) -> void
+fn func() -> void
 {
-    value = x + y;
+    var a: int;
+    var b: int;
+
+    a += b;
 }

@@ -184,6 +184,9 @@ std::string sema_node_to_str(const Sema::SemaContext& ctx, const Sema::SemaTree&
         case SemaNodeKind::CompoundStmt: {
             const auto& cstmt = node.as<Sema::CompoundStmt>();  
 
+            if (cstmt.children_.empty())
+                return indent + std::format("CompoundStmt");
+
             std::string expr_strs{};
             for (auto i = 0uz; i < cstmt.children_.size(); i++) {
                 expr_strs += sema_node_to_str(ctx, sema_tree, cstmt.children_[i], indent + "  ");
@@ -196,14 +199,21 @@ std::string sema_node_to_str(const Sema::SemaContext& ctx, const Sema::SemaTree&
 
         case SemaNodeKind::ReturnStmt: {
             const auto& ret_stmt = node.as<Sema::ReturnStmt>();
+            return indent + std::format("ReturnStmt\n{}", sema_node_to_str(ctx, sema_tree, ret_stmt.value_, indent + "  "));
+        }
 
-            return indent + sema_node_to_str(ctx, sema_tree, ret_stmt.value_, indent + "  ");
+        case SemaNodeKind::BreakStmt: {
+            return indent + std::format("BreakStmt");
+        }
+
+        case SemaNodeKind::ContinueStmt: {
+            return indent + std::format("ContinueStmt");
         }
 
         case SemaNodeKind::IfStmt: {
             const auto& if_stmt = node.as<Sema::IfStmt>();
 
-            if (if_stmt.else_stmt_) {
+            if (if_stmt.else_stmt_.has_value()) {
                 return indent + std::format("IfStmt\n{}\n{}\n{}", 
                     sema_node_to_str(ctx, sema_tree, if_stmt.cond_, indent + "  "),
                     sema_node_to_str(ctx, sema_tree, if_stmt.then_stmt_, indent + "  "),

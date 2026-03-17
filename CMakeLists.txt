@@ -16,7 +16,7 @@ add_library(compiler_lib STATIC
     src/core/sema/symbol.cpp
     src/core/sema/passes/decorate.cpp
     src/core/sema/passes/type_check.cpp
-    #src/core/sema/passes/desugar.cpp
+    src/core/sema/passes/desugar.cpp
     src/core/utils/print/print.cpp
 )
 

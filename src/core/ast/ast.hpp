@@ -2,16 +2,9 @@
 
 #include "ast_node.hpp"
 
-#define NODE_LIMIT (1 << 18)
-
 struct AST
 {   
     std::vector<ASTNode> nodes_;
-
-    AST() noexcept
-    {
-        nodes_.reserve(NODE_LIMIT);
-    }
 
     template <typename T, typename... Args>
         requires std::is_constructible_v<T, Args...>

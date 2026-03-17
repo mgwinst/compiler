@@ -75,12 +75,10 @@ namespace Sema
 
     struct CompoundStmt
     {
-        std::vector<SemaNodeRef> children_; // both expr/decls
-        std::optional<SemaNodeRef> return_stmt_;
+        std::vector<SemaNodeRef> children_; // both expr/decls/returns
 
-        CompoundStmt(std::vector<SemaNodeRef> children, std::optional<SemaNodeRef> return_stmt = std::nullopt) noexcept :
-            children_{ std::move(children) },
-            return_stmt_{ return_stmt } {}
+        CompoundStmt(std::vector<SemaNodeRef> children) noexcept :
+            children_{ std::move(children) } {}
     };
 
     struct ReturnStmt
@@ -89,6 +87,16 @@ namespace Sema
 
         ReturnStmt(SemaNodeRef value) noexcept :
             value_{ value } {}
+    };
+
+    struct BreakStmt
+    {
+
+    };
+
+    struct ContinueStmt
+    {
+
     };
 
     // nest IfStmt nodes for elif chains (no need for dedicated else-if nodes)
@@ -100,8 +108,7 @@ namespace Sema
 
     struct WhileStmt
     {
-        SemaNodeRef cond_;
-        SemaNodeRef body_;
+        SemaNodeRef cond_, body_;
 
         WhileStmt(SemaNodeRef cond, SemaNodeRef body) noexcept :
             cond_{ cond },
@@ -110,8 +117,7 @@ namespace Sema
 
     struct ForStmt
     {
-        SemaNodeRef init_, cond_, update_;
-        SemaNodeRef body_;
+        SemaNodeRef init_, cond_, update_, body_;
 
         ForStmt(SemaNodeRef init, SemaNodeRef cond, SemaNodeRef update, SemaNodeRef body) noexcept :
             init_{ init },
@@ -239,14 +245,18 @@ namespace Sema
             init_values_{ std::move(init_values) } {}
     };
 
-    struct ExplicitCastExpr
-    {
+    // ************** CASTING **************
 
+    struct ExplicitCastExpr
+    {       
+        TypeRef target_type;
+        SemaNodeRef expr;
     };
 
     struct ImplicitCastExpr
     {
-
+        ImplicitCastKind kind;
+        SemaNodeRef expr;
     };
 
 } // namespace Sema
@@ -261,6 +271,8 @@ template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::FuncDecl>      
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::RecordDecl>            = SemaNodeKind::RecordDecl;
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::CompoundStmt>          = SemaNodeKind::CompoundStmt;
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::ReturnStmt>            = SemaNodeKind::ReturnStmt;
+template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::BreakStmt>             = SemaNodeKind::BreakStmt;
+template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::ContinueStmt>          = SemaNodeKind::ContinueStmt;
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::IfStmt>                = SemaNodeKind::IfStmt;
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::WhileStmt>             = SemaNodeKind::WhileStmt;
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::ForStmt>               = SemaNodeKind::ForStmt;
@@ -283,13 +295,105 @@ class SemaNode
 {
 public:
     template <typename T>
-        requires (sema_node_kind_v<T> != SemaNodeKind::Invalid && sizeof(T) < 127)
-    SemaNode(std::in_place_type_t<T>, auto&&... args) : kind_{ sema_node_kind_v<T> }
+        requires (sema_node_kind_v<T> != SemaNodeKind::Invalid && sizeof(T) <= 127)
+    SemaNode(std::in_place_type_t<T>, auto&&... args) noexcept : kind_{ sema_node_kind_v<T> }
     {
         ::new (data_) T{ std::forward<decltype(args)>(args)... };
     }
 
-    ~SemaNode()
+    SemaNode(SemaNode&& other) noexcept : kind_{ other.kind_ }
+    {
+        move_construct_from(other);
+        other.kind_ = SemaNodeKind::Invalid;
+    }
+
+    SemaNode& operator=(SemaNode&& other) noexcept
+    {
+        this->~SemaNode();
+        kind_ = other.kind_;
+        move_construct_from(other);
+        other.kind_ = SemaNodeKind::Invalid;
+        
+        return *this;
+    }
+
+    SemaNode(const SemaNode&) = delete;
+    SemaNode& operator=(const SemaNode&) = delete;
+
+    ~SemaNode() noexcept
+    {
+        destroy_active();
+    }
+
+    SemaNodeKind get_kind() const noexcept
+    {
+        return kind_;
+    }
+
+    template <typename T>
+    [[nodiscard]] const T& as() const
+    {
+        if (kind_ != sema_node_kind_v<T>)
+            error_exit("types don't match");
+
+        return *std::launder(reinterpret_cast<const T*>(data_));
+    }
+
+    template <typename T>
+    [[nodiscard]] T& as()
+    {
+        if (kind_ != sema_node_kind_v<T>)
+            error_exit("types don't match");
+
+        return *std::launder(reinterpret_cast<T*>(data_));
+    }
+
+private:
+    alignas(64) std::byte data_[127];
+    SemaNodeKind kind_;
+
+    void move_construct_from(SemaNode& other)
+    {
+        switch (other.kind_) {
+            case SemaNodeKind::CompilationUnitDecl: move_construct<Sema::CompilationUnitDecl>(other); break;
+            case SemaNodeKind::VarDecl:             move_construct<Sema::VarDecl>(other);             break;
+            case SemaNodeKind::ParamDecl:           move_construct<Sema::ParamDecl>(other);           break;
+            case SemaNodeKind::FuncDecl:            move_construct<Sema::FuncDecl>(other);            break;
+            case SemaNodeKind::RecordDecl:          move_construct<Sema::RecordDecl>(other);          break;
+            case SemaNodeKind::CompoundStmt:        move_construct<Sema::CompoundStmt>(other);        break;
+            case SemaNodeKind::ReturnStmt:          move_construct<Sema::ReturnStmt>(other);          break;
+            case SemaNodeKind::BreakStmt:           move_construct<Sema::BreakStmt>(other);           break;
+            case SemaNodeKind::ContinueStmt:        move_construct<Sema::ContinueStmt>(other);        break;
+            case SemaNodeKind::IfStmt:              move_construct<Sema::IfStmt>(other);              break;
+            case SemaNodeKind::WhileStmt:           move_construct<Sema::WhileStmt>(other);           break;
+            case SemaNodeKind::ForStmt:             move_construct<Sema::ForStmt>(other);             break;
+            case SemaNodeKind::IntegerLiteralExpr:  move_construct<Sema::IntegerLiteralExpr>(other);  break;
+            case SemaNodeKind::FloatLiteralExpr:    move_construct<Sema::FloatLiteralExpr>(other);    break;
+            case SemaNodeKind::CharLiteralExpr:     move_construct<Sema::CharLiteralExpr>(other);     break;
+            case SemaNodeKind::StringLiteralExpr:   move_construct<Sema::StringLiteralExpr>(other);   break;
+            case SemaNodeKind::BooleanLiteralExpr:  move_construct<Sema::BooleanLiteralExpr>(other);  break;
+            case SemaNodeKind::UnaryExpr:           move_construct<Sema::UnaryExpr>(other);           break;
+            case SemaNodeKind::BinaryExpr:          move_construct<Sema::BinaryExpr>(other);          break;
+            case SemaNodeKind::ReferenceExpr:       move_construct<Sema::ReferenceExpr>(other);       break;
+            case SemaNodeKind::CallExpr:            move_construct<Sema::CallExpr>(other);            break;
+            case SemaNodeKind::MemberExpr:          move_construct<Sema::MemberExpr>(other);          break;
+            case SemaNodeKind::ArraySubscriptExpr:  move_construct<Sema::ArraySubscriptExpr>(other);  break;
+            case SemaNodeKind::InitListExpr:        move_construct<Sema::InitListExpr>(other);        break;
+            case SemaNodeKind::ExplicitCastExpr:    move_construct<Sema::ExplicitCastExpr>(other);    break;
+            case SemaNodeKind::ImplicitCastExpr:    move_construct<Sema::ImplicitCastExpr>(other);    break;
+            case SemaNodeKind::Invalid:
+            default:
+                break;
+        }
+    }
+
+    template <typename T>
+    void move_construct(SemaNode& other) noexcept
+    {
+        new (data_) T{ std::move(other.as<T>()) };
+    }
+
+    void destroy_active()
     {
         switch (kind_) {
             case SemaNodeKind::CompilationUnitDecl:      destroy<Sema::CompilationUnitDecl>();  break;
@@ -299,6 +403,8 @@ public:
             case SemaNodeKind::RecordDecl:               destroy<Sema::RecordDecl>();           break;
             case SemaNodeKind::CompoundStmt:             destroy<Sema::CompoundStmt>();         break;
             case SemaNodeKind::ReturnStmt:               destroy<Sema::ReturnStmt>();           break;
+            case SemaNodeKind::BreakStmt:                destroy<Sema::BreakStmt>();            break;
+            case SemaNodeKind::ContinueStmt:             destroy<Sema::ContinueStmt>();         break;
             case SemaNodeKind::IfStmt:                   destroy<Sema::IfStmt>();               break;
             case SemaNodeKind::WhileStmt:                destroy<Sema::WhileStmt>();            break;
             case SemaNodeKind::ForStmt:                  destroy<Sema::ForStmt>();              break;
@@ -320,34 +426,6 @@ public:
             default: break;
         }
     }
-
-    SemaNodeKind get_kind() const noexcept
-    {
-        return kind_;
-    }
-
-    template <typename T>
-    [[nodiscard]] const T& as() const
-    {
-        if (kind_ != sema_node_kind_v<T>)
-            error_exit("types don't match");
-
-        return *std::launder(reinterpret_cast<const T*>(data_));
-
-    }
-
-    template <typename T>
-    [[nodiscard]] T& as()
-    {
-        if (kind_ != sema_node_kind_v<T>)
-            error_exit("types don't match");
-
-        return *std::launder(reinterpret_cast<T*>(data_));
-    }
-
-private:
-    alignas(64) std::byte data_[127];
-    SemaNodeKind kind_;
 
     template <typename T>
     void destroy()

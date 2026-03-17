@@ -107,15 +107,20 @@ namespace Sema
                 for (auto c : cmpd_stmt.children_)
                     children.push_back(build_sema_node(ctx, ast, c));
 
-                if (cmpd_stmt.return_stmt_)
-                    return ctx.sema_tree_->emplace<CompoundStmt>(std::move(children), build_sema_node(ctx, ast, *cmpd_stmt.return_stmt_));
-
                 return ctx.sema_tree_->emplace<CompoundStmt>(std::move(children));
             }
 
             case ASTNodeKind::ReturnStmt: {
-                const auto& ret = ast_node.as<ReturnStmt>();
-                return ctx.sema_tree_->emplace<ReturnStmt>(ret.value_);
+                const auto& ret = ast_node.as<Syntax::ReturnStmt>();
+                return ctx.sema_tree_->emplace<ReturnStmt>(build_sema_node(ctx, ast, ret.value_));
+            }
+
+            case ASTNodeKind::BreakStmt: {
+                return ctx.sema_tree_->emplace<BreakStmt>();
+            }
+
+            case ASTNodeKind::ContinueStmt: {
+                return ctx.sema_tree_->emplace<ContinueStmt>();
             }
 
             // fix hacky empty else case -1
@@ -210,7 +215,6 @@ namespace Sema
                     const auto err = UndeclaredIdentiferError{std::format("use of undeclared identifier '{}'", ref.name_), ref.source_loc_};
                     ctx.diagnostics_->register_error(err);
 
-                    // have to return something here because no valid symbol to query below...
                     // fix: invalid reference state is just -1 for symbol and type references
                     return ctx.sema_tree_->emplace<ReferenceExpr>(static_cast<SymbolRef>(-1), static_cast<TypeRef>(-1), std::move(ref.name_), ref.source_loc_);
                 }

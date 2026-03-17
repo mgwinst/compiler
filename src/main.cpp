@@ -29,8 +29,8 @@ void test_lexer()
 
 void debug_print(Sema::SemaContext& ctx)
 {
-    print_type_pool(ctx);
-    print_symbol_table(ctx);
+    // print_type_pool(ctx);
+    // print_symbol_table(ctx);
     print_sema_tree(ctx);
 }
 
@@ -54,12 +54,20 @@ void test()
 
         Sema::SemaContext sema_ctx;
         build_sema_tree(sema_ctx, *ast); // return tree? keep isoloted in ctx?
+
+        if (sema_ctx.diagnostics_->errors_.size() > 0) {
+            sema_ctx.diagnostics_->dump_errors();
+            std::exit(1);
+        }
+
         check_types(sema_ctx);
 
         if (sema_ctx.diagnostics_->errors_.size() > 0) {
             sema_ctx.diagnostics_->dump_errors();
             std::exit(1);
         }
+
+        desugar(sema_ctx);
 
         debug_print(sema_ctx);
     }

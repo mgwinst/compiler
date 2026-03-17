@@ -265,7 +265,6 @@ std::expected<ASTNodeRef, Error> Parser::parse_param_decl() noexcept
     auto type = parse_type();
     if (!type) return std::unexpected{ type.error() };
 
-    span_tokens_.push(cur_token_);
     return ast_->emplace<Syntax::ParamDecl>(std::string{ *name }, *type, source);
 }
 
@@ -298,6 +297,16 @@ std::expected<ASTNodeRef, Error> Parser::parse_field() noexcept
     EXPECT_VAR(); // parse_var_decl() expects var token to have already been eaten
 
     return parse_var_decl();
+}
+
+std::expected<ASTNodeRef, Error> Parser::parse_return_stmt() noexcept
+{
+    auto expr = parse_expr();
+    if (!expr) return std::unexpected{ expr.error() };
+
+    EXPECT_SEMICOLON();
+
+    return ast_->emplace<Syntax::ReturnStmt>(*expr);
 }
 
 // if / while / for statements can only occur in compound statements
@@ -347,6 +356,38 @@ std::expected<ASTNodeRef, Error> Parser::parse_compound_stmt() noexcept
                 break;
             }
 
+            case TokenType::KEYWORD_RETURN: {
+                eat_token();
+
+                auto ret = parse_return_stmt();
+                if (!ret) return std::unexpected{ ret.error() };
+
+                children.push_back(*ret);
+                break;
+            }
+
+            case TokenType::KEYWORD_BREAK: {
+                eat_token();
+
+                auto b = ast_->emplace<Syntax::BreakStmt>();
+                children.push_back(b);
+
+                EXPECT_SEMICOLON();
+
+                break;
+            }
+
+            case TokenType::KEYWORD_CONTINUE: {
+                eat_token();
+
+                auto b = ast_->emplace<Syntax::ContinueStmt>();
+                children.push_back(b);
+
+                EXPECT_SEMICOLON();
+
+                break;
+            }
+
             default: {
                 auto expr = parse_expr();
                 if (!expr) return std::unexpected{ expr.error() };
@@ -356,13 +397,11 @@ std::expected<ASTNodeRef, Error> Parser::parse_compound_stmt() noexcept
                 break;
             }
         }
-
-        // Must handle return statements
     }
 
     EXPECT_RBRACE();
 
-    return ast_->emplace<Syntax::CompoundStmt>(std::move(children), std::nullopt); // handle return statements
+    return ast_->emplace<Syntax::CompoundStmt>(std::move(children));
 }
 
 std::expected<ASTNodeRef, Error> Parser::parse_while_loop() noexcept

@@ -12,6 +12,8 @@ enum class ASTNodeKind : uint8_t
 
     CompoundStmt,
     ReturnStmt,
+    BreakStmt,
+    ContinueStmt,
     IfStmt,
     WhileStmt,
     ForStmt,
@@ -53,6 +55,8 @@ enum class SemaNodeKind : uint8_t
 
     CompoundStmt,
     ReturnStmt,
+    BreakStmt,
+    ContinueStmt,
     IfStmt,
     WhileStmt,
     ForStmt,
@@ -125,3 +129,22 @@ enum class Linkage
     None
 };
 
+enum class ImplicitCastKind
+{
+    IntToFloat,
+    FloatToInt,
+
+    Widening,
+    Narrowing,
+
+    SignedToUnsigned,
+    UnsignedToSigned,
+    
+    PointerToBoolean,
+    IntegralToBoolean,
+
+    ArrayToPointerDecay,
+    FunctionToPointerDecay,
+
+    BitCast
+};
