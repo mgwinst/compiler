@@ -3,31 +3,22 @@
 
 #include "sema_pass.hpp"
 
-/*
-    dusugar
-
-    for -> while
-    a[i] -> *(a + i)
-    x += 3 -> x = x + 3
-    3 + 5 -> 8, (simple constant folding)
-*/
-
 namespace Sema
 {
-    SemaNodeRef for_to_while(SemaContext& ctx, const ForStmt& for_stmt)
+    SemaNodeId for_to_while(SemaContext& ctx, const ForStmt& for_stmt)
     {
         ctx.sema_tree_->nodes_[for_stmt.body_].as<CompoundStmt>().children_.push_back(for_stmt.update_);
 
         auto while_stmt = ctx.sema_tree_->emplace<WhileStmt>(for_stmt.cond_, for_stmt.body_);
 
-        std::vector<SemaNodeRef> children;
+        std::vector<SemaNodeId> children;
         children.push_back(for_stmt.init_);
         children.push_back(while_stmt);
 
         return ctx.sema_tree_->emplace<CompoundStmt>(std::move(children));
     }
 
-    SemaNodeRef arr_idx_to_ptr_arithmetic(SemaContext& ctx, const ArraySubscriptExpr& expr) 
+    SemaNodeId arr_idx_to_ptr_arithmetic(SemaContext& ctx, const ArraySubscriptExpr& expr) 
     {
         auto bin_op = ctx.sema_tree_->emplace<BinaryExpr>("+", expr.base_, expr.index_);
         return ctx.sema_tree_->emplace<UnaryExpr>("*", bin_op);
@@ -39,16 +30,16 @@ namespace Sema
         return compound_ops.contains(op);
     }
 
-    SemaNodeRef expand_compound_assignment(SemaContext& ctx, const BinaryExpr& expr)
+    SemaNodeId expand_compound_assignment(SemaContext& ctx, const BinaryExpr& expr)
     {
         auto op = expr.op_[0];
         auto right = ctx.sema_tree_->emplace<BinaryExpr>(std::string{ op }, expr.left_, expr.right_);
         return ctx.sema_tree_->emplace<BinaryExpr>("=", expr.left_, right);
     }
 
-    void desugar(SemaContext& ctx, SemaNodeRef ref)
+    void desugar(SemaContext& ctx, SemaNodeId ref)
     {
-        auto& node = ctx.sema_tree_->nodes_[ref];
+        const auto& node = ctx.sema_tree_->nodes_[ref];
 
         switch (node.get_kind()) {
             case SemaNodeKind::CompilationUnitDecl: {
@@ -93,6 +84,7 @@ namespace Sema
                 break;
             }
 
+            // for -> while
             case SemaNodeKind::ForStmt: {
                 const auto& for_stmt = node.as<Sema::ForStmt>();
 
@@ -123,6 +115,7 @@ namespace Sema
                 break;
             }
 
+            // a += b -> a = a + b
             case SemaNodeKind::BinaryExpr: {
                 const auto& be = node.as<Sema::BinaryExpr>();
 
@@ -141,7 +134,9 @@ namespace Sema
             // a[i] -> *(a + i)
             case SemaNodeKind::ArraySubscriptExpr: {
                 const auto& expr = node.as<Sema::ArraySubscriptExpr>();
+
                 desugar(ctx, expr.index_);
+
                 auto new_expr = arr_idx_to_ptr_arithmetic(ctx, expr);
 
                 std::swap(ctx.sema_tree_->nodes_[ref], ctx.sema_tree_->nodes_[new_expr]);

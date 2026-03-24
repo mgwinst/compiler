@@ -4,39 +4,38 @@
 #include "types.hpp"
 #include "../../utils/print/print.hpp"
 
-#define NODE_LIMIT (1 << 18)
-
 namespace
 {
-    std::unordered_map<std::string_view, TypeRef> builtin_map = {
-        {"void",    VOID_INDEX   },
-        {"byte",    BYTE_INDEX   },
-        {"bool",    BOOL_INDEX   },
-        {"int8",    INT8_INDEX   },
-        {"int16",   INT16_INDEX  },
-        {"int32",   INT32_INDEX  },
-        {"int",     INT32_INDEX  },
-        {"int64",   INT64_INDEX  },
-        {"uint8",   UINT8_INDEX  },
-        {"uint16",  UINT16_INDEX },
-        {"uint32",  UINT32_INDEX },
-        {"uint",    UINT32_INDEX },
-        {"uint64",  UINT64_INDEX },
-        {"float16", FLOAT16_INDEX},
-        {"float32", FLOAT32_INDEX},
-        {"float",   FLOAT32_INDEX},
-        {"float64", FLOAT64_INDEX}
+    std::unordered_map<std::string_view, TypeId> builtin_map = {
+        {"void",    VOID   },
+        {"byte",    BYTE   },
+        {"char",    CHAR   },
+        {"bool",    BOOL   },
+        {"int8",    INT8   },
+        {"int16",   INT16  },
+        {"int32",   INT32  },
+        {"int",     INT32  },
+        {"int64",   INT64  },
+        {"uint8",   UINT8  },
+        {"uint16",  UINT16 },
+        {"uint32",  UINT32 },
+        {"uint",    UINT32 },
+        {"uint64",  UINT64 },
+        {"float16", FLOAT16},
+        {"float32", FLOAT32},
+        {"float",   FLOAT32},
+        {"float64", FLOAT64}
     };
 }
 
 namespace Sema
 {
-    TypePool::TypePool()
+    TypePool::TypePool() noexcept
     {
-        types_.reserve(NODE_LIMIT);
-
+        types_.emplace_back(std::in_place_type<ErrorType>);
         types_.emplace_back(std::in_place_type<VoidType>);
         types_.emplace_back(std::in_place_type<ByteType>);
+        types_.emplace_back(std::in_place_type<CharType>);
         types_.emplace_back(std::in_place_type<BoolType>);
 
         types_.emplace_back(std::in_place_type<IntegerType>, uint16_t{ 8 }, true);
@@ -54,7 +53,10 @@ namespace Sema
         types_.emplace_back(std::in_place_type<FloatType>, uint16_t{ 64 });
     }
 
-    TypeRef TypePool::resolve_type(const ASTNodeRef type_expr, const AST& ast) noexcept
+    const Type& TypePool::get_type(TypeId ref) const noexcept { return types_[ref]; }
+    Type& TypePool::get_type(TypeId ref) noexcept { return types_[ref]; }
+
+    TypeId TypePool::resolve_type(const ASTNodeId type_expr, const AST& ast) noexcept
     {
         const auto& node = ast.nodes_[type_expr];
         
@@ -104,9 +106,15 @@ namespace Sema
             case ASTNodeKind::FuncDecl: {
                 const auto& func = node.as<Syntax::FuncDecl>();
 
+                std::vector<TypeId> param_types;
+                for (auto p : func.params_) {
+                    auto param = ast.nodes_[p].as<Syntax::ParamDecl>().type_expr_;
+                    param_types.push_back(resolve_type(param, ast));
+                }
+
                 auto ret_type = resolve_type(func.return_type_, ast);
                 
-                return get_or_create<FunctionType>(func.name_, ret_type);
+                return get_or_create<FunctionType>(func.name_, param_types, ret_type);
             }
 
             case ASTNodeKind::RecordDecl: {

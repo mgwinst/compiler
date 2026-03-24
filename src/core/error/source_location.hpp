@@ -23,3 +23,10 @@ struct SourceLoc
         item_{ tok.lexeme_ },
         source_line_{ tok.source_line_ } {}
 };
+
+inline std::string format_source(const SourceLoc src_loc)
+{
+    const auto d = (size_t)std::distance(src_loc.source_line_.data(), src_loc.item_.data());
+    const auto underline = std::string(d, ' ') + std::string(src_loc.item_.length(), '^');
+    return std::format("    {}\n    {}", src_loc.source_line_, underline);
+}

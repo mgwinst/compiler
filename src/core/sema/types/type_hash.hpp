@@ -11,7 +11,7 @@ namespace Sema
         return seed ^ (value + 0x9e3779b9 + (seed << 6) + (seed >> 2));
     }
 
-    inline std::size_t hash_vector(std::size_t seed, const std::vector<TypeRef>& vec) 
+    inline std::size_t hash_vector(std::size_t seed, const std::vector<TypeId>& vec) 
     {
         auto h = seed;
         for (auto v : vec) {
@@ -29,7 +29,7 @@ namespace Sema
     {
         static constexpr std::size_t magic = 0x1ce5b6d7a4f3e291ULL;
         
-        static std::size_t hash(TypeRef inner_type)
+        static std::size_t hash(TypeId inner_type)
         {
             return hash_combine(magic, inner_type);
         }
@@ -40,7 +40,7 @@ namespace Sema
     {
         static constexpr std::size_t magic = 0x2d4f6e8a9b1c3d5fULL;
 
-        static std::size_t hash(TypeRef inner_type)
+        static std::size_t hash(TypeId inner_type)
         {
             return hash_combine(magic, inner_type);
         }
@@ -51,7 +51,7 @@ namespace Sema
     {
         static constexpr std::size_t magic = 0x3e6d8f9ab1c2d4e7ULL;
         
-        static std::size_t hash(TypeRef inner_type, ASTNodeRef size)
+        static std::size_t hash(TypeId inner_type, ASTNodeId size)
         {
             auto h = hash_combine(magic, inner_type);
             return hash_combine(h, size);
@@ -63,7 +63,7 @@ namespace Sema
     {
         static constexpr std::size_t magic = 0x4f7e9a0bc1d2e3f8ULL;
         
-        static std::size_t hash(QualifierKind q, TypeRef inner_type)
+        static std::size_t hash(QualifierKind q, TypeId inner_type)
         {
             auto h = hash_combine(magic, static_cast<std::size_t>(q));
             return hash_combine(h, inner_type);
@@ -75,9 +75,10 @@ namespace Sema
     {
         static constexpr std::size_t magic = 0x5a8cb9d0e1f20364ULL;
         
-        static std::size_t hash(const std::string& name, TypeRef ret)
+        static std::size_t hash(const std::string& name, const std::vector<TypeId>& params, TypeId ret)
         {
             auto h = hash_combine(magic, std::hash<std::string>{}(name));
+            h = hash_vector(h, params);
             return hash_combine(h, ret);
         }
     };

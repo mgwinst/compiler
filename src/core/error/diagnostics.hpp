@@ -11,7 +11,7 @@ struct Diagnostics
     std::vector<Warning> warnings_;
 
     void register_error(const Error& error);
-    void add_warning(const Warning& warning);
+    void register_warning(const Warning& warning);
 
     void dump_errors();
     void dump_warnings();

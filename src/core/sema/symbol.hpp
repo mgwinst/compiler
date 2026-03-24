@@ -8,8 +8,6 @@
 #include "../utils/alias.hpp"
 #include "../utils/enums.hpp"
 
-using SymbolRef = int64_t;
-
 namespace Sema
 {
     // where will these go? size, alignment, offset (layout related info), is_const, 
@@ -21,13 +19,13 @@ namespace Sema
     {
         std::string identifier_;
         SymbolKind kind_;
-        TypeRef type_;
+        TypeId type_id_;
         StorageClass storage_;
         Linkage linkage_;
 
         auto to_string() const 
         {
-            return std::format("<Symbol: [Identifier: '{}'], [Type: {}]>", identifier_, type_);
+            return std::format("<Symbol: [Identifier: '{}'], [Type: {}]>", identifier_, type_id_);
         }
     };
 
@@ -38,32 +36,32 @@ namespace Sema
 
     struct SymbolTable
     {
-        std::vector<std::unordered_map<std::string, SymbolRef>> scopes_;
+        std::vector<std::unordered_map<std::string, SymbolId>> scopes_;
         std::vector<Symbol> symbol_pool_;
 
-        SymbolRef insert(const HasName auto& node, TypeRef type) noexcept
+        SymbolId insert(const HasName auto& node, TypeId type_id) noexcept
         {
             Symbol symbol{ 
                 .identifier_ = node.name_,
-                .type_ = type,
+                .type_id_ = type_id,
                 .storage_ = StorageClass::Auto,
                 .linkage_ = Linkage::External
             };
             
-            auto idx = symbol_pool_.size();
+            auto id = symbol_pool_.size();
             symbol_pool_.push_back(symbol);
             
-            cur_scope().emplace(node.name_, idx);
+            cur_scope().emplace(node.name_, id);
 
-            return static_cast<SymbolRef>(idx);
+            return static_cast<SymbolId>(id);
         }
 
         bool exists_in_scope(const std::string& ident) noexcept;
-        SymbolRef lookup(const std::string& ident) noexcept;
-        std::unordered_map<std::string, SymbolRef>& cur_scope() noexcept;
+        SymbolId lookup(const std::string& ident) noexcept;
+        std::unordered_map<std::string, SymbolId>& cur_scope() noexcept;
         void enter_scope() noexcept;
         void exit_scope() noexcept;
-        Symbol& get_symbol(SymbolRef symbol_ref) noexcept;
+        Symbol& get_symbol(SymbolId symbol_ref) noexcept;
         void print() const noexcept;
     };
 

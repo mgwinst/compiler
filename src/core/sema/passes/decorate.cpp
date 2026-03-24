@@ -2,13 +2,18 @@
 
 namespace Sema
 {
-    SemaNodeRef build_sema_node(SemaContext& ctx, const AST& ast, ASTNodeRef ast_node_ref)
+    inline bool exists(std::integral auto x) 
     {
-        const auto& ast_node = ast.nodes_[ast_node_ref];
+        return x != -1;    
+    }
+
+    SemaNodeId build_sema_node(SemaContext& ctx, const AST& ast, ASTNodeId ast_node_id)
+    {
+        const auto& ast_node = ast.nodes_[ast_node_id];
 
         switch (ast_node.get_kind()) {
             case ASTNodeKind::CompilationUnitDecl: {
-                SemaNodeRef sema_root = ctx.sema_tree_->emplace<CompilationUnitDecl>(std::string{ "source file" });
+                SemaNodeId sema_root = ctx.sema_tree_->emplace<CompilationUnitDecl>(std::string{ "source file" });
 
                 ctx.symbol_table_->enter_scope();
 
@@ -26,47 +31,61 @@ namespace Sema
             case ASTNodeKind::VarDecl: {
                 const auto& var = ast_node.as<Syntax::VarDecl>();
 
-                auto type = ctx.type_pool_->resolve_type(var.type_expr_, ast);
+                auto var_type_id = ctx.type_pool_->resolve_type(var.type_expr_, ast);
 
                 if (ctx.symbol_table_->exists_in_scope(var.name_)) {
                     const auto err = RedefinitionError{std::format("redefinition of '{}'", var.name_), var.source_loc_};
                     ctx.diagnostics_->register_error(err);
                 }
                 
-                auto symbol = ctx.symbol_table_->insert(var, type);
+                auto symbol = ctx.symbol_table_->insert(var, var_type_id);
 
                 if (var.init_) {
                     auto init = build_sema_node(ctx, ast, *var.init_);
-                    return ctx.sema_tree_->emplace<VarDecl>(symbol, type, init, var.source_loc_);
+                    return ctx.sema_tree_->emplace<VarDecl>(symbol, var_type_id, init, var.source_loc_);
                 }
 
-                return ctx.sema_tree_->emplace<VarDecl>(symbol, type, std::nullopt, var.source_loc_);
+                return ctx.sema_tree_->emplace<VarDecl>(symbol, var_type_id, std::nullopt, var.source_loc_);
             }
 
             case ASTNodeKind::ParamDecl: {
                 const auto& param = ast_node.as<Syntax::ParamDecl>();
                 
-                auto type = ctx.type_pool_->resolve_type(param.type_expr_, ast);
+                auto param_type_id = ctx.type_pool_->resolve_type(param.type_expr_, ast);
 
                 if (ctx.symbol_table_->exists_in_scope(param.name_)) {
                     const auto err = RedefinitionError{std::format("redefinition of parameter '{}'", param.name_), param.source_loc_};
                     ctx.diagnostics_->register_error(err);
                 }
 
-                auto symbol = ctx.symbol_table_->insert(param, type);
+                auto symbol = ctx.symbol_table_->insert(param, param_type_id);
                 
-                return ctx.sema_tree_->emplace<ParamDecl>(symbol, type, param.source_loc_);
+                return ctx.sema_tree_->emplace<ParamDecl>(symbol, param_type_id, param.source_loc_);
             }
+
 
             case ASTNodeKind::FuncDecl: {
                 const auto& func = ast_node.as<Syntax::FuncDecl>();
 
-                auto func_type = ctx.type_pool_->resolve_type(ast_node_ref, ast);
-                auto func_symbol = ctx.symbol_table_->insert(func, func_type);
+                auto func_type_id = ctx.type_pool_->resolve_type(ast_node_id, ast);
+                
+                // handle overload resolution
+                auto func_symbol_id = ctx.symbol_table_->lookup(func.name_);
+                if (exists(func_symbol_id)) {
+                    auto& existing_func_symbol = ctx.symbol_table_->get_symbol(func_symbol_id);
+
+                    // return type case unaccounted for
+                    if (func_type_id == existing_func_symbol.type_id_) {
+                        const auto err = RedefinitionError{std::format("redefinition of '{}'", func.name_), func.source_loc_};
+                        ctx.diagnostics_->register_error(err);
+                    }
+                }
+
+                auto func_symbol = ctx.symbol_table_->insert(func, func_type_id);
 
                 ctx.symbol_table_->enter_scope();
 
-                std::vector<SemaNodeRef> params;
+                std::vector<SemaNodeId> params;
                 for (auto p : func.params_)
                     params.push_back(build_sema_node(ctx, ast, p));
 
@@ -74,13 +93,13 @@ namespace Sema
 
                 ctx.symbol_table_->exit_scope();
 
-                return ctx.sema_tree_->emplace<FuncDecl>(func_symbol, func_type, std::move(params), body, func.source_loc_);
+                return ctx.sema_tree_->emplace<FuncDecl>(func_symbol, func_type_id, std::move(params), body, func.source_loc_);
             }
 
             case ASTNodeKind::RecordDecl: {
                 const auto& rec = ast_node.as<Syntax::RecordDecl>();
 
-                auto rec_type = ctx.type_pool_->resolve_type(ast_node_ref, ast); // 'unknown <T>'
+                auto rec_type = ctx.type_pool_->resolve_type(ast_node_id, ast); // 'unknown <T>'
 
                 if (ctx.symbol_table_->exists_in_scope(rec.name_)) {
                     const auto err = RedefinitionError{std::format("redefinition of '{}'", rec.name_), rec.source_loc_};
@@ -91,7 +110,7 @@ namespace Sema
 
                 ctx.symbol_table_->enter_scope();               
 
-                std::vector<SemaNodeRef> fields;
+                std::vector<SemaNodeId> fields;
                 for (auto p : rec.fields_)
                     fields.push_back(build_sema_node(ctx, ast, p));
 
@@ -103,7 +122,7 @@ namespace Sema
             case ASTNodeKind::CompoundStmt: {
                 const auto& cmpd_stmt = ast_node.as<Syntax::CompoundStmt>();
                 
-                std::vector<SemaNodeRef> children;
+                std::vector<SemaNodeId> children;
                 for (auto c : cmpd_stmt.children_)
                     children.push_back(build_sema_node(ctx, ast, c));
 
@@ -216,10 +235,10 @@ namespace Sema
                     ctx.diagnostics_->register_error(err);
 
                     // fix: invalid reference state is just -1 for symbol and type references
-                    return ctx.sema_tree_->emplace<ReferenceExpr>(static_cast<SymbolRef>(-1), static_cast<TypeRef>(-1), std::move(ref.name_), ref.source_loc_);
+                    return ctx.sema_tree_->emplace<ReferenceExpr>(static_cast<SymbolId>(-1), static_cast<TypeId>(-1), std::move(ref.name_), ref.source_loc_);
                 }
 
-                auto target_type = ctx.symbol_table_->symbol_pool_[target_symbol].type_;
+                auto target_type = ctx.symbol_table_->symbol_pool_[target_symbol].type_id_;
                 auto target_ident = ctx.symbol_table_->symbol_pool_[target_symbol].identifier_; 
 
                 return ctx.sema_tree_->emplace<ReferenceExpr>(target_symbol, target_type, std::move(target_ident), ref.source_loc_);
@@ -229,7 +248,7 @@ namespace Sema
                 const auto& call = ast_node.as<Syntax::CallExpr>();
                 auto callee = build_sema_node(ctx, ast, call.callee_);
                 
-                std::vector<SemaNodeRef> args;
+                std::vector<SemaNodeId> args;
                 for (auto arg : call.args_)
                     args.push_back(build_sema_node(ctx, ast, arg));
                 
@@ -237,10 +256,10 @@ namespace Sema
             }
 
             case ASTNodeKind::MemberExpr: {
-                const auto& member = ast_node.as<Syntax::MemberExpr>();
-                auto base = build_sema_node(ctx, ast, member.base_);
-                
-                return ctx.sema_tree_->emplace<MemberExpr>(base, std::move(member.member_), member.is_arrow_);
+                const auto& expr = ast_node.as<Syntax::MemberExpr>();
+                auto base = build_sema_node(ctx, ast, expr.base_);
+
+                return ctx.sema_tree_->emplace<MemberExpr>(base, std::move(expr.member_), expr.is_arrow_);
             }
 
             case ASTNodeKind::ArraySubscriptExpr: {
@@ -255,7 +274,7 @@ namespace Sema
             case ASTNodeKind::InitListExpr: {
                 const auto& init_list = ast_node.as<Syntax::InitListExpr>();
 
-                std::vector<SemaNodeRef> values;
+                std::vector<SemaNodeId> values;
                 for (auto v : init_list.init_values_)
                     values.push_back(build_sema_node(ctx, ast, v));
 
@@ -263,7 +282,6 @@ namespace Sema
             }
 
             case ASTNodeKind::ExplicitCastExpr:
-            case ASTNodeKind::ImplicitCastExpr:
 
             default:
                 std::println("{}", (int)ast_node.get_kind());
@@ -274,6 +292,7 @@ namespace Sema
     void build_sema_tree(SemaContext& ctx, const AST& ast)
     {
         build_sema_node(ctx, ast, ast.root());
+
     }
 
 } // Sema

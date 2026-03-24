@@ -10,7 +10,7 @@ namespace Sema
         return cur_scope().contains(ident);           
     }       
 
-    SymbolRef SymbolTable::lookup(const std::string& ident) noexcept {
+    SymbolId SymbolTable::lookup(const std::string& ident) noexcept {
         for (auto& scope : scopes_ | std::views::reverse) {
             if (scope.contains(ident)) {
                 return scope[ident];
@@ -20,7 +20,7 @@ namespace Sema
         return -1;
     }
 
-    std::unordered_map<std::string, SymbolRef>& SymbolTable::cur_scope() noexcept
+    std::unordered_map<std::string, SymbolId>& SymbolTable::cur_scope() noexcept
     { 
         return scopes_.back();
     }
@@ -35,9 +35,9 @@ namespace Sema
         scopes_.pop_back();
     }
 
-    Symbol& SymbolTable::get_symbol(SymbolRef symbol_ref) noexcept
+    Symbol& SymbolTable::get_symbol(SymbolId id) noexcept
     {
-        return symbol_pool_[symbol_ref];
+        return symbol_pool_[id];
     }
 
     void SymbolTable::print() const noexcept

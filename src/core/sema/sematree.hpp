@@ -16,12 +16,12 @@ namespace Sema
             return nodes_.size() - 1;
         }
 
-        SemaNodeRef root() const noexcept 
+        SemaNodeId root() const noexcept 
         { 
             if (nodes_.empty())
                 error_exit("Semantic Tree is empty");
 
-            return SemaNodeRef{ 0 };
+            return SemaNodeId{ 0 };
         }
     };
 

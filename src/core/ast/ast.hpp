@@ -14,11 +14,11 @@ struct AST
         return nodes_.size() - 1;
     }
 
-    ASTNodeRef root() const noexcept
+    ASTNodeId root() const noexcept
     {
         if (nodes_.empty())
             error_exit("AST is empty");
         
-        return ASTNodeRef{ 0 };
+        return ASTNodeId{ 0 };
     }
 };

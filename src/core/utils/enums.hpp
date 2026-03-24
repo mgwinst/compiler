@@ -83,8 +83,10 @@ enum class SemaNodeKind : uint8_t
 
 enum class TypeKind : uint8_t
 {
+    Error,
     Void,
     Byte,
+    Char,
     Bool,
     Integer,
     Float,

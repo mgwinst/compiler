@@ -12,7 +12,7 @@ void Diagnostics::register_error(const Error& error)
 }
 
 // handle warning counts with -W flags later...
-void Diagnostics::add_warning(const Warning& warning)
+void Diagnostics::register_warning(const Warning& warning)
 {
     warnings_.push_back(warning);
 }

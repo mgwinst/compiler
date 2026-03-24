@@ -1,7 +1,14 @@
-fn func() -> void
+fn func(a: int, b: int) -> int
 {
-    var a: int;
-    var b: int;
+    
+}
 
-    a += b;
+fn func(a: int, b: int) -> int
+{
+
+}
+
+fn main() -> int
+{
+    
 }

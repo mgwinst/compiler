@@ -19,7 +19,7 @@ namespace Syntax
     struct CompilationUnitDecl
     {
         std::string name_;
-        std::vector<ASTNodeRef> decls_;
+        std::vector<ASTNodeId> decls_;
 
         CompilationUnitDecl(std::string name) noexcept :
             name_{ std::move(name) },
@@ -29,11 +29,11 @@ namespace Syntax
     struct VarDecl
     {
         std::string name_;
-        ASTNodeRef type_expr_;
-        std::optional<ASTNodeRef> init_{ std::nullopt }; // single expr or init_list_expr
+        ASTNodeId type_expr_;
+        std::optional<ASTNodeId> init_{ std::nullopt }; // single expr or init_list_expr
         SourceLoc source_loc_;
 
-        VarDecl(std::string name, ASTNodeRef type_expr, std::optional<ASTNodeRef> init, SourceLoc source_loc) noexcept :
+        VarDecl(std::string name, ASTNodeId type_expr, std::optional<ASTNodeId> init, SourceLoc source_loc) noexcept :
             name_{ std::move(name) }, 
             type_expr_{ type_expr }, 
             init_{ std::move(init) },
@@ -44,10 +44,10 @@ namespace Syntax
     struct ParamDecl
     {
         std::string name_;
-        ASTNodeRef type_expr_;
+        ASTNodeId type_expr_;
         SourceLoc source_loc_;
 
-        ParamDecl(std::string name, ASTNodeRef type_expr, SourceLoc source_loc) noexcept :
+        ParamDecl(std::string name, ASTNodeId type_expr, SourceLoc source_loc) noexcept :
             name_{ std::move(name) },
             type_expr_{ type_expr },
             source_loc_{ std::move(source_loc) } {}
@@ -56,12 +56,12 @@ namespace Syntax
     struct FuncDecl
     {
         std::string name_;
-        std::vector<ASTNodeRef> params_;
-        ASTNodeRef return_type_;
-        ASTNodeRef body_;
+        std::vector<ASTNodeId> params_;
+        ASTNodeId return_type_;
+        ASTNodeId body_;
         SourceLoc source_loc_;
 
-        FuncDecl(std::string name, std::vector<ASTNodeRef> params, ASTNodeRef return_type, ASTNodeRef body, SourceLoc source_loc) noexcept :
+        FuncDecl(std::string name, std::vector<ASTNodeId> params, ASTNodeId return_type, ASTNodeId body, SourceLoc source_loc) noexcept :
             name_{ std::move(name) },
             params_{ std::move(params) },
             return_type_{ return_type },
@@ -73,10 +73,10 @@ namespace Syntax
     {
         RecordKind kind_;
         std::string name_;
-        std::vector<ASTNodeRef> fields_;
+        std::vector<ASTNodeId> fields_;
         SourceLoc source_loc_;
 
-        RecordDecl(RecordKind kind, std::string name, std::vector<ASTNodeRef> fields, SourceLoc source_loc) noexcept :
+        RecordDecl(RecordKind kind, std::string name, std::vector<ASTNodeId> fields, SourceLoc source_loc) noexcept :
             kind_{ kind },
             name_{ std::move(name) },
             fields_{ std::move(fields) },
@@ -87,17 +87,17 @@ namespace Syntax
 
     struct CompoundStmt
     {
-        std::vector<ASTNodeRef> children_; // exprs/decls/returns
+        std::vector<ASTNodeId> children_; // exprs/decls/returns
 
-        CompoundStmt(std::vector<ASTNodeRef> children) noexcept :
+        CompoundStmt(std::vector<ASTNodeId> children) noexcept :
             children_{ std::move(children) } {}
     };
 
     struct ReturnStmt
     {
-        ASTNodeRef value_;
+        ASTNodeId value_;
 
-        ReturnStmt(ASTNodeRef value) noexcept :
+        ReturnStmt(ASTNodeId value) noexcept :
             value_{ value } {}
     };
 
@@ -113,11 +113,11 @@ namespace Syntax
 
     // nest IfStmt nodes for elif chains (no need for dedicated else-if nodes)
     struct IfStmt {
-        ASTNodeRef cond_;
-        ASTNodeRef then_stmt_; 
-        std::optional<ASTNodeRef> else_stmt_ = std::nullopt;
+        ASTNodeId cond_;
+        ASTNodeId then_stmt_; 
+        std::optional<ASTNodeId> else_stmt_ = std::nullopt;
 
-        IfStmt(ASTNodeRef cond, ASTNodeRef then_stmt, std::optional<ASTNodeRef> else_stmt) :
+        IfStmt(ASTNodeId cond, ASTNodeId then_stmt, std::optional<ASTNodeId> else_stmt) :
             cond_{ cond },
             then_stmt_( then_stmt ),
             else_stmt_( else_stmt ) {}
@@ -125,20 +125,20 @@ namespace Syntax
 
     struct WhileStmt
     {
-        ASTNodeRef cond_;
-        ASTNodeRef body_;
+        ASTNodeId cond_;
+        ASTNodeId body_;
 
-        WhileStmt(ASTNodeRef cond, ASTNodeRef body) :
+        WhileStmt(ASTNodeId cond, ASTNodeId body) :
             cond_{ cond },
             body_{ body } {}
     };
 
     struct ForStmt
     {
-        ASTNodeRef init_, cond_, update_;
-        ASTNodeRef body_;
+        ASTNodeId init_, cond_, update_;
+        ASTNodeId body_;
 
-        ForStmt(ASTNodeRef init, ASTNodeRef cond, ASTNodeRef update, ASTNodeRef body) noexcept :
+        ForStmt(ASTNodeId init, ASTNodeId cond, ASTNodeId update, ASTNodeId body) noexcept :
             init_{ init },
             cond_{ cond },
             update_{ update },
@@ -188,10 +188,10 @@ namespace Syntax
     struct UnaryExpr
     {
         std::string op_;
-        ASTNodeRef operand_;
+        ASTNodeId operand_;
         bool is_postfix_ = false;
 
-        UnaryExpr(std::string op, ASTNodeRef operand, bool is_postfix) noexcept :
+        UnaryExpr(std::string op, ASTNodeId operand, bool is_postfix) noexcept :
             op_{ std::move(op) },
             operand_{ operand },
             is_postfix_{ is_postfix } {}
@@ -200,9 +200,9 @@ namespace Syntax
     struct BinaryExpr
     {
         std::string op_;
-        ASTNodeRef left_, right_;
+        ASTNodeId left_, right_;
 
-        BinaryExpr(std::string op, ASTNodeRef left, ASTNodeRef right) noexcept :
+        BinaryExpr(std::string op, ASTNodeId left, ASTNodeId right) noexcept :
             op_{ std::move(op) },
             left_{ left },
             right_{ right } {}
@@ -220,21 +220,21 @@ namespace Syntax
 
     struct CallExpr
     {
-        ASTNodeRef callee_; // callee is a reference expression ^
-        std::vector<ASTNodeRef> args_;
+        ASTNodeId callee_; // callee is a reference expression ^
+        std::vector<ASTNodeId> args_;
 
-        CallExpr(ASTNodeRef callee, std::vector<ASTNodeRef> args) noexcept :
+        CallExpr(ASTNodeId callee, std::vector<ASTNodeId> args) noexcept :
             callee_{ callee },
             args_{ std::move(args) } {}
     };
 
     struct MemberExpr
     {
-        ASTNodeRef base_;
+        ASTNodeId base_;
         std::string member_;
         bool is_arrow_ = false;
         
-        MemberExpr(ASTNodeRef base, std::string member, bool is_arrow = false) :
+        MemberExpr(ASTNodeId base, std::string member, bool is_arrow = false) :
             base_{ base },
             member_{ std::move(member) },
             is_arrow_{ is_arrow } {}
@@ -242,19 +242,19 @@ namespace Syntax
 
     struct ArraySubscriptExpr
     {
-        ASTNodeRef base_;
-        ASTNodeRef index_;
+        ASTNodeId base_;
+        ASTNodeId index_;
 
-        ArraySubscriptExpr(ASTNodeRef base, ASTNodeRef index) noexcept :
+        ArraySubscriptExpr(ASTNodeId base, ASTNodeId index) noexcept :
             base_{ base },
             index_{ index } {}
     };
 
     struct InitListExpr
     {
-        std::vector<ASTNodeRef> init_values_;
+        std::vector<ASTNodeId> init_values_;
         
-        InitListExpr(std::vector<ASTNodeRef> init_values) :
+        InitListExpr(std::vector<ASTNodeId> init_values) :
             init_values_{ std::move(init_values) } {}
     };
 
@@ -268,26 +268,26 @@ namespace Syntax
     struct QualifierTypeExpr
     {
         QualifierKind kind_;
-        ASTNodeRef inner_;
+        ASTNodeId inner_;
 
-        QualifierTypeExpr(QualifierKind kind, ASTNodeRef inner) :
+        QualifierTypeExpr(QualifierKind kind, ASTNodeId inner) :
             kind_{ kind }, inner_{ inner } {}
     };
     
     struct PointerTypeExpr
     {
-        ASTNodeRef inner_;
+        ASTNodeId inner_;
     };
 
     struct ReferenceTypeExpr
     {
-        ASTNodeRef inner_;
+        ASTNodeId inner_;
     };
 
     struct ArrayTypeExpr
     {
-        ASTNodeRef inner_;
-        std::optional<ASTNodeRef> size_;
+        ASTNodeId inner_;
+        std::optional<ASTNodeId> size_;
     };
 
     struct NamedTypeExpr

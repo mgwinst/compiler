@@ -4,6 +4,7 @@
 
 #include "../sema/sematree.hpp"
 #include "../sema/types/type_pool.hpp"
+#include "../sema/symbol.hpp"
 #include "../error/diagnostics.hpp"
 #include "../utils/utils.hpp"
 

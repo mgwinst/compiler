@@ -2,17 +2,21 @@
 
 #include <cstddef>
 #include <type_traits>
-#include <unordered_map>
 #include <utility>
 #include <new>
+#include <vector>
 
 #include "../../utils/macros.hpp"
 #include "../../utils/alias.hpp"
 #include "../../utils/enums.hpp"
 
-
 namespace Sema
 {
+    struct ErrorType
+    {
+
+    };
+
     struct VoidType
     {
         bool operator==(const VoidType&) const { return true; }
@@ -21,6 +25,11 @@ namespace Sema
     struct ByteType
     {
         bool operator==(const ByteType&) const { return true; }
+    };
+
+    struct CharType
+    {
+        bool operator==(const CharType&) const { return true; }
     };
 
     struct BoolType
@@ -45,21 +54,21 @@ namespace Sema
 
     struct ReferenceType
     {
-        TypeRef inner_type_;
+        TypeId inner_type_;
 
         bool operator==(const ReferenceType& other) const = default;
     };
 
     struct PointerType
     {
-        TypeRef inner_type_;
+        TypeId inner_type_;
 
         bool operator==(const PointerType& other) const = default;
     };
 
     struct ArrayType
     {
-        TypeRef inner_type_;
+        TypeId inner_type_;
         uint64_t size_;
 
         bool operator==(const ArrayType& other) const = default;
@@ -68,9 +77,9 @@ namespace Sema
     struct QualifierType
     {
         QualifierKind kind_;
-        TypeRef inner_type_;
+        TypeId inner_type_;
 
-        QualifierType(QualifierKind kind, TypeRef inner_type) :
+        QualifierType(QualifierKind kind, TypeId inner_type) :
             kind_{ kind },
             inner_type_{ inner_type } {}
 
@@ -80,10 +89,12 @@ namespace Sema
     struct FunctionType
     {
         std::string name_;
-        TypeRef return_type_;
+        std::vector<TypeId> params_;
+        TypeId return_type_;
 
-        FunctionType(std::string name, TypeRef return_type) :
+        FunctionType(std::string name, std::vector<TypeId> params, TypeId return_type) :
             name_{ std::move(name) },
+            params_{ std::move(params) },
             return_type_{ return_type } {}
 
         bool operator==(const FunctionType& other) const = default;
@@ -104,8 +115,10 @@ namespace Sema
     template <typename T>
     inline constexpr TypeKind type_kind_v = TypeKind::Invalid;
 
+    template <> inline constexpr TypeKind type_kind_v<ErrorType>     = TypeKind::Error;
     template <> inline constexpr TypeKind type_kind_v<VoidType>      = TypeKind::Void;
     template <> inline constexpr TypeKind type_kind_v<ByteType>      = TypeKind::Byte;
+    template <> inline constexpr TypeKind type_kind_v<CharType>      = TypeKind::Char;
     template <> inline constexpr TypeKind type_kind_v<BoolType>      = TypeKind::Bool;
     template <> inline constexpr TypeKind type_kind_v<IntegerType>   = TypeKind::Integer;
     template <> inline constexpr TypeKind type_kind_v<FloatType>     = TypeKind::Float;
@@ -116,11 +129,9 @@ namespace Sema
     template <> inline constexpr TypeKind type_kind_v<FunctionType>  = TypeKind::Function;
     template <> inline constexpr TypeKind type_kind_v<RecordType>    = TypeKind::Record;
 
-    struct Type
+    class Type
     {
-        alignas(64) std::byte data_[63];
-        TypeKind kind_;
-
+    public:
         template <typename T>
             requires (type_kind_v<T> != TypeKind::Invalid)
         Type(std::in_place_type_t<T>, auto&&... args) : kind_{ type_kind_v<T> }
@@ -128,23 +139,28 @@ namespace Sema
             ::new (reinterpret_cast<T*>(data_)) T{ std::forward<decltype(args)>(args)... };
         }
 
-        ~Type()
+        Type(Type&& other) noexcept : kind_{ other.kind_ }
         {
-            switch (kind_) {
-                case TypeKind::Void:        destroy<VoidType>();      break;
-                case TypeKind::Byte:        destroy<ByteType>();      break;
-                case TypeKind::Bool:        destroy<BoolType>();      break;
-                case TypeKind::Integer:     destroy<IntegerType>();   break;
-                case TypeKind::Float:       destroy<FloatType>();     break;
-                case TypeKind::Reference:   destroy<ReferenceType>(); break;
-                case TypeKind::Pointer:     destroy<PointerType>();   break;
-                case TypeKind::Array:       destroy<ArrayType>();     break;
-                case TypeKind::Qualifier:   destroy<QualifierType>(); break;
-                case TypeKind::Function:    destroy<FunctionType>();  break;
-                case TypeKind::Record:      destroy<RecordType>();    break;
-                case TypeKind::Invalid: [[fallthrough]];
-                default: break;
-            }
+            move_construct_from(other);
+            other.kind_ = TypeKind::Invalid;
+        }
+
+        Type& operator=(Type&& other) noexcept
+        {
+            this->~Type();
+            kind_ = other.kind_;
+            move_construct_from(other);
+            other.kind_ = TypeKind::Invalid;
+            
+            return *this;
+        }
+
+        Type(const Type&) = delete;
+        Type& operator=(const Type&) = delete;
+
+        ~Type() noexcept
+        {
+            destroy_active();
         }
 
         TypeKind get_kind() const
@@ -161,13 +177,67 @@ namespace Sema
             return *std::launder(reinterpret_cast<const T*>(data_));
         }
 
+
         template <typename T>
         [[nodiscard]] T& as()
         {
-            if (kind_ != type_kind_v<T>) [[unlikely]]
+            if (kind_ != type_kind_v<T>) [[unlikely]] {
                 error_exit("types don't match");
+            }
 
             return *std::launder(reinterpret_cast<T*>(data_));
+        }
+
+    private:
+        alignas(64) std::byte data_[127];
+        TypeKind kind_;
+
+        void move_construct_from(Type& other)
+        {
+            switch (kind_) {
+                case TypeKind::Error:       move_construct<ErrorType>(other);      break;
+                case TypeKind::Void:        move_construct<VoidType>(other);      break;
+                case TypeKind::Byte:        move_construct<ByteType>(other);      break;
+                case TypeKind::Char:        move_construct<CharType>(other);      break;
+                case TypeKind::Bool:        move_construct<BoolType>(other);      break;
+                case TypeKind::Integer:     move_construct<IntegerType>(other);   break;
+                case TypeKind::Float:       move_construct<FloatType>(other);     break;
+                case TypeKind::Reference:   move_construct<ReferenceType>(other); break;
+                case TypeKind::Pointer:     move_construct<PointerType>(other);   break;
+                case TypeKind::Array:       move_construct<ArrayType>(other);     break;
+                case TypeKind::Qualifier:   move_construct<QualifierType>(other); break;
+                case TypeKind::Function:    move_construct<FunctionType>(other);  break;
+                case TypeKind::Record:      move_construct<RecordType>(other);    break;
+                case TypeKind::Invalid: [[fallthrough]];
+                default: break;
+            }
+        }
+
+        template <typename T>
+        void move_construct(Type& other) noexcept
+        {
+            ::new (data_) T{ std::move(other.as<T>()) };
+        }
+
+        void destroy_active() noexcept
+        {
+            switch (kind_) {
+                case TypeKind::Error:       destroy<ErrorType>();      break;
+                case TypeKind::Void:        destroy<VoidType>();      break;
+                case TypeKind::Byte:        destroy<ByteType>();      break;
+                case TypeKind::Char:        destroy<CharType>();      break;
+                case TypeKind::Bool:        destroy<BoolType>();      break;
+                case TypeKind::Integer:     destroy<IntegerType>();   break;
+                case TypeKind::Float:       destroy<FloatType>();     break;
+                case TypeKind::Reference:   destroy<ReferenceType>(); break;
+                case TypeKind::Pointer:     destroy<PointerType>();   break;
+                case TypeKind::Array:       destroy<ArrayType>();     break;
+                case TypeKind::Qualifier:   destroy<QualifierType>(); break;
+                case TypeKind::Function:    destroy<FunctionType>();  break;
+                case TypeKind::Record:      destroy<RecordType>();    break;
+                case TypeKind::Invalid: [[fallthrough]];
+                default: break;
+            }
         }
 
         template <typename T>
@@ -180,38 +250,19 @@ namespace Sema
 
 } // namespace Sema
 
-inline constexpr std::size_t VOID_INDEX = 0;
-inline constexpr std::size_t BYTE_INDEX = 1;
-inline constexpr std::size_t BOOL_INDEX = 2;
-inline constexpr std::size_t INT8_INDEX = 3;
-inline constexpr std::size_t INT16_INDEX = 4;
-inline constexpr std::size_t INT32_INDEX = 5;
-inline constexpr std::size_t INT64_INDEX = 6;
-inline constexpr std::size_t UINT8_INDEX = 7;
-inline constexpr std::size_t UINT16_INDEX = 8;
-inline constexpr std::size_t UINT32_INDEX = 9;
-inline constexpr std::size_t UINT64_INDEX = 10;
-inline constexpr std::size_t FLOAT16_INDEX = 11;
-inline constexpr std::size_t FLOAT32_INDEX = 12;
-inline constexpr std::size_t FLOAT64_INDEX = 13;
-
-enum class TypeCategory
-{
-    INTEGER,
-    FLOATING_POINT
-};
-
-inline std::unordered_map<TypeRef, TypeCategory> type_category {
-    {INT8_INDEX,    TypeCategory::INTEGER},
-    {INT16_INDEX,   TypeCategory::INTEGER},
-    {INT32_INDEX,   TypeCategory::INTEGER},
-    {INT64_INDEX,   TypeCategory::INTEGER},
-    {UINT8_INDEX,   TypeCategory::INTEGER},
-    {UINT16_INDEX,  TypeCategory::INTEGER}, 
-    {UINT32_INDEX,  TypeCategory::INTEGER},
-    {UINT64_INDEX,  TypeCategory::INTEGER},
-    {FLOAT16_INDEX, TypeCategory::FLOATING_POINT},
-    {FLOAT32_INDEX, TypeCategory::FLOATING_POINT},
-    {FLOAT64_INDEX, TypeCategory::FLOATING_POINT}
-};
-
+inline constexpr SemaNodeId ERROR_TYPE = 0;
+inline constexpr SemaNodeId VOID = 1;
+inline constexpr SemaNodeId BYTE = 2;
+inline constexpr SemaNodeId CHAR = 3;
+inline constexpr SemaNodeId BOOL = 4;
+inline constexpr SemaNodeId INT8 = 5;
+inline constexpr SemaNodeId INT16 = 6;
+inline constexpr SemaNodeId INT32 = 7;
+inline constexpr SemaNodeId INT64 = 8;
+inline constexpr SemaNodeId UINT8 = 9;
+inline constexpr SemaNodeId UINT16 = 10;
+inline constexpr SemaNodeId UINT32 = 11;
+inline constexpr SemaNodeId UINT64 = 12;
+inline constexpr SemaNodeId FLOAT16 = 13;
+inline constexpr SemaNodeId FLOAT32 = 14;
+inline constexpr SemaNodeId FLOAT64 = 15;

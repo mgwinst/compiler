@@ -7,13 +7,6 @@
 #include "source_location.hpp"
 #include "../utils/utils.hpp"
 
-inline std::string format_source(const SourceLoc src_loc)
-{
-    const auto d = (size_t)std::distance(src_loc.source_line_.data(), src_loc.item_.data());
-    const auto underline = std::string(d, ' ') + std::string(src_loc.item_.length(), '^');
-    return std::format("    {}\n    {}", src_loc.source_line_, underline);
-}
-
 struct SyntaxError
 {
     std::string msg_;
@@ -56,14 +49,14 @@ struct UndeclaredIdentiferError
 
 };
 
-struct TypeError
+struct TypeMismatchError
 {
     std::string msg_;
 
-    TypeError(std::string_view err_msg) : 
-        msg_{ err_msg } {}
+    TypeMismatchError(std::string_view msg) : 
+        msg_{ msg } {}
 
-    TypeError(std::string_view err_msg, SourceLoc source_loc) : 
+    TypeMismatchError(std::string_view err_msg, SourceLoc source_loc) : 
         msg_{ std::format("{}:{}: error: {}\n{}\n", 
             source_loc.line_number_,
             source_loc.column_number_,
@@ -71,8 +64,7 @@ struct TypeError
             format_source(source_loc)) } {}
 };
 
-
-using Error = std::variant<SyntaxError, RedefinitionError, UndeclaredIdentiferError, TypeError>;
+using Error = std::variant<SyntaxError, RedefinitionError, UndeclaredIdentiferError, TypeMismatchError>;
 
 template <typename T>
 std::string error_to_string(const T& error)
@@ -90,7 +82,7 @@ std::string error_to_string(const T& error)
             return std::format("{}", undecl_ident_error.msg_);
         },
 
-        [](const TypeError& type_error) {
+        [](const TypeMismatchError& type_error) {
             return std::format("{}", type_error.msg_);
         }
 

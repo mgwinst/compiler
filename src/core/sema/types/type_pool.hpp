@@ -7,29 +7,35 @@
 #include "types.hpp"
 #include "../../ast/ast.hpp"
 
-inline constexpr std::size_t INLINE_VEC_SIZE{ 16 };
+inline constexpr std::size_t INLINE_VEC_SIZE{ 8 };
 
 namespace Sema
 {
-    struct TypePool
+    class TypePool
     {
+    public:
+        TypePool() noexcept;
+
+        const Type& get_type(TypeId ref) const noexcept;
+        Type& get_type(TypeId ref) noexcept;
+
+        TypeId resolve_type(const ASTNodeId type_expr, const AST& ast) noexcept;
+        void print() const noexcept;
+
+    private:
         std::vector<Type> types_;
-        std::unordered_map<TypeRef, boost::container::small_vector<TypeRef, INLINE_VEC_SIZE>> buckets_;
-
-        TypePool();
-
-        TypeRef resolve_type(const ASTNodeRef type_expr, const AST& ast) noexcept;
+        std::unordered_map<TypeId, boost::container::small_vector<TypeId, INLINE_VEC_SIZE>> buckets_;
 
         template <typename T, typename... Args>
             requires std::is_constructible_v<T, Args...>
-        [[nodiscard]] TypeRef get_or_create(Args&&... args)
+        [[nodiscard]] TypeId get_or_create(Args&&... args) noexcept
         {
             auto& bucket = buckets_[TypeHasher<T>::hash(args...)];
 
-            for (TypeRef ref : bucket) {
-                if (types_[ref].get_kind() == type_kind_v<T>) {
-                    if (types_[ref].as<T>() == T{ args... })
-                        return ref;
+            for (TypeId id : bucket) {
+                if (types_[id].get_kind() == type_kind_v<T>) {
+                    if (types_[id].as<T>() == T{ args... })
+                        return id;
                 }
             }
 
@@ -39,8 +45,6 @@ namespace Sema
 
             return id;
         }
-
-        void print() const noexcept;
     };
 
 } // namespace Sema

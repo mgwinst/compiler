@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
-using ASTNodeRef = uint64_t;
-using TypeRef = uint64_t;
-using SemaNodeRef = uint64_t;
+using ASTNodeId = uint64_t;
+using TypeId = uint64_t;
+using SemaNodeId = uint64_t;
+using SymbolId = uint64_t;

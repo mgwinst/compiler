@@ -1,9 +1,11 @@
 #pragma once
 
-#include "symbol.hpp"
+#include <vector>
+
 #include "../error/source_location.hpp"
 #include "../utils/macros.hpp"
 #include "../utils/enums.hpp"
+#include "../utils/alias.hpp"
 
 namespace Sema
 {
@@ -12,9 +14,9 @@ namespace Sema
     struct CompilationUnitDecl
     {
         std::string name_;
-        std::vector<SemaNodeRef> decls_;
-        SymbolRef symbol_;
-        TypeRef type_;
+        std::vector<SemaNodeId> decls_;
+        SymbolId symbol_;
+        TypeId type_id_;
 
         CompilationUnitDecl(std::string name) noexcept :
             name_{ std::move(name) } {}
@@ -22,36 +24,36 @@ namespace Sema
 
     struct VarDecl
     {
-        SymbolRef symbol_;
-        TypeRef type_;
-        std::optional<SemaNodeRef> init_; // single expr or init_list
+        SymbolId symbol_;
+        TypeId type_id_;
+        std::optional<SemaNodeId> init_; // single expr or init_list
         SourceLoc source_loc_;
     };
 
     struct ParamDecl
     {
-        SymbolRef symbol_;
-        TypeRef type_;
-        //std::optional<SemaNodeRef> init_; // single expr or init_list
+        SymbolId symbol_;
+        TypeId type_id_;
+        //std::optional<SemaNodeId> init_; // single expr or init_list
         SourceLoc source_loc_;
 
-        ParamDecl(SymbolRef symbol, TypeRef type, SourceLoc source_loc) noexcept :
+        ParamDecl(SymbolId symbol, TypeId type_id_id, SourceLoc source_loc) noexcept :
             symbol_{ symbol },
-            type_{ type },
+            type_id_{ type_id_id },
             source_loc_{ source_loc } {}
     };
 
     struct FuncDecl
     {
-        SymbolRef symbol_;
-        TypeRef type_;
-        std::vector<SemaNodeRef> params_;
-        SemaNodeRef body_;
+        SymbolId symbol_;
+        TypeId type_id_;
+        std::vector<SemaNodeId> params_;
+        SemaNodeId body_;
         SourceLoc source_loc_;
 
-        FuncDecl(SymbolRef symbol, TypeRef type, std::vector<SemaNodeRef> params, SemaNodeRef body, SourceLoc source_loc) noexcept :
+        FuncDecl(SymbolId symbol, TypeId type_id_id, std::vector<SemaNodeId> params, SemaNodeId body, SourceLoc source_loc) noexcept :
             symbol_{ symbol },
-            type_{ type },
+            type_id_{ type_id_id },
             params_{ std::move(params) },
             body_{ body },
             source_loc_{ source_loc } {}
@@ -59,14 +61,14 @@ namespace Sema
 
     struct RecordDecl 
     {
-        SymbolRef symbol_;
-        TypeRef type_;
-        std::vector<SemaNodeRef> fields_;
+        SymbolId symbol_;
+        TypeId type_id_;
+        std::vector<SemaNodeId> fields_;
         SourceLoc source_loc_;
         
-        RecordDecl(SymbolRef symbol, TypeRef type, std::vector<SemaNodeRef> fields, SourceLoc source_loc) :
+        RecordDecl(SymbolId symbol, TypeId type, std::vector<SemaNodeId> fields, SourceLoc source_loc) :
             symbol_{ symbol }, 
-            type_{ type }, 
+            type_id_{ type }, 
             fields_{ std::move(fields) },
             source_loc_{ source_loc } {}
     };
@@ -75,17 +77,17 @@ namespace Sema
 
     struct CompoundStmt
     {
-        std::vector<SemaNodeRef> children_; // both expr/decls/returns
+        std::vector<SemaNodeId> children_; // both expr/decls/returns
 
-        CompoundStmt(std::vector<SemaNodeRef> children) noexcept :
+        CompoundStmt(std::vector<SemaNodeId> children) noexcept :
             children_{ std::move(children) } {}
     };
 
     struct ReturnStmt
     {
-        SemaNodeRef value_;
+        SemaNodeId value_;
 
-        ReturnStmt(SemaNodeRef value) noexcept :
+        ReturnStmt(SemaNodeId value) noexcept :
             value_{ value } {}
     };
 
@@ -101,25 +103,25 @@ namespace Sema
 
     // nest IfStmt nodes for elif chains (no need for dedicated else-if nodes)
     struct IfStmt {
-        SemaNodeRef cond_;
-        SemaNodeRef then_stmt_; 
-        std::optional<SemaNodeRef> else_stmt_;
+        SemaNodeId cond_;
+        SemaNodeId then_stmt_; 
+        std::optional<SemaNodeId> else_stmt_;
     };
 
     struct WhileStmt
     {
-        SemaNodeRef cond_, body_;
+        SemaNodeId cond_, body_;
 
-        WhileStmt(SemaNodeRef cond, SemaNodeRef body) noexcept :
+        WhileStmt(SemaNodeId cond, SemaNodeId body) noexcept :
             cond_{ cond },
             body_{ body } {}
     };
 
     struct ForStmt
     {
-        SemaNodeRef init_, cond_, update_, body_;
+        SemaNodeId init_, cond_, update_, body_;
 
-        ForStmt(SemaNodeRef init, SemaNodeRef cond, SemaNodeRef update, SemaNodeRef body) noexcept :
+        ForStmt(SemaNodeId init, SemaNodeId cond, SemaNodeId update, SemaNodeId body) noexcept :
             init_{ init },
             cond_{ cond },
             update_{ update },
@@ -169,10 +171,10 @@ namespace Sema
     struct UnaryExpr
     {
         std::string op_;
-        SemaNodeRef operand_;
+        SemaNodeId operand_;
         bool is_postfix_;
 
-        UnaryExpr(std::string op, SemaNodeRef operand, bool is_postfix = false) noexcept :
+        UnaryExpr(std::string op, SemaNodeId operand, bool is_postfix = false) noexcept :
             op_{ std::move(op) },
             operand_{ operand },
             is_postfix_{ is_postfix } {}
@@ -181,9 +183,9 @@ namespace Sema
     struct BinaryExpr
     {
         std::string op_;
-        SemaNodeRef left_, right_;
+        SemaNodeId left_, right_;
 
-        BinaryExpr(std::string op, SemaNodeRef left, SemaNodeRef right) noexcept :
+        BinaryExpr(std::string op, SemaNodeId left, SemaNodeId right) noexcept :
             op_{ std::move(op) },
             left_{ left },
             right_{ right } {}
@@ -192,36 +194,36 @@ namespace Sema
     // invalid state to continue sema passes?
     struct ReferenceExpr
     {
-        SymbolRef target_symbol_;
-        TypeRef target_type_;
+        SymbolId target_symbol_;
+        TypeId target_type_id_;
         std::string name_;
         SourceLoc source_loc_;
         bool is_valid_;
 
-        ReferenceExpr(SymbolRef target_symbol, TypeRef target_type, std::string name, SourceLoc source_loc) noexcept : 
+        ReferenceExpr(SymbolId target_symbol, TypeId target_type, std::string name, SourceLoc source_loc) noexcept : 
             target_symbol_{ target_symbol },
-            target_type_{ target_type },
+            target_type_id_{ target_type },
             name_{ std::move(name) },
             source_loc_{ source_loc } {}
     };
 
     struct CallExpr
     {
-        SemaNodeRef callee_; // reference expr
-        std::vector<SemaNodeRef> args_;
+        SemaNodeId callee_; // reference expr
+        std::vector<SemaNodeId> args_;
 
-        CallExpr(SemaNodeRef callee, std::vector<SemaNodeRef> args) noexcept :
+        CallExpr(SemaNodeId callee, std::vector<SemaNodeId> args) noexcept :
             callee_{ callee },
             args_{ std::move(args) } {}
     };
 
     struct MemberExpr
     {
-        SemaNodeRef base_;
+        SemaNodeId base_;
         std::string member_;
         bool is_arrow_ = false;
         
-        MemberExpr(SemaNodeRef base, std::string member, bool is_arrow = false) :
+        MemberExpr(SemaNodeId base, std::string member, bool is_arrow = false) :
             base_{ base },
             member_{ std::move(member) },
             is_arrow_{ is_arrow } {}
@@ -229,19 +231,19 @@ namespace Sema
 
     struct ArraySubscriptExpr
     {
-        SemaNodeRef base_;
-        SemaNodeRef index_;
+        SemaNodeId base_;
+        SemaNodeId index_;
 
-        ArraySubscriptExpr(SemaNodeRef base, SemaNodeRef index) noexcept :
+        ArraySubscriptExpr(SemaNodeId base, SemaNodeId index) noexcept :
             base_{ base },
             index_{ index } {}
     };
 
     struct InitListExpr
     {
-        std::vector<SemaNodeRef> init_values_;
+        std::vector<SemaNodeId> init_values_;
         
-        InitListExpr(std::vector<SemaNodeRef> init_values) :
+        InitListExpr(std::vector<SemaNodeId> init_values) :
             init_values_{ std::move(init_values) } {}
     };
 
@@ -249,14 +251,15 @@ namespace Sema
 
     struct ExplicitCastExpr
     {       
-        TypeRef target_type;
-        SemaNodeRef expr;
+        TypeId target_type_id_;
+        SemaNodeId expr_;
     };
 
     struct ImplicitCastExpr
     {
-        ImplicitCastKind kind;
-        SemaNodeRef expr;
+        ImplicitCastKind kind_;
+        TypeId target_type_id_;
+        SemaNodeId expr_;
     };
 
 } // namespace Sema
@@ -390,7 +393,7 @@ private:
     template <typename T>
     void move_construct(SemaNode& other) noexcept
     {
-        new (data_) T{ std::move(other.as<T>()) };
+        ::new (data_) T{ std::move(other.as<T>()) };
     }
 
     void destroy_active()

@@ -2,7 +2,6 @@
 
 #include <expected>
 #include <tuple>
-#include <stack>
 
 #include "../lexer/lexer.hpp"
 #include "../ast/ast.hpp"
@@ -40,20 +39,20 @@ struct Parser
 
     void parse_compilation_unit() noexcept;
 
-    std::expected<ASTNodeRef, Error> parse_decl() noexcept;
-    std::expected<ASTNodeRef, Error> parse_var_decl() noexcept;
-    std::expected<ASTNodeRef, Error> parse_param_decl() noexcept;
-    std::expected<ASTNodeRef, Error> parse_func_decl() noexcept;
-    std::expected<ASTNodeRef, Error> parse_struct_def() noexcept;
-    std::expected<ASTNodeRef, Error> parse_field() noexcept;
-    std::expected<ASTNodeRef, Error> parse_return_stmt() noexcept;
-    std::expected<ASTNodeRef, Error> parse_compound_stmt() noexcept;
-    std::expected<ASTNodeRef, Error> parse_while_loop() noexcept;
-    std::expected<ASTNodeRef, Error> parse_for_loop() noexcept;
-    std::expected<ASTNodeRef, Error> parse_if_stmt() noexcept;
-    std::expected<ASTNodeRef, Error> nud(const Token token) noexcept;
-    std::expected<ASTNodeRef, Error> led(const Token token, ASTNodeRef left) noexcept;
-    std::expected<ASTNodeRef, Error> parse_expr(int min_prec = 0) noexcept;
-    std::expected<ASTNodeRef, Error> parse_init_list_expr() noexcept;
-    std::expected<ASTNodeRef, Error> parse_type() noexcept;
+    std::expected<ASTNodeId, Error> parse_decl() noexcept;
+    std::expected<ASTNodeId, Error> parse_var_decl() noexcept;
+    std::expected<ASTNodeId, Error> parse_param_decl() noexcept;
+    std::expected<ASTNodeId, Error> parse_func_decl() noexcept;
+    std::expected<ASTNodeId, Error> parse_struct_def() noexcept;
+    std::expected<ASTNodeId, Error> parse_field() noexcept;
+    std::expected<ASTNodeId, Error> parse_return_stmt() noexcept;
+    std::expected<ASTNodeId, Error> parse_compound_stmt() noexcept;
+    std::expected<ASTNodeId, Error> parse_while_loop() noexcept;
+    std::expected<ASTNodeId, Error> parse_for_loop() noexcept;
+    std::expected<ASTNodeId, Error> parse_if_stmt() noexcept;
+    std::expected<ASTNodeId, Error> parse_expr(int min_prec = 0) noexcept;
+    std::expected<ASTNodeId, Error> parse_init_list_expr() noexcept;
+    std::expected<ASTNodeId, Error> parse_type() noexcept;
+    std::expected<ASTNodeId, Error> nud(const Token token) noexcept;
+    std::expected<ASTNodeId, Error> led(const Token token, ASTNodeId left) noexcept;
 };
