@@ -64,7 +64,29 @@ struct TypeMismatchError
             format_source(source_loc)) } {}
 };
 
-using Error = std::variant<SyntaxError, RedefinitionError, UndeclaredIdentiferError, TypeMismatchError>;
+struct InvalidArguments
+{
+    std::string msg_;
+
+    InvalidArguments(std::string_view msg) : 
+        msg_{ msg } {}
+
+    InvalidArguments(std::string_view err_msg, SourceLoc source_loc) : 
+        msg_{ std::format("{}:{}: error: {}\n{}\n", 
+            source_loc.line_number_,
+            source_loc.column_number_,
+            err_msg, 
+            format_source(source_loc)) } {}
+};
+
+
+using Error = std::variant<
+    SyntaxError, 
+    RedefinitionError, 
+    UndeclaredIdentiferError, 
+    TypeMismatchError, 
+    InvalidArguments
+>;
 
 template <typename T>
 std::string error_to_string(const T& error)
@@ -83,6 +105,10 @@ std::string error_to_string(const T& error)
         },
 
         [](const TypeMismatchError& type_error) {
+            return std::format("{}", type_error.msg_);
+        },
+
+        [](const InvalidArguments& type_error) {
             return std::format("{}", type_error.msg_);
         }
 

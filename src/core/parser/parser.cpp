@@ -615,6 +615,8 @@ std::expected<ASTNodeId, Error> Parser::nud(const Token token) noexcept
 
 std::expected<ASTNodeId, Error> Parser::led(const Token token, ASTNodeId left) noexcept
 {
+    // SourceLoc source{ prev_token_ }; -> func(x, y, z) makes 'func' the offender
+
     eat_token();
     
     switch (token.type_) {
@@ -668,7 +670,7 @@ std::expected<ASTNodeId, Error> Parser::led(const Token token, ASTNodeId left) n
             }
 
             EXPECT_RPAREN();
-            return ast_->emplace<Syntax::CallExpr>(left, std::move(args));
+            return ast_->emplace<Syntax::CallExpr>(left, std::move(args), SourceLoc{ prev_token_ });
         }
 
         // arr[x]

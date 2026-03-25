@@ -2,7 +2,6 @@
 
 #include "type_pool.hpp"
 #include "types.hpp"
-#include "../../utils/print/print.hpp"
 
 namespace
 {
@@ -100,7 +99,10 @@ namespace Sema
                 if (auto it = builtin_map.find(named.name_); it != builtin_map.end())
                     return it->second;
 
-                return get_or_create<RecordType>(RecordKind::Unknown, named.name_); // resolves during type checking (we shouldn't know its struct/enum/union yet, check the symbol table)
+                if (auto it = user_def_type_map.find(named.name_); it != user_def_type_map.end())
+                    return it->second;
+
+                error_exit("type does not exist");
             }
 
             case ASTNodeKind::FuncDecl: {
@@ -120,34 +122,35 @@ namespace Sema
             case ASTNodeKind::RecordDecl: {
                 const auto& rec = node.as<Syntax::RecordDecl>();
 
+                TypeId id;
+
                 switch (rec.kind_) {
                     case RecordKind::Struct: {
-                        return get_or_create<RecordType>(RecordKind::Struct, rec.name_);
+                        id = get_or_create<RecordType>(RecordKind::Struct, rec.name_);
+                        break;
                     }
 
                     case RecordKind::Union: {
-                        return get_or_create<RecordType>(RecordKind::Union, rec.name_);
+                        id = get_or_create<RecordType>(RecordKind::Union, rec.name_);
+                        break;
                     }
 
                     case RecordKind::Enum: {
-                        return get_or_create<RecordType>(RecordKind::Enum, rec.name_);
+                        id = get_or_create<RecordType>(RecordKind::Enum, rec.name_);
+                        break;
                     }
 
                     default:
                         error_exit("Record type must be struct/union/enum");
                 }
+
+                user_def_type_map.emplace(rec.name_, id);
+                return id;
             }
 
             default: {
                 error_exit("type mismatch during type resolution");
             }
-        }
-    }
-
-    void TypePool::print() const noexcept
-    {
-        for (auto i = 0uz; i < types_.size(); i++) {
-            std::println("{} [{}]", type_to_str(*this, i), i);
         }
     }
 

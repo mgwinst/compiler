@@ -100,6 +100,8 @@ namespace Sema
         bool operator==(const FunctionType& other) const = default;
     };
 
+    // records are the only nominally typed constructs 
+    // records also share namespace -> union S; struct S; -> Error in C. do we want this behavior?
     struct RecordType 
     {
         RecordKind kind_;

@@ -222,10 +222,12 @@ namespace Syntax
     {
         ASTNodeId callee_; // callee is a reference expression ^
         std::vector<ASTNodeId> args_;
+        SourceLoc source_loc_;
 
-        CallExpr(ASTNodeId callee, std::vector<ASTNodeId> args) noexcept :
+        CallExpr(ASTNodeId callee, std::vector<ASTNodeId> args, SourceLoc source_loc) noexcept :
             callee_{ callee },
-            args_{ std::move(args) } {}
+            args_{ std::move(args) },
+            source_loc_{ source_loc } {}
     };
 
     struct MemberExpr

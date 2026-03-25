@@ -20,11 +20,14 @@ namespace Sema
         Type& get_type(TypeId ref) noexcept;
 
         TypeId resolve_type(const ASTNodeId type_expr, const AST& ast) noexcept;
-        void print() const noexcept;
 
-    private:
+
+
+
         std::vector<Type> types_;
         std::unordered_map<TypeId, boost::container::small_vector<TypeId, INLINE_VEC_SIZE>> buckets_;
+
+        std::unordered_map<std::string, TypeId> user_def_type_map; // fixes unknown type resolution problem
 
         template <typename T, typename... Args>
             requires std::is_constructible_v<T, Args...>

@@ -211,10 +211,12 @@ namespace Sema
     {
         SemaNodeId callee_; // reference expr
         std::vector<SemaNodeId> args_;
+        SourceLoc source_loc_;
 
-        CallExpr(SemaNodeId callee, std::vector<SemaNodeId> args) noexcept :
+        CallExpr(SemaNodeId callee, std::vector<SemaNodeId> args, SourceLoc source_loc) noexcept :
             callee_{ callee },
-            args_{ std::move(args) } {}
+            args_{ std::move(args) },
+            source_loc_{ source_loc } {}
     };
 
     struct MemberExpr

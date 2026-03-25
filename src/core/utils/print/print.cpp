@@ -14,9 +14,9 @@ namespace
     };
 }
 
-std::string type_to_str(const Sema::TypePool& type_pool, TypeId type_ref)
+std::string type_to_str(const Sema::SemaContext& ctx, TypeId type_ref)
 {
-    const auto& type = type_pool.get_type(type_ref);
+    const auto& type = ctx.type_pool_->get_type(type_ref);
 
     switch (type.get_kind()) {
         case TypeKind::Error: {
@@ -53,23 +53,23 @@ std::string type_to_str(const Sema::TypePool& type_pool, TypeId type_ref)
 
         case TypeKind::Reference: {
             const auto& t = type.as<Sema::ReferenceType>();
-            return std::format("{}&", type_to_str(type_pool, t.inner_type_));
+            return std::format("{}&", type_to_str(ctx, t.inner_type_));
         }
 
         case TypeKind::Pointer: {
             const auto& t = type.as<Sema::PointerType>();
-            return std::format("{}*", type_to_str(type_pool, t.inner_type_));
+            return std::format("{}*", type_to_str(ctx, t.inner_type_));
         }
 
         // FIX: print size
         case TypeKind::Array: {
             const auto& t = type.as<Sema::ArrayType>();
-            return std::format("{}[]", type_to_str(type_pool, t.inner_type_));
+            return std::format("{}[]", type_to_str(ctx, t.inner_type_));
         }
 
         case TypeKind::Qualifier: {
             const auto& t = type.as<Sema::QualifierType>();
-            return std::format("{} {}", qualkind_to_str[t.kind_], type_to_str(type_pool, t.inner_type_));
+            return std::format("{} {}", qualkind_to_str[t.kind_], type_to_str(ctx, t.inner_type_));
         }
 
         case TypeKind::Function: {
@@ -87,8 +87,6 @@ std::string type_to_str(const Sema::TypePool& type_pool, TypeId type_ref)
             error_exit("type mismatch");
     }
 }
-
-
 
 
 
@@ -122,9 +120,9 @@ std::string sema_node_to_str(const Sema::SemaContext& ctx, const Sema::SemaTree&
             const auto& symbol = ctx.symbol_table_->get_symbol(var.symbol_);
 
             if (var.init_)
-                return indent + std::format("VarDecl ['{}', {}]\n{}", symbol.identifier_, type_to_str(*ctx.type_pool_, symbol.type_id_), sema_node_to_str(ctx, sema_tree, *var.init_, indent + "  "));
+                return indent + std::format("VarDecl ['{}', {}]\n{}", symbol.identifier_, type_to_str(ctx, symbol.type_id_), sema_node_to_str(ctx, sema_tree, *var.init_, indent + "  "));
             else
-                return indent + std::format("VarDecl ['{}', {}]", symbol.identifier_, type_to_str(*ctx.type_pool_, symbol.type_id_));
+                return indent + std::format("VarDecl ['{}', {}]", symbol.identifier_, type_to_str(ctx, symbol.type_id_));
         }
 
         case SemaNodeKind::ParamDecl: {
@@ -132,7 +130,7 @@ std::string sema_node_to_str(const Sema::SemaContext& ctx, const Sema::SemaTree&
 
             const auto& symbol = ctx.symbol_table_->get_symbol(param.symbol_);
 
-            return indent + std::format("ParamDecl ['{}', {}]", symbol.identifier_, type_to_str(*ctx.type_pool_, symbol.type_id_));
+            return indent + std::format("ParamDecl ['{}', {}]", symbol.identifier_, type_to_str(ctx, symbol.type_id_));
         }
 
         case SemaNodeKind::FuncDecl: {
@@ -141,7 +139,7 @@ std::string sema_node_to_str(const Sema::SemaContext& ctx, const Sema::SemaTree&
             const auto& func_symbol = ctx.symbol_table_->get_symbol(func.symbol_);
 
             auto ret_type = ctx.type_pool_->get_type(func_symbol.type_id_).as<Sema::FunctionType>().return_type_;
-            auto ret_type_str = type_to_str(*ctx.type_pool_, ret_type);
+            auto ret_type_str = type_to_str(ctx, ret_type);
 
             std::string param_type_list_str{};
             std::string param_decls_str{};
@@ -150,7 +148,7 @@ std::string sema_node_to_str(const Sema::SemaContext& ctx, const Sema::SemaTree&
                 for (auto i = 0uz; i < func.params_.size(); i++) {
                     const auto& param = ctx.sema_tree_->nodes_[func.params_[i]].as<Sema::ParamDecl>();
                     const auto& param_symbol = ctx.symbol_table_->get_symbol(param.symbol_);
-                    param_type_list_str += type_to_str(*ctx.type_pool_, param_symbol.type_id_);
+                    param_type_list_str += type_to_str(ctx, param_symbol.type_id_);
 
                     param_decls_str += sema_node_to_str(ctx, sema_tree, func.params_[i], indent + "  ");
 
@@ -187,7 +185,7 @@ std::string sema_node_to_str(const Sema::SemaContext& ctx, const Sema::SemaTree&
             
             const auto& symbol = ctx.symbol_table_->get_symbol(rec.symbol_);
 
-            return indent + std::format("RecordDecl ['{}']\n{}", type_to_str(*ctx.type_pool_, symbol.type_id_), field_list_str);
+            return indent + std::format("RecordDecl ['{}']\n{}", type_to_str(ctx, symbol.type_id_), field_list_str);
         }
 
         case SemaNodeKind::CompoundStmt: {
@@ -301,7 +299,7 @@ std::string sema_node_to_str(const Sema::SemaContext& ctx, const Sema::SemaTree&
 
             const auto& symbol = ctx.symbol_table_->get_symbol(r.target_symbol_);
 
-            return indent + std::format("RefExpr ['{}', {}]", symbol.identifier_, type_to_str(*ctx.type_pool_, symbol.type_id_));
+            return indent + std::format("RefExpr ['{}', {}]", symbol.identifier_, type_to_str(ctx, symbol.type_id_));
         }
 
         case SemaNodeKind::CallExpr: {
@@ -372,9 +370,13 @@ void print_symbol_table(const Sema::SemaContext& ctx)
     std::println();
 }
 
+/*
 void print_type_pool(const Sema::SemaContext& ctx)
 {
     //std::println("new types: {}\n", ctx.type_pool_->types_.size() - 14);
     ctx.type_pool_->print();
+    for (auto& type : ctx.type_pool_->types_)
+        type_to_str(ctx, type);
     std::println();
 }
+*/

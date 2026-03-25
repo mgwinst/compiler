@@ -68,15 +68,19 @@ namespace Sema
                 const auto& func = ast_node.as<Syntax::FuncDecl>();
 
                 auto func_type_id = ctx.type_pool_->resolve_type(ast_node_id, ast);
+                auto& func_type = ctx.type_pool_->get_type(func_type_id).as<FunctionType>();
                 
                 // handle overload resolution
                 auto func_symbol_id = ctx.symbol_table_->lookup(func.name_);
                 if (exists(func_symbol_id)) {
                     auto& existing_func_symbol = ctx.symbol_table_->get_symbol(func_symbol_id);
+                    auto& existing_func_type = ctx.type_pool_->get_type(existing_func_symbol.type_id_).as<FunctionType>();
 
-                    // return type case unaccounted for
                     if (func_type_id == existing_func_symbol.type_id_) {
                         const auto err = RedefinitionError{std::format("redefinition of '{}'", func.name_), func.source_loc_};
+                        ctx.diagnostics_->register_error(err);
+                    } else if (func_type.params_ == existing_func_type.params_ && func_type.return_type_ != existing_func_type.return_type_) {
+                        const auto err = RedefinitionError{std::format("ambiguous redefinition of '{}' | prototype differs only in return type", func.name_), func.source_loc_};
                         ctx.diagnostics_->register_error(err);
                     }
                 }
@@ -99,14 +103,14 @@ namespace Sema
             case ASTNodeKind::RecordDecl: {
                 const auto& rec = ast_node.as<Syntax::RecordDecl>();
 
-                auto rec_type = ctx.type_pool_->resolve_type(ast_node_id, ast); // 'unknown <T>'
+                auto rec_type_id = ctx.type_pool_->resolve_type(ast_node_id, ast); // 'unknown <T>'
 
                 if (ctx.symbol_table_->exists_in_scope(rec.name_)) {
                     const auto err = RedefinitionError{std::format("redefinition of '{}'", rec.name_), rec.source_loc_};
                     ctx.diagnostics_->register_error(err);
                 }
 
-                auto rec_symbol = ctx.symbol_table_->insert(rec, rec_type);
+                auto rec_symbol = ctx.symbol_table_->insert(rec, rec_type_id);
 
                 ctx.symbol_table_->enter_scope();               
 
@@ -116,7 +120,7 @@ namespace Sema
 
                 ctx.symbol_table_->exit_scope();
 
-                return ctx.sema_tree_->emplace<RecordDecl>(rec_symbol, rec_type, std::move(fields), rec.source_loc_);
+                return ctx.sema_tree_->emplace<RecordDecl>(rec_symbol, rec_type_id, std::move(fields), rec.source_loc_);
             }
 
             case ASTNodeKind::CompoundStmt: {
@@ -252,7 +256,7 @@ namespace Sema
                 for (auto arg : call.args_)
                     args.push_back(build_sema_node(ctx, ast, arg));
                 
-                return ctx.sema_tree_->emplace<CallExpr>(callee, std::move(args));
+                return ctx.sema_tree_->emplace<CallExpr>(callee, std::move(args), call.source_loc_);
             }
 
             case ASTNodeKind::MemberExpr: {
