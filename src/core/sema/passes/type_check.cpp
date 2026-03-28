@@ -1,7 +1,7 @@
 #include "sema_pass.hpp"
+#include "helpers.hpp"
 #include "../../utils/print/print.hpp"
 
-#include <cstdlib>
 #include <ranges>
 
 // after sema tree has been built, we should interface 
@@ -10,41 +10,12 @@
 
 namespace Sema
 {
-    inline bool is_int_or_ptr(const Type& type)
-    {
-        return type.get_kind() == TypeKind::Integer || type.get_kind() == TypeKind::Pointer;
-    }
-
-    inline bool is_const(const Type& type) 
-    {
-        if (type.get_kind() == TypeKind::Qualifier)
-            return type.as<QualifierType>().kind_ == QualifierKind::Const;
-        return false;
-    }
-
-    void ignore_const()
-    {
-        
-    }
-
-    bool convertible_to_boolean(const Type& type)
-    {
-        /*
-        if (is_const(type)) {
-            type = type.as<QualifierType>().inner_type_;
-        }
-        */
-
-        if (type.get_kind() == TypeKind::Record)
-            return false;
-
-        return true;
-    }
-
     // implicit conversion should not change the symbol or type, it just inserts an implicit cast node to target type
 
     std::optional<TypeId> check_type(SemaContext& ctx, SemaNodeId node_id)
     {
+        // bool ok; // maybe we set this, then at end of expression type check, check the value and if !ok, return ERROR_TYPE 
+
         auto& node = ctx.sema_tree_->nodes_[node_id];
         
         switch (node.get_kind()) {
@@ -65,7 +36,7 @@ namespace Sema
                         return ERROR_TYPE;
 
                     if (var.type_id_ != *init_type_id) {
-                        auto err = TypeMismatchError{std::format("type mismatch ({} and {})", type_to_str(ctx, var.type_id_), type_to_str(ctx, *init_type_id))};
+                        auto err = TypeError{std::format("type mismatch ({} and {})", type_to_str(ctx, var.type_id_), type_to_str(ctx, *init_type_id)), var.source_loc_};
                         ctx.diagnostics_->register_error(err);
                         return ERROR_TYPE;
                     }
@@ -101,12 +72,44 @@ namespace Sema
 
             case SemaNodeKind::IfStmt: {
                 auto& ifstmt = node.as<IfStmt>();
-                               
+                
+                auto cond_type_id = check_type(ctx, ifstmt.cond_);
+                if (cond_type_id == ERROR_TYPE) return ERROR_TYPE;
+
+                if (!convertible_to_boolean(ctx.type_pool_->get_type(*cond_type_id))) {
+                    auto err = TypeError{std::format("condition expression must be of boolean or scalar type")};
+                    ctx.diagnostics_->register_error(err);
+                    return ERROR_TYPE;
+                }
+
+                check_type(ctx, ifstmt.then_stmt_); // check types in body, then_stmt -> if body
+
+                if (ifstmt.else_stmt_) {
+                    auto else_cond_type_id = check_type(ctx, *ifstmt.else_stmt_);
+                    if (else_cond_type_id == ERROR_TYPE) return ERROR_TYPE;
+                
+                    if (!convertible_to_boolean(ctx.type_pool_->get_type(*else_cond_type_id))) {
+                        auto err = TypeError{std::format("condition expression must be of boolean or scalar type")};
+                        ctx.diagnostics_->register_error(err);
+                        return ERROR_TYPE;
+                    }
+                }
 
                 return std::nullopt;
             }
 
             case SemaNodeKind::WhileStmt: {
+                auto& while_stmt = node.as<WhileStmt>();
+
+                auto cond_type_id = check_type(ctx, while_stmt.cond_);
+                if (cond_type_id == ERROR_TYPE) return ERROR_TYPE;
+                
+                if (!convertible_to_boolean(ctx.type_pool_->get_type(*cond_type_id))) {
+                    auto err = TypeError{std::format("condition expression must be of boolean or scalar type")};
+                    ctx.diagnostics_->register_error(err);
+                    return ERROR_TYPE;
+                }
+
                 return std::nullopt;
             }
 
@@ -132,41 +135,41 @@ namespace Sema
                 auto operand_type_id = check_type(ctx, unary.operand_);
                 if (*operand_type_id == ERROR_TYPE) return ERROR_TYPE;
 
-                Type& operand_type = ctx.type_pool_->get_type(*operand_type_id);
+                const Type& operand_type = ctx.type_pool_->get_type(*operand_type_id);
 
                 if (unary.op_ == "&") {
                     return ctx.type_pool_->get_or_create<PointerType>(*operand_type_id);
                 } else if (unary.op_ == "*") {
                     if (operand_type.get_kind() != TypeKind::Pointer) {
-                        auto err = TypeMismatchError{std::format("dereferencing non-pointer type {}", type_to_str(ctx, *operand_type_id))};
+                        auto err = TypeError{std::format("dereferencing non-pointer type {}", type_to_str(ctx, *operand_type_id)), unary.source_loc_};
                         ctx.diagnostics_->register_error(err);
                         return ERROR_TYPE;
                     }
-                    return operand_type_id;
                 } else if (unary.op_ == "!") {
                     if (!convertible_to_boolean(operand_type)) {
-                        auto err = TypeMismatchError{std::format("invalid argument type '{}' to unary expression '!'", type_to_str(ctx, *operand_type_id))};
+                        auto err = TypeError{std::format("invalid argument type '{}' to unary expression '!'", type_to_str(ctx, *operand_type_id)), unary.source_loc_};
                         ctx.diagnostics_->register_error(err);
                         return ERROR_TYPE;
                     }
                     return BOOL;
                 } else if (unary.op_ == "~") {
                     if (operand_type.get_kind() != TypeKind::Integer) {
-                        auto err = TypeMismatchError{std::format("non-integral type '{}' to unary expression '~'", type_to_str(ctx, *operand_type_id))};
+                        auto err = TypeError{std::format("non-integral type '{}' to unary expression '~'", type_to_str(ctx, *operand_type_id)), unary.source_loc_};
                         ctx.diagnostics_->register_error(err);
                         return ERROR_TYPE;
                     }
                 } else if (unary.op_ == "++" || unary.op_ == "--") {
                     if (!is_int_or_ptr(operand_type) || is_const(operand_type)) {
-                        auto err = TypeMismatchError{std::format("can't '{}' value of type ({})", unary.op_, type_to_str(ctx, *operand_type_id))};
+                        auto err = TypeError{std::format("can't '{}' value of type ({})", unary.op_, type_to_str(ctx, *operand_type_id)), unary.source_loc_};
                         ctx.diagnostics_->register_error(err);
                         return ERROR_TYPE;
                     }
-                    return operand_type_id;
                 }
-                return std::nullopt;
+
+                return operand_type_id;
             }
 
+            // FIX BIN OP RETURN TYPES (probably need a table for pattern matching...)
             case SemaNodeKind::BinaryExpr: {
                 auto& binary = node.as<BinaryExpr>();
 
@@ -176,19 +179,25 @@ namespace Sema
                 if (*left_type == ERROR_TYPE || *right_type == ERROR_TYPE)
                     return ERROR_TYPE;
 
-                /*
-                if (is_bitwise(binary.op_)) {
-                    if (!is_integral(left_type) || !is_integral(right_type)) {
-                        ...
-                    }
-                }
-                */
-
                 if (*left_type != *right_type) {
-                    auto err = TypeMismatchError{std::format("type mismatch ({} and {})", type_to_str(ctx, *left_type), type_to_str(ctx, *right_type))};
+                    auto err = TypeError{std::format("type mismatch ({} and {})", type_to_str(ctx, *left_type), type_to_str(ctx, *right_type)), binary.source_loc_};
                     ctx.diagnostics_->register_error(err);
                     return ERROR_TYPE;
                 }
+
+                /*
+                if (is_bitwise_op(binary.op_)) {
+                    if (!is_integral(*left_type) || !is_integral(*right_type)) {
+                        auto err = TypeError{std::format("bitwise ops require integral type operands", type_to_str(ctx, *left_type), type_to_str(ctx, *right_type)), binary.source_loc_};
+                        ctx.diagnostics_->register_error(err);
+                        return ERROR_TYPE;
+                    }
+                } else if (is_logical_op(binary.op_)) {
+                    return BOOL;
+                } else if (is_relational_op(binary.op_)) {
+                    
+                }
+                */
 
                 return left_type;
             }
@@ -201,8 +210,8 @@ namespace Sema
             case SemaNodeKind::CallExpr: {
                 auto& call = node.as<CallExpr>();
 
-                auto ref = ctx.sema_tree_->nodes_[call.callee_].as<ReferenceExpr>();
-                auto& func_type = ctx.type_pool_->get_type(ref.target_type_id_).as<FunctionType>();
+                auto call_ref = ctx.sema_tree_->nodes_[call.callee_].as<ReferenceExpr>();
+                auto& func_type = ctx.type_pool_->get_type(call_ref.target_type_id_).as<FunctionType>();
                 
                 if (func_type.params_.size() != call.args_.size()) {
                     auto err = InvalidArguments{std::format("expected '{}' arguments in call expression", func_type.params_.size()), call.source_loc_};
@@ -215,7 +224,7 @@ namespace Sema
                     if (!arg_type) return ERROR_TYPE;
 
                     if (param_type != *arg_type) {
-                        auto err = TypeMismatchError{std::format("type mismatch ({} and {})", type_to_str(ctx, param_type), type_to_str(ctx, *arg_type))};
+                        auto err = TypeError{std::format("passing '{}' to parameter of incompatible type '{}'", type_to_str(ctx, *arg_type), type_to_str(ctx, param_type)), call.source_loc_};
                         ctx.diagnostics_->register_error(err);
                         return ERROR_TYPE;
                     }
@@ -224,24 +233,27 @@ namespace Sema
                 return func_type.return_type_;
             }
 
-            // does expr.member == one of rec's fields identifier names?
-            // but if we don't store field names, how can we do this?
             case SemaNodeKind::MemberExpr: {
                 auto& expr = node.as<MemberExpr>();
-
-                auto& ref = ctx.sema_tree_->nodes_[expr.base_].as<ReferenceExpr>();
-                auto& rec_type = ctx.type_pool_->get_type(ref.target_type_id_).as<RecordType>();
-
-                // if (ref.name_ != rec_type.field.name_)
-                // ...
+                auto& rec_ref = ctx.sema_tree_->nodes_[expr.base_].as<ReferenceExpr>();
+                auto& rec_type = ctx.type_pool_->get_type(rec_ref.target_type_id_).as<RecordType>();
                 
-
-                return std::nullopt;
+                if (Field* field = rec_type.lookup_field(expr.member_); !field) {
+                    auto err = TypeError{std::format("no member named '{}' in '{}'", expr.member_, type_to_str(ctx, rec_ref.target_type_id_)), expr.source_loc_};
+                    ctx.diagnostics_->register_error(err);
+                    return ERROR_TYPE;
+                } else {
+                    return field->type_;
+                }
             }
 
             case SemaNodeKind::ArraySubscriptExpr: {
-                return std::nullopt;
+                auto& expr = node.as<ArraySubscriptExpr>();
+                auto& arr_ref = ctx.sema_tree_->nodes_[expr.base_].as<ReferenceExpr>();
+                auto& arr_symbol = ctx.symbol_table_->get_symbol(arr_ref.target_symbol_);
+                auto& arr_type = ctx.type_pool_->get_type(arr_symbol.type_id_).as<ArrayType>();
 
+                return arr_type.inner_type_;
             }
 
             case SemaNodeKind::InitListExpr: {
@@ -249,7 +261,6 @@ namespace Sema
             }
 
             default:
-                // std::println("{}", (int)node.get_kind());
                 return std::nullopt;
         }
     }

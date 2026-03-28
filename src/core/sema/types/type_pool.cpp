@@ -99,7 +99,7 @@ namespace Sema
                 if (auto it = builtin_map.find(named.name_); it != builtin_map.end())
                     return it->second;
 
-                if (auto it = user_def_type_map.find(named.name_); it != user_def_type_map.end())
+                if (auto it = user_defined_map.find(named.name_); it != user_defined_map.end())
                     return it->second;
 
                 error_exit("type does not exist");
@@ -121,36 +121,23 @@ namespace Sema
 
             case ASTNodeKind::RecordDecl: {
                 const auto& rec = node.as<Syntax::RecordDecl>();
-
-                TypeId id;
-
-                switch (rec.kind_) {
-                    case RecordKind::Struct: {
-                        id = get_or_create<RecordType>(RecordKind::Struct, rec.name_);
-                        break;
-                    }
-
-                    case RecordKind::Union: {
-                        id = get_or_create<RecordType>(RecordKind::Union, rec.name_);
-                        break;
-                    }
-
-                    case RecordKind::Enum: {
-                        id = get_or_create<RecordType>(RecordKind::Enum, rec.name_);
-                        break;
-                    }
-
-                    default:
-                        error_exit("Record type must be struct/union/enum");
+                
+                std::vector<Field> fields;
+                for (auto f : rec.fields_) {
+                    auto& field_node = ast.nodes_[f].as<Syntax::VarDecl>();
+                    auto field_type_id = resolve_type(field_node.type_expr_, ast);
+                    fields.push_back(Field{field_node.name_, field_type_id});
                 }
 
-                user_def_type_map.emplace(rec.name_, id);
-                return id;
+                auto type_id = get_or_create<RecordType>(rec.kind_, rec.name_);
+                types_[type_id].as<RecordType>().fields_ = std::move(fields);
+
+                user_defined_map.emplace(rec.name_, type_id);
+                return type_id;
             }
 
-            default: {
+            default:
                 error_exit("type mismatch during type resolution");
-            }
         }
     }
 

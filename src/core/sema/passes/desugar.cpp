@@ -20,8 +20,8 @@ namespace Sema
 
     SemaNodeId arr_idx_to_ptr_arithmetic(SemaContext& ctx, const ArraySubscriptExpr& expr) 
     {
-        auto bin_op = ctx.sema_tree_->emplace<BinaryExpr>("+", expr.base_, expr.index_);
-        return ctx.sema_tree_->emplace<UnaryExpr>("*", bin_op);
+        auto bin_op = ctx.sema_tree_->emplace<BinaryExpr>("+", expr.base_, expr.index_, SourceLoc{});
+        return ctx.sema_tree_->emplace<UnaryExpr>("*", bin_op, false, SourceLoc{});
     }
 
     bool is_compound_assign(std::string_view op)
@@ -33,8 +33,8 @@ namespace Sema
     SemaNodeId expand_compound_assignment(SemaContext& ctx, const BinaryExpr& expr)
     {
         auto op = expr.op_[0];
-        auto right = ctx.sema_tree_->emplace<BinaryExpr>(std::string{ op }, expr.left_, expr.right_);
-        return ctx.sema_tree_->emplace<BinaryExpr>("=", expr.left_, right);
+        auto right = ctx.sema_tree_->emplace<BinaryExpr>(std::string{ op }, expr.left_, expr.right_, SourceLoc{});
+        return ctx.sema_tree_->emplace<BinaryExpr>("=", expr.left_, right, SourceLoc{});
     }
 
     void desugar(SemaContext& ctx, SemaNodeId ref)
@@ -99,14 +99,14 @@ namespace Sema
             
             // ++a -> a = a + 1
             case SemaNodeKind::UnaryExpr: {
-                const auto& ue = node.as<Sema::UnaryExpr>();
+                const auto& unary = node.as<Sema::UnaryExpr>();
 
-                if (ue.op_ == "++" || ue.op_ == "--") {
-                    auto op = ue.op_[0];
+                if (unary.op_ == "++" || unary.op_ == "--") {
+                    auto op = unary.op_[0];
 
                     auto literal_one = ctx.sema_tree_->emplace<IntegerLiteralExpr>(1);
-                    auto right = ctx.sema_tree_->emplace<BinaryExpr>(std::string{ op }, ue.operand_, literal_one);
-                    auto expanded = ctx.sema_tree_->emplace<BinaryExpr>("=", ue.operand_, right);
+                    auto right = ctx.sema_tree_->emplace<BinaryExpr>(std::string{ op }, unary.operand_, literal_one, SourceLoc{});
+                    auto expanded = ctx.sema_tree_->emplace<BinaryExpr>("=", unary.operand_, right, SourceLoc{});
 
                     std::swap(ctx.sema_tree_->nodes_[ref], ctx.sema_tree_->nodes_[expanded]);
                     ctx.sema_tree_->nodes_.pop_back();

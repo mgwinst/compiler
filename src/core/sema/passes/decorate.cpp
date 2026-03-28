@@ -219,15 +219,15 @@ namespace Sema
             }
 
             case ASTNodeKind::UnaryExpr: {
-                const auto& ue = ast_node.as<Syntax::UnaryExpr>();
-                return ctx.sema_tree_->emplace<UnaryExpr>(std::move(ue.op_), build_sema_node(ctx, ast, ue.operand_), ue.is_postfix_);
+                const auto& unary = ast_node.as<Syntax::UnaryExpr>();
+                return ctx.sema_tree_->emplace<UnaryExpr>(std::move(unary.op_), build_sema_node(ctx, ast, unary.operand_), unary.is_postfix_, unary.source_loc_);
             }
 
             case ASTNodeKind::BinaryExpr: {
-                const auto& be = ast_node.as<Syntax::BinaryExpr>();
-                auto left = build_sema_node(ctx, ast, be.left_);
-                auto right = build_sema_node(ctx, ast, be.right_);
-                return ctx.sema_tree_->emplace<BinaryExpr>(be.op_, left, right);
+                const auto& binary = ast_node.as<Syntax::BinaryExpr>();
+                auto left = build_sema_node(ctx, ast, binary.left_);
+                auto right = build_sema_node(ctx, ast, binary.right_);
+                return ctx.sema_tree_->emplace<BinaryExpr>(binary.op_, left, right, binary.source_loc_);
             }
 
             case ASTNodeKind::ReferenceExpr: {
@@ -263,7 +263,7 @@ namespace Sema
                 const auto& expr = ast_node.as<Syntax::MemberExpr>();
                 auto base = build_sema_node(ctx, ast, expr.base_);
 
-                return ctx.sema_tree_->emplace<MemberExpr>(base, std::move(expr.member_), expr.is_arrow_);
+                return ctx.sema_tree_->emplace<MemberExpr>(base, std::move(expr.member_), expr.is_arrow_, expr.source_loc_);
             }
 
             case ASTNodeKind::ArraySubscriptExpr: {
@@ -272,7 +272,7 @@ namespace Sema
                 auto base = build_sema_node(ctx, ast, arr_sub.base_);
                 auto index = build_sema_node(ctx, ast, arr_sub.index_);
 
-                return ctx.sema_tree_->emplace<ArraySubscriptExpr>(base, index);
+                return ctx.sema_tree_->emplace<ArraySubscriptExpr>(base, index, arr_sub.source_loc_);
             }
 
             case ASTNodeKind::InitListExpr: {

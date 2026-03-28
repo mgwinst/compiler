@@ -22,6 +22,8 @@ namespace Sema
         TypeId type_id_;
         StorageClass storage_;
         Linkage linkage_;
+        // size
+        // offset
 
         auto to_string() const 
         {

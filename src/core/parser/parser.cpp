@@ -294,7 +294,7 @@ std::expected<ASTNodeId, Error> Parser::parse_struct_def() noexcept
 
 std::expected<ASTNodeId, Error> Parser::parse_field() noexcept
 {
-    EXPECT_VAR(); // parse_var_decl() expects var token to have already been eaten
+    // EXPECT_VAR(); // parse_var_decl() expects var token to have already been eaten
 
     return parse_var_decl();
 }
@@ -570,7 +570,7 @@ std::expected<ASTNodeId, Error> Parser::nud(const Token token) noexcept
             auto op = parse_expr(prec::unary);
             if (!op) return std::unexpected{ op.error() };
 
-            return ast_->emplace<Syntax::UnaryExpr>(std::string{ token.lexeme_ }, *op, false); // postfix = false (default value)
+            return ast_->emplace<Syntax::UnaryExpr>(std::string{ token.lexeme_ }, *op, false, SourceLoc{ prev_token_ }); // postfix = false (default value)
         }
 
         case TokenType::IDENTIFIER: {
@@ -615,7 +615,7 @@ std::expected<ASTNodeId, Error> Parser::nud(const Token token) noexcept
 
 std::expected<ASTNodeId, Error> Parser::led(const Token token, ASTNodeId left) noexcept
 {
-    // SourceLoc source{ prev_token_ }; -> func(x, y, z) makes 'func' the offender
+    SourceLoc source{ cur_token_ }; // -> func(x, y, z) makes 'func' the offender
 
     eat_token();
     
@@ -648,12 +648,12 @@ std::expected<ASTNodeId, Error> Parser::led(const Token token, ASTNodeId left) n
             auto right = parse_expr(infix_lbp(token));
             if (!right) return std::unexpected{ right.error() };
 
-            return ast_->emplace<Syntax::BinaryExpr>(std::string{ token.lexeme_ }, left, *right);
+            return ast_->emplace<Syntax::BinaryExpr>(std::string{ token.lexeme_ }, left, *right, source);
         }
 
         case TokenType::PLUS_PLUS:
         case TokenType::MINUS_MINUS: {
-            return ast_->emplace<Syntax::UnaryExpr>(std::string{token.lexeme_}, left, true);  // postfix = true, since this is only time true, bool seems okay for now, move to clear enum later
+            return ast_->emplace<Syntax::UnaryExpr>(std::string{token.lexeme_}, left, true, source);  // postfix = true, since this is only time true, bool seems okay for now, move to clear enum later
         }
 
         // func(x)
@@ -670,7 +670,7 @@ std::expected<ASTNodeId, Error> Parser::led(const Token token, ASTNodeId left) n
             }
 
             EXPECT_RPAREN();
-            return ast_->emplace<Syntax::CallExpr>(left, std::move(args), SourceLoc{ prev_token_ });
+            return ast_->emplace<Syntax::CallExpr>(left, std::move(args), source);
         }
 
         // arr[x]
@@ -679,7 +679,7 @@ std::expected<ASTNodeId, Error> Parser::led(const Token token, ASTNodeId left) n
             if (!index) return std::unexpected{ index.error() };
 
             EXPECT_RBRACKET();
-            return ast_->emplace<Syntax::ArraySubscriptExpr>(left, *index);
+            return ast_->emplace<Syntax::ArraySubscriptExpr>(left, *index, source);
         }
 
         case TokenType::DOT:
@@ -689,7 +689,7 @@ std::expected<ASTNodeId, Error> Parser::led(const Token token, ASTNodeId left) n
 
             auto is_arrow = token.type_ == TokenType::ARROW ? true : false;
 
-            return ast_->emplace<Syntax::MemberExpr>(left, std::string{ *member_name }, is_arrow);
+            return ast_->emplace<Syntax::MemberExpr>(left, std::string{ *member_name }, is_arrow, source);
         }
 
         default:
@@ -718,6 +718,8 @@ std::expected<ASTNodeId, Error> Parser::parse_expr(int min_prec) noexcept
 
 std::expected<ASTNodeId, Error> Parser::parse_init_list_expr() noexcept
 {
+    SourceLoc source{ cur_token_ };   
+
     eat_token();   
 
     std::vector<ASTNodeId> init_values;
@@ -733,6 +735,6 @@ std::expected<ASTNodeId, Error> Parser::parse_init_list_expr() noexcept
 
     EXPECT_RBRACE();
 
-    return ast_->emplace<Syntax::InitListExpr>(std::move(init_values)); 
+    return ast_->emplace<Syntax::InitListExpr>(std::move(init_values), source);
 }
 

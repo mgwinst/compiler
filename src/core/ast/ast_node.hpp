@@ -190,22 +190,26 @@ namespace Syntax
         std::string op_;
         ASTNodeId operand_;
         bool is_postfix_ = false;
+        SourceLoc source_loc_;
 
-        UnaryExpr(std::string op, ASTNodeId operand, bool is_postfix) noexcept :
+        UnaryExpr(std::string op, ASTNodeId operand, bool is_postfix, SourceLoc source_loc) noexcept :
             op_{ std::move(op) },
             operand_{ operand },
-            is_postfix_{ is_postfix } {}
+            is_postfix_{ is_postfix },
+            source_loc_{ source_loc } {}
     };
 
     struct BinaryExpr
     {
         std::string op_;
         ASTNodeId left_, right_;
+        SourceLoc source_loc_;
 
-        BinaryExpr(std::string op, ASTNodeId left, ASTNodeId right) noexcept :
+        BinaryExpr(std::string op, ASTNodeId left, ASTNodeId right, SourceLoc source_loc) noexcept :
             op_{ std::move(op) },
             left_{ left },
-            right_{ right } {}
+            right_{ right },
+            source_loc_{ source_loc } {}
     };
 
     struct ReferenceExpr
@@ -235,29 +239,35 @@ namespace Syntax
         ASTNodeId base_;
         std::string member_;
         bool is_arrow_ = false;
+        SourceLoc source_loc_;
         
-        MemberExpr(ASTNodeId base, std::string member, bool is_arrow = false) :
+        MemberExpr(ASTNodeId base, std::string member, bool is_arrow, SourceLoc source_loc) :
             base_{ base },
             member_{ std::move(member) },
-            is_arrow_{ is_arrow } {}
+            is_arrow_{ is_arrow },
+            source_loc_{ source_loc } {}
     };
 
     struct ArraySubscriptExpr
     {
         ASTNodeId base_;
         ASTNodeId index_;
+        SourceLoc source_loc_;
 
-        ArraySubscriptExpr(ASTNodeId base, ASTNodeId index) noexcept :
+        ArraySubscriptExpr(ASTNodeId base, ASTNodeId index, SourceLoc source_loc) noexcept :
             base_{ base },
-            index_{ index } {}
+            index_{ index },
+            source_loc_( source_loc ) {}
     };
 
     struct InitListExpr
     {
         std::vector<ASTNodeId> init_values_;
+        SourceLoc source_loc_;
         
-        InitListExpr(std::vector<ASTNodeId> init_values) :
-            init_values_{ std::move(init_values) } {}
+        InitListExpr(std::vector<ASTNodeId> init_values, SourceLoc source_loc) :
+            init_values_{ std::move(init_values) },
+            source_loc_{ source_loc } {}
     };
 
     struct ExplicitCastExpr

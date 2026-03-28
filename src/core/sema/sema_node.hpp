@@ -172,23 +172,27 @@ namespace Sema
     {
         std::string op_;
         SemaNodeId operand_;
-        bool is_postfix_;
+        bool is_postfix_ = false;
+        SourceLoc source_loc_;
 
-        UnaryExpr(std::string op, SemaNodeId operand, bool is_postfix = false) noexcept :
+        UnaryExpr(std::string op, SemaNodeId operand, bool is_postfix, SourceLoc source_loc) noexcept :
             op_{ std::move(op) },
             operand_{ operand },
-            is_postfix_{ is_postfix } {}
+            is_postfix_{ is_postfix },
+            source_loc_{ source_loc } {}
     };
 
     struct BinaryExpr
     {
         std::string op_;
         SemaNodeId left_, right_;
+        SourceLoc source_loc_;
 
-        BinaryExpr(std::string op, SemaNodeId left, SemaNodeId right) noexcept :
+        BinaryExpr(std::string op, SemaNodeId left, SemaNodeId right, SourceLoc source_loc) noexcept :
             op_{ std::move(op) },
             left_{ left },
-            right_{ right } {}
+            right_{ right },
+            source_loc_{ source_loc } {}
     };
 
     // invalid state to continue sema passes?
@@ -224,21 +228,25 @@ namespace Sema
         SemaNodeId base_;
         std::string member_;
         bool is_arrow_ = false;
+        SourceLoc source_loc_;
         
-        MemberExpr(SemaNodeId base, std::string member, bool is_arrow = false) :
+        MemberExpr(SemaNodeId base, std::string member, bool is_arrow, SourceLoc source_loc) :
             base_{ base },
             member_{ std::move(member) },
-            is_arrow_{ is_arrow } {}
+            is_arrow_{ is_arrow },
+            source_loc_{ source_loc } {}
     };
 
     struct ArraySubscriptExpr
     {
         SemaNodeId base_;
         SemaNodeId index_;
+        SourceLoc source_loc_;
 
-        ArraySubscriptExpr(SemaNodeId base, SemaNodeId index) noexcept :
+        ArraySubscriptExpr(SemaNodeId base, SemaNodeId index, SourceLoc source_loc) noexcept :
             base_{ base },
-            index_{ index } {}
+            index_{ index },
+            source_loc_{ source_loc } {}
     };
 
     struct InitListExpr

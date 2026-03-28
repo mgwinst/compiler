@@ -19,9 +19,9 @@ void Diagnostics::register_warning(const Warning& warning)
 
 void Diagnostics::dump_errors()
 {
-    for (const auto& error : errors_) {
+    for (const auto& error : errors_)
         std::println("{}", error_to_string(error));
-    }
+    std::println("{} error(s) generated", errors_.size());
 }
 
 void Diagnostics::dump_warnings()

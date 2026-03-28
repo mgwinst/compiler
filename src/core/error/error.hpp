@@ -49,14 +49,14 @@ struct UndeclaredIdentiferError
 
 };
 
-struct TypeMismatchError
+struct TypeError
 {
     std::string msg_;
 
-    TypeMismatchError(std::string_view msg) : 
+    TypeError(std::string_view msg) : 
         msg_{ msg } {}
 
-    TypeMismatchError(std::string_view err_msg, SourceLoc source_loc) : 
+    TypeError(std::string_view err_msg, SourceLoc source_loc) : 
         msg_{ std::format("{}:{}: error: {}\n{}\n", 
             source_loc.line_number_,
             source_loc.column_number_,
@@ -84,7 +84,7 @@ using Error = std::variant<
     SyntaxError, 
     RedefinitionError, 
     UndeclaredIdentiferError, 
-    TypeMismatchError, 
+    TypeError, 
     InvalidArguments
 >;
 
@@ -104,7 +104,7 @@ std::string error_to_string(const T& error)
             return std::format("{}", undecl_ident_error.msg_);
         },
 
-        [](const TypeMismatchError& type_error) {
+        [](const TypeError& type_error) {
             return std::format("{}", type_error.msg_);
         },
 

@@ -11,7 +11,7 @@
 void debug_print(Sema::SemaContext& ctx)
 {
     // print_type_pool(ctx);
-    // print_symbol_table(ctx);
+    print_symbol_table(ctx);
     print_sema_tree(ctx);
 }
 
@@ -46,7 +46,7 @@ void test()
 
         dump_errors(*sema_ctx.diagnostics_);
 
-        // desugar(sema_ctx);
+        desugar(sema_ctx);
 
         debug_print(sema_ctx);
     }

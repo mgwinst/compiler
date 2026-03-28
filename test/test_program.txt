@@ -1,17 +1,11 @@
-struct S
+struct Foo
 {
-    var x: int;
-    var y: int;
-}
-
-fn func(val: S*) -> S*
-{
-    return val;
+    x: int;
+    y: int;
 }
 
 fn main() -> int
 {
-    var s_obj: S;
-
-    var s_ptr: S* = func(&s_obj);
+    var f: Foo;
+    f.x = 5;
 }

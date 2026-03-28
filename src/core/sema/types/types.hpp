@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cwchar>
 #include <type_traits>
 #include <utility>
 #include <new>
@@ -86,6 +87,13 @@ namespace Sema
         bool operator==(const QualifierType& other) const = default;
     };
 
+    /*
+    struct Parameter
+    {
+
+    }
+    */
+
     struct FunctionType
     {
         std::string name_;
@@ -100,19 +108,36 @@ namespace Sema
         bool operator==(const FunctionType& other) const = default;
     };
 
-    // records are the only nominally typed constructs 
-    // records also share namespace -> union S; struct S; -> Error in C. do we want this behavior?
+    struct Field
+    {
+        std::string name_;          
+        TypeId type_;
+
+        bool operator==(const Field& other) const = default;
+    };
+
     struct RecordType 
     {
         RecordKind kind_;
         std::string name_;
+        std::vector<Field> fields_;
+        // uint64_t size_;
 
         RecordType(RecordKind kind, std::string name) :
             kind_{ kind },
             name_{ std::move(name) } {}
 
         bool operator==(const RecordType& other) const = default;
+
+        Field* lookup_field(std::string_view name)
+        {
+            auto it = std::ranges::find_if(fields_, [&](const Field& f) { return f.name_ == name; });
+            return (it != fields_.end()) ? &(*it) : nullptr;
+        }
     };
+
+    // records are the only nominally typed constructs 
+    // records also share namespace -> union S; struct S; -> Error in C. do we want this behavior?
 
     template <typename T>
     inline constexpr TypeKind type_kind_v = TypeKind::Invalid;
