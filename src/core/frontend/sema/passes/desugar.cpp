@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <unordered_set>
 
 #include "sema_pass.hpp"
 

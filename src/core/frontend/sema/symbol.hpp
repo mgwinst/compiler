@@ -5,8 +5,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "../utils/alias.hpp"
-#include "../utils/enums.hpp"
+#include "../../utils/alias.hpp"
+#include "../../utils/enums.hpp"
 
 namespace Sema
 {

@@ -8,9 +8,9 @@
 #include <new>
 
 #include "../error/source_location.hpp"
-#include "../utils/macros.hpp"
-#include "../utils/alias.hpp"
-#include "../utils/enums.hpp"
+#include "../../utils/macros.hpp"
+#include "../../utils/alias.hpp"
+#include "../../utils/enums.hpp"
 
 // ************** DECLARATIONS **************
 

@@ -1,11 +1,5 @@
-struct Foo
+fn func() -> int
 {
-    x: int;
-    y: int;
-}
-
-fn main() -> int
-{
-    var f: Foo;
-    f.x = 5;
+    var x: int = 3;
+    x = x + 1;
 }

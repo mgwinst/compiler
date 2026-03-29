@@ -5,9 +5,9 @@
 #include "../lexer/token.hpp"
 #include "../lexer/lexer.hpp"
 #include "parser.hpp"
-#include "../utils/string_utils.hpp"
-#include "../utils/alias.hpp"
-#include "../utils/macros.hpp"
+#include "../../utils/string_utils.hpp"
+#include "../../utils/alias.hpp"
+#include "../../utils/macros.hpp"
 
 #define CONST true
 #define NON_CONST false

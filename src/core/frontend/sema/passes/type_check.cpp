@@ -1,6 +1,6 @@
 #include "sema_pass.hpp"
 #include "helpers.hpp"
-#include "../../utils/print/print.hpp"
+#include "../../../utils/print/print.hpp"
 
 #include <ranges>
 

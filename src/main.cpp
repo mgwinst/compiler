@@ -1,17 +1,16 @@
-#include <cstdlib>
 #include <functional>
 
 #include "core/context/context.hpp"
-#include "core/error/diagnostics.hpp"
-#include "core/parser/parser.hpp"
+#include "core/frontend/error/diagnostics.hpp"
+#include "core/frontend/parser/parser.hpp"
+#include "core/frontend/ast/ast.hpp"
+#include "core/frontend/sema/passes/sema_pass.hpp"
 #include "core/utils/print/print.hpp"
-#include "core/ast/ast.hpp"
-#include "core/sema/passes/sema_pass.hpp"
 
 void debug_print(Sema::SemaContext& ctx)
 {
     // print_type_pool(ctx);
-    print_symbol_table(ctx);
+    // print_symbol_table(ctx);
     print_sema_tree(ctx);
 }
 

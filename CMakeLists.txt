@@ -9,14 +9,14 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(Boost REQUIRED)
 
 add_library(compiler_lib STATIC
-    src/core/lexer/lexer.cpp 
-    src/core/parser/parser.cpp 
-    src/core/error/diagnostics.cpp
-    src/core/sema/types/type_pool.cpp
-    src/core/sema/symbol.cpp
-    src/core/sema/passes/decorate.cpp
-    src/core/sema/passes/type_check.cpp
-    src/core/sema/passes/desugar.cpp
+    src/core/frontend/lexer/lexer.cpp 
+    src/core/frontend/parser/parser.cpp 
+    src/core/frontend/error/diagnostics.cpp
+    src/core/frontend/sema/types/type_pool.cpp
+    src/core/frontend/sema/symbol.cpp
+    src/core/frontend/sema/passes/decorate.cpp
+    src/core/frontend/sema/passes/type_check.cpp
+    src/core/frontend/sema/passes/desugar.cpp
     src/core/utils/print/print.cpp
 )
 

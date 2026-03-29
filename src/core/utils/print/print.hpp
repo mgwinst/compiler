@@ -1,8 +1,7 @@
 #pragma once
 
-#include "../../ast/ast.hpp"
-#include "../../sema/sematree.hpp"
-#include "../../sema/types/type_pool.hpp"
+#include "../../frontend/ast/ast.hpp"
+#include "../../frontend/sema/sematree.hpp"
 #include "../../context/context.hpp"
 
 void print(const AST& ast);

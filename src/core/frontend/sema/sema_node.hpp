@@ -3,9 +3,9 @@
 #include <vector>
 
 #include "../error/source_location.hpp"
-#include "../utils/macros.hpp"
-#include "../utils/enums.hpp"
-#include "../utils/alias.hpp"
+#include "../../utils/macros.hpp"
+#include "../../utils/enums.hpp"
+#include "../../utils/alias.hpp"
 
 namespace Sema
 {

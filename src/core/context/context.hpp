@@ -2,10 +2,10 @@
 
 #include <memory>
 
-#include "../sema/sematree.hpp"
-#include "../sema/types/type_pool.hpp"
-#include "../sema/symbol.hpp"
-#include "../error/diagnostics.hpp"
+#include "../frontend/sema/sematree.hpp"
+#include "../frontend/sema/types/type_pool.hpp"
+#include "../frontend/sema/symbol.hpp"
+#include "../frontend/error/diagnostics.hpp"
 #include "../utils/utils.hpp"
 
 struct CompilationContext
