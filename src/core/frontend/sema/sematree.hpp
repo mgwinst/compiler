@@ -2,27 +2,23 @@
 
 #include "sema_node.hpp"
 
-namespace Sema
-{
-    struct SemaTree
-    {   
-        std::vector<SemaNode> nodes_;
+struct SemaTree
+{   
+    std::vector<SemaNode> nodes_;
 
-        template <typename T, typename... Args>
-            requires std::is_constructible_v<T, Args...>
-        [[nodiscard]] auto emplace(Args&&... args) noexcept
-        {
-            nodes_.emplace_back(std::in_place_type<T>, std::forward<Args>(args)...);
-            return nodes_.size() - 1;
-        }
+    template <typename T, typename... Args>
+        requires std::is_constructible_v<T, Args...>
+    [[nodiscard]] auto emplace(Args&&... args) noexcept
+    {
+        nodes_.emplace_back(std::in_place_type<T>, std::forward<Args>(args)...);
+        return nodes_.size() - 1;
+    }
 
-        SemaNodeId root() const noexcept 
-        { 
-            if (nodes_.empty())
-                error_exit("Semantic Tree is empty");
+    SemaNodeID root() const noexcept 
+    { 
+        if (nodes_.empty())
+            error_exit("Semantic Tree is empty");
 
-            return SemaNodeId{ 0 };
-        }
-    };
-
-} // namespace Sema
+        return static_cast<SemaNodeID>(0);
+    }
+};

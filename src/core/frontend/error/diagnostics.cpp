@@ -17,16 +17,19 @@ void Diagnostics::register_warning(const Warning& warning)
     warnings_.push_back(warning);
 }
 
-void Diagnostics::dump_errors()
+void Diagnostics::dump_errors() const
 {
     for (const auto& error : errors_)
         std::println("{}", error_to_string(error));
     std::println("{} error(s) generated", errors_.size());
 }
 
-void Diagnostics::dump_warnings()
+void Diagnostics::dump_warnings() const
 {
     for (const auto& warning : warnings_) {
         std::println("{}", warning_to_string(warning));
     }
 }
+
+bool Diagnostics::contains_errors() const { return errors_.size() > 0; }
+bool Diagnostics::contains_warnings() const { return warnings_.size() > 0; }

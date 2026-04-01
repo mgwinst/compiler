@@ -13,11 +13,12 @@ add_library(compiler_lib STATIC
     src/core/frontend/parser/parser.cpp 
     src/core/frontend/error/diagnostics.cpp
     src/core/frontend/sema/types/type_pool.cpp
+    src/core/frontend/sema/types/type_checker.cpp
     src/core/frontend/sema/symbol.cpp
-    src/core/frontend/sema/passes/decorate.cpp
-    src/core/frontend/sema/passes/type_check.cpp
-    src/core/frontend/sema/passes/desugar.cpp
+    src/core/frontend/sema/desugar.cpp
+    src/core/frontend/sema/sema_tree_builder.cpp
     src/core/utils/print/print.cpp
+    src/core/driver/pipeline.cpp
 )
 
 target_include_directories(compiler_lib PUBLIC

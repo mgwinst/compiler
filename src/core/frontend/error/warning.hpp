@@ -43,7 +43,7 @@ std::string warning_to_string(const T& error)
 
         [](const NarrowingConversionWarning& warning) {
             return std::format("{}", warning.msg_);
-        },
+        }
 
     ), error);
 }

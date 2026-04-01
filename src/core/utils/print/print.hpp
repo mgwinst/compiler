@@ -1,15 +1,24 @@
 #pragma once
 
-#include "../../frontend/ast/ast.hpp"
 #include "../../frontend/sema/sematree.hpp"
 #include "../../context/context.hpp"
 
-void print(const AST& ast);
-void print(const Sema::SemaTree& sema_tree, const Sema::SemaContext& ctx);
+std::string type_to_str(const ModuleContext&, TypeID type_ref);
+std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const SemaNodeID node_id, std::string indent);
 
-std::string type_to_str(const Sema::SemaContext& ctx, TypeId type_ref);
-std::string sema_node_to_str(const Sema::SemaContext& ctx, const Sema::SemaTree& sema_tree, const SemaNodeId ref, std::string indent);
+// TODO: better pretty printer design
+class PrettyPrinter
+{
+public:
+    PrettyPrinter(ModuleContext& ctx) :
+        ctx_{ ctx } {}  
 
-void print_sema_tree(const Sema::SemaContext& ctx);
-void print_symbol_table(const Sema::SemaContext& ctx);
-void print_type_pool(const Sema::SemaContext& ctx);
+    void print(SemaTree& tree) const
+    {
+        std::println("{}\n", node_to_str(ctx_, tree, tree.root(), ""));
+    }
+
+private:
+    ModuleContext& ctx_;
+};
+

@@ -1,22 +1,22 @@
 #pragma once   
 
-#include "../types/types.hpp"
-#include "../../../utils/enums.hpp"
+#include "types/types.hpp"
+#include "../../utils/enums.hpp"
 
-inline bool is_integral(TypeId type_id)
+inline bool is_integral(TypeID type_id)
 {
     return (type_id >= INT8 && type_id <= UINT64);   
 }
 
-inline bool is_int_or_ptr(const Sema::Type& type)
+inline bool is_int_or_ptr(const Type& type)
 {
     return type.get_kind() == TypeKind::Integer || type.get_kind() == TypeKind::Pointer;
 }
 
-inline bool is_const(const Sema::Type& type) 
+inline bool is_const(const Type& type) 
 {
     if (type.get_kind() == TypeKind::Qualifier)
-        return type.as<Sema::QualifierType>().kind_ == QualifierKind::Const;
+        return type.as<QualifierType>().kind_ == QualifierKind::Const;
     return false;
 }
 
@@ -25,7 +25,7 @@ inline void ignore_const()
     
 }
 
-inline bool convertible_to_boolean(const Sema::Type& type)
+inline bool convertible_to_boolean(const Type& type)
 {
     /*
     if (is_const(type)) {

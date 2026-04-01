@@ -36,11 +36,11 @@ struct RedefinitionError
 };
 
 
-struct UndeclaredIdentiferError
+struct UndeclaredIDentiferError
 {
     std::string msg_;
 
-    UndeclaredIdentiferError(std::string_view err_msg, SourceLoc source_loc) :
+    UndeclaredIDentiferError(std::string_view err_msg, SourceLoc source_loc) :
         msg_{ std::format("{}:{}: error: {}\n{}\n", 
             source_loc.line_number_,
             source_loc.column_number_,
@@ -83,7 +83,7 @@ struct InvalidArguments
 using Error = std::variant<
     SyntaxError, 
     RedefinitionError, 
-    UndeclaredIdentiferError, 
+    UndeclaredIDentiferError, 
     TypeError, 
     InvalidArguments
 >;
@@ -100,7 +100,7 @@ std::string error_to_string(const T& error)
             return std::format("{}", redef_error.msg_);
         },
 
-        [](const UndeclaredIdentiferError& undecl_ident_error) {
+        [](const UndeclaredIDentiferError& undecl_ident_error) {
             return std::format("{}", undecl_ident_error.msg_);
         },
 
