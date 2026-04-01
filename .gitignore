@@ -1,4 +1,3 @@
 /build
 .vscode
 .clangd
-/src/core/frontend/linearizer

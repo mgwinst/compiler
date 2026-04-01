@@ -49,8 +49,6 @@ struct Function
 };
 
 
-// stateful traversal passes 
-
 class Linearizer
 {
 public:
@@ -60,9 +58,7 @@ public:
 
     Program run()
     {
-        // walk(tree_.root());
-        // flatten_node(tree_.root());
-
+        linearize(tree_.root());
         return std::move(program_);
     }
 
@@ -71,7 +67,7 @@ private:
     const ModuleContext& ctx_;
     const SemaTree& tree_;
 
-    void walk(SemaNodeID node_id)
+    void linearize(SemaNodeID node_id)
     {
         
     }
