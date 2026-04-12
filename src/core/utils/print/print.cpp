@@ -93,18 +93,18 @@ std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const Se
     const auto& node = tree.nodes_[ref];
 
     switch (node.get_kind()) {
-        case SemaNodeKind::CompilationUnitDecl: {
-            const auto& comp_unit = node.as<Sema::CompilationUnitDecl>();
+        case SemaNodeKind::ModuleDecl: {
+            const auto& module = node.as<Sema::ModuleDecl>();
 
             std::string decls_str{};
 
-            for (auto i = 0uz; i < comp_unit.decls_.size(); i++) {
-                decls_str += node_to_str(ctx, tree, comp_unit.decls_[i], indent + "  ");
-                if (i != comp_unit.decls_.size() - 1)
+            for (auto i = 0uz; i < module.decls_.size(); i++) {
+                decls_str += node_to_str(ctx, tree, module.decls_[i], indent + "  ");
+                if (i != module.decls_.size() - 1)
                     decls_str += "\n\n";
             }
 
-            return indent + std::format("CompilationUnitDecl ({})\n{}", comp_unit.name_, decls_str);
+            return indent + std::format("ModuleDecl ({})\n{}", module.name_, decls_str);
         }
 
         case SemaNodeKind::VarDecl: {
@@ -346,5 +346,31 @@ std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const Se
 
         default:
             return "parse error";
+    }
+}
+
+std::string ir_value_to_str(IR::Value* value)
+{
+    switch (value->kind_) {
+        case IR::ValueKind::InstructionVal: {
+            auto* inst = static_cast<IR::Instruction*>(value);
+            switch (inst->op_) {
+                case IR::Op::Alloca:
+                    return std::format("{} = alloca", inst->name_); // %x = alloca int32
+                case IR::Op::Load:
+                    return std::format("{} = load {}", inst->name_, inst->operands_[0]->name_);
+                case IR::Op::Store:
+                    return std::format("store {}, {}", inst->operands_[0]->name_, inst->operands_[1]->name_);
+                case IR::Op::Add:
+                    return std::format("{} = add {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+                case IR::Op::Mul:
+                    return std::format("{} = mul {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+                default:
+                    break;
+            }
+        }
+        
+        default:
+            break;
     }
 }

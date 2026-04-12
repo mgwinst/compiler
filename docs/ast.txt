@@ -17,7 +17,7 @@ fn main() -> int
     int ans = add(3, 4);
 }
 
-CompilationUnitDecl (main.cpp)
+ModuleDecl (main.cpp)
     FuncDecl 'f' (int, int) -> (int)
         ConstParamDecl <0x0800> ['a', int]
         ConstParamDecl ['b', int]

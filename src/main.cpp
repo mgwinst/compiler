@@ -11,19 +11,17 @@ void test()
         
         ModuleContext ctx;
 
-        auto ast = parse(file);
-        auto sema_tree = decorate(ctx, ast);
+        AST ast = parse(file);
+        SemaTree sema_tree = decorate(ctx, ast);
         type_check(ctx, sema_tree);
         desugar(ctx, sema_tree);
+        IR::Program program = lower(ctx, sema_tree);
 
-        // auto program = linearize(ctx, sema_tree);
-        // ...
-
-        PrettyPrinter{ ctx }.print(sema_tree);
+        PrettyPrinter printer{ ctx };
+        printer.print(sema_tree);
+        printer.print(program);
     }
 }
-
-
 
 int main()
 {

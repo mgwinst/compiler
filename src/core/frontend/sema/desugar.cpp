@@ -47,9 +47,9 @@ void TreeDesugarer::desugar_node(SemaNodeID node_id)
     const auto& node = tree_.nodes_[node_id];
 
     switch (node.get_kind()) {
-        case SemaNodeKind::CompilationUnitDecl: {
-            const auto& comp_unit = node.as<CompilationUnitDecl>();
-            for (auto decl : comp_unit.decls_)
+        case SemaNodeKind::ModuleDecl: {
+            const auto& module = node.as<ModuleDecl>();
+            for (auto decl : module.decls_)
                 desugar_node(decl);
             break;
         }

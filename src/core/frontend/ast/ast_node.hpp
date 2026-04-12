@@ -16,14 +16,16 @@
 
 namespace Syntax
 {
-    struct CompilationUnitDecl
+    struct ModuleDecl
     {
         std::string name_;
         std::vector<ASTNodeID> decls_;
 
-        CompilationUnitDecl(std::string name) noexcept :
+        ModuleDecl(std::string name) noexcept :
             name_{ std::move(name) },
             decls_{} {}
+
+        const auto& declarations() { return decls_; }
     };
 
     struct VarDecl
@@ -315,7 +317,7 @@ namespace Syntax
 template <typename T>
 inline constexpr ASTNodeKind ast_node_kind_v = ASTNodeKind::Invalid;
 
-template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::CompilationUnitDecl> = ASTNodeKind::CompilationUnitDecl;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ModuleDecl> = ASTNodeKind::ModuleDecl;
 template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::VarDecl>             = ASTNodeKind::VarDecl;
 template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ParamDecl>           = ASTNodeKind::ParamDecl;
 template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::FuncDecl>            = ASTNodeKind::FuncDecl;
@@ -410,7 +412,7 @@ private:
     void move_construct_from(ASTNode& other)
     {
         switch (other.kind_) {
-            case ASTNodeKind::CompilationUnitDecl: move_construct<Syntax::CompilationUnitDecl>(other); break;
+            case ASTNodeKind::ModuleDecl: move_construct<Syntax::ModuleDecl>(other); break;
             case ASTNodeKind::VarDecl:             move_construct<Syntax::VarDecl>(other);             break;
             case ASTNodeKind::ParamDecl:           move_construct<Syntax::ParamDecl>(other);           break;
             case ASTNodeKind::FuncDecl:            move_construct<Syntax::FuncDecl>(other);            break;
@@ -455,7 +457,7 @@ private:
     void destroy_active() noexcept
     {
         switch (kind_) {
-            case ASTNodeKind::CompilationUnitDecl:  destroy<Syntax::CompilationUnitDecl>();  break;
+            case ASTNodeKind::ModuleDecl:  destroy<Syntax::ModuleDecl>();  break;
             case ASTNodeKind::VarDecl:              destroy<Syntax::VarDecl>();              break;
             case ASTNodeKind::ParamDecl:            destroy<Syntax::ParamDecl>();            break;
             case ASTNodeKind::FuncDecl:             destroy<Syntax::FuncDecl>();             break;

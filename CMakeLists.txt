@@ -9,16 +9,17 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(Boost REQUIRED)
 
 add_library(compiler_lib STATIC
+    src/core/driver/pipeline.cpp
     src/core/frontend/lexer/lexer.cpp 
     src/core/frontend/parser/parser.cpp 
     src/core/frontend/error/diagnostics.cpp
     src/core/frontend/sema/types/type_pool.cpp
     src/core/frontend/sema/types/type_checker.cpp
+    src/core/frontend/sema/sema_tree_builder.cpp
     src/core/frontend/sema/symbol.cpp
     src/core/frontend/sema/desugar.cpp
-    src/core/frontend/sema/sema_tree_builder.cpp
+    src/core/lowering/LoweringEngine.cpp
     src/core/utils/print/print.cpp
-    src/core/driver/pipeline.cpp
 )
 
 target_include_directories(compiler_lib PUBLIC

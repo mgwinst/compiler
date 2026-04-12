@@ -4,7 +4,7 @@
 
 enum class ASTNodeKind : uint8_t 
 {
-    CompilationUnitDecl,
+    ModuleDecl,
     VarDecl,
     ParamDecl,
     FuncDecl,
@@ -47,7 +47,7 @@ enum class ASTNodeKind : uint8_t
 
 enum class SemaNodeKind : uint8_t 
 {
-    CompilationUnitDecl,
+    ModuleDecl,
     VarDecl,
     ParamDecl,
     FuncDecl,

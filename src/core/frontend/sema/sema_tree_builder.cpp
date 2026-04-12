@@ -18,15 +18,15 @@ SemaNodeID SemaTreeBuilder::build_sema_node(ASTNodeID ast_node_id)
     const auto& ast_node = ast_.nodes_[ast_node_id];
 
     switch (ast_node.get_kind()) {
-        case ASTNodeKind::CompilationUnitDecl: {
-            SemaNodeID sema_root = sema_tree_.emplace<CompilationUnitDecl>(std::string{ "source file" });
+        case ASTNodeKind::ModuleDecl: {
+            SemaNodeID sema_root = sema_tree_.emplace<ModuleDecl>(std::string{ "source file" });
 
             ctx_.symbol_table_.enter_scope();
 
-            const auto& comp_unit = ast_node.as<Syntax::CompilationUnitDecl>();
-            for (auto decl : comp_unit.decls_) {
+            const auto& module = ast_node.as<Syntax::ModuleDecl>();
+            for (auto decl : module.decls_) {
                 auto sema_node = build_sema_node(decl);
-                sema_tree_.nodes_[sema_root].as<CompilationUnitDecl>().decls_.push_back(sema_node);
+                sema_tree_.nodes_[sema_root].as<ModuleDecl>().decls_.push_back(sema_node);
             }
 
             ctx_.symbol_table_.exit_scope();

@@ -1,5 +1,6 @@
-fn func() -> int
+fn func() -> void
 {
-    var x: int = 3;
-    x = x + 1;
+    var a: int;
+    var b: int;
+    var x: int = a * b;
 }

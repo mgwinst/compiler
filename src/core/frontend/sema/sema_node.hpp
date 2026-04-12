@@ -11,15 +11,17 @@ namespace Sema
 {
     // ************** DECLARATIONS **************
 
-    struct CompilationUnitDecl
+    struct ModuleDecl
     {
         std::string name_;
         std::vector<SemaNodeID> decls_;
         SymbolID symbol_;
         TypeID type_id_;
 
-        CompilationUnitDecl(std::string name) noexcept :
+        ModuleDecl(std::string name) noexcept :
             name_{ std::move(name) } {}
+        
+        const auto& declarations() const { return decls_; }
     };
 
     struct VarDecl
@@ -28,6 +30,11 @@ namespace Sema
         TypeID type_id_;
         std::optional<SemaNodeID> init_; // single expr or init_list
         SourceLoc source_loc_;
+
+        bool has_initializer() const
+        {
+            return init_.has_value();
+        }
     };
 
     struct ParamDecl
@@ -51,9 +58,9 @@ namespace Sema
         SemaNodeID body_;
         SourceLoc source_loc_;
 
-        FuncDecl(SymbolID symbol, TypeID type_id_id, std::vector<SemaNodeID> params, SemaNodeID body, SourceLoc source_loc) noexcept :
+        FuncDecl(SymbolID symbol, TypeID type_id, std::vector<SemaNodeID> params, SemaNodeID body, SourceLoc source_loc) noexcept :
             symbol_{ symbol },
-            type_id_{ type_id_id },
+            type_id_{ type_id },
             params_{ std::move(params) },
             body_{ body },
             source_loc_{ source_loc } {}
@@ -277,7 +284,7 @@ namespace Sema
 template <typename T>
 inline constexpr SemaNodeKind sema_node_kind_v = SemaNodeKind::Invalid;
 
-template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::CompilationUnitDecl>   = SemaNodeKind::CompilationUnitDecl;
+template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::ModuleDecl>   = SemaNodeKind::ModuleDecl;
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::VarDecl>               = SemaNodeKind::VarDecl;
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::ParamDecl>             = SemaNodeKind::ParamDecl;
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::FuncDecl>              = SemaNodeKind::FuncDecl;
@@ -368,7 +375,7 @@ private:
     void move_construct_from(SemaNode& other)
     {
         switch (other.kind_) {
-            case SemaNodeKind::CompilationUnitDecl: move_construct<Sema::CompilationUnitDecl>(other); break;
+            case SemaNodeKind::ModuleDecl: move_construct<Sema::ModuleDecl>(other); break;
             case SemaNodeKind::VarDecl:             move_construct<Sema::VarDecl>(other);             break;
             case SemaNodeKind::ParamDecl:           move_construct<Sema::ParamDecl>(other);           break;
             case SemaNodeKind::FuncDecl:            move_construct<Sema::FuncDecl>(other);            break;
@@ -409,7 +416,7 @@ private:
     void destroy_active()
     {
         switch (kind_) {
-            case SemaNodeKind::CompilationUnitDecl:      destroy<Sema::CompilationUnitDecl>();  break;
+            case SemaNodeKind::ModuleDecl:      destroy<Sema::ModuleDecl>();  break;
             case SemaNodeKind::VarDecl:                  destroy<Sema::VarDecl>();              break;
             case SemaNodeKind::ParamDecl:                destroy<Sema::ParamDecl>();            break;
             case SemaNodeKind::FuncDecl:                 destroy<Sema::FuncDecl>();             break;

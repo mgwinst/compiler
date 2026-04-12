@@ -63,7 +63,7 @@ std::expected<std::string_view, Error> Parser::match(TokenType token_type) noexc
 
 void Parser::parse_compilation_unit() noexcept
 {
-    auto comp_unit = ast_.emplace<Syntax::CompilationUnitDecl>(source_file_.file_path);
+    auto module = ast_.emplace<Syntax::ModuleDecl>(source_file_.file_path);
 
     eat_token();
 
@@ -73,7 +73,7 @@ void Parser::parse_compilation_unit() noexcept
         if (!decl)
             panic(decl.error());
         else
-            ast_.nodes_[comp_unit].as<Syntax::CompilationUnitDecl>().decls_.push_back(*decl);
+            ast_.nodes_[module].as<Syntax::ModuleDecl>().decls_.push_back(*decl);
     }
 }
 

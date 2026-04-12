@@ -33,3 +33,5 @@ void Diagnostics::dump_warnings() const
 
 bool Diagnostics::contains_errors() const { return errors_.size() > 0; }
 bool Diagnostics::contains_warnings() const { return warnings_.size() > 0; }
+
+// since diagnostics is unique to module -> add flush mechanism for warnings

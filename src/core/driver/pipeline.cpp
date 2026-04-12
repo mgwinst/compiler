@@ -4,6 +4,8 @@
 #include "../frontend/sema/sema_tree_builder.hpp"
 #include "../frontend/sema/desugar.hpp"
 #include "../frontend/sema/types/type_checker.hpp"
+#include "../lowering/LoweringEngine.hpp"
+#include "../lowering/ir.hpp"
 
 inline void report(const Diagnostics& diag)
 {
@@ -45,9 +47,7 @@ void desugar(ModuleContext& ctx, SemaTree& tree)
     TreeDesugarer(ctx, tree).run();
 }
 
-/*
-Program linearize(const ModuleContext& ctx, const SemaTree& tree)
+IR::Program lower(const ModuleContext& ctx, const SemaTree& tree)
 {
-    return Linearizer{ctx, tree}.run();
+    return LoweringEngine{ctx, tree}.run();
 }
-*/

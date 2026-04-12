@@ -18,9 +18,9 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
     auto& node = tree_.nodes_[node_id];
     
     switch (node.get_kind()) {
-        case SemaNodeKind::CompilationUnitDecl: {
-            auto& comp_unit = node.as<CompilationUnitDecl>();
-            for (auto decl : comp_unit.decls_)
+        case SemaNodeKind::ModuleDecl: {
+            auto& module = node.as<ModuleDecl>();
+            for (auto decl : module.decls_)
                 check_type(decl);
             return std::nullopt;
         }
