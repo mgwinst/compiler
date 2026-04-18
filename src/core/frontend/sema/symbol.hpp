@@ -8,6 +8,8 @@
 #include "../../utils/alias.hpp"
 #include "../../utils/enums.hpp"
 
+// should the symbol or symbol table handle type info queries?
+
 struct Symbol
 {
     std::string identifier_;
@@ -15,8 +17,10 @@ struct Symbol
     TypeID type_id_;
     StorageClass storage_;
     Linkage linkage_;
-    // size
-    // offset
+    
+    // these should be part of the type instead
+    // uint64_t size_;
+    // uint64_t alignment_;
 
     auto to_string() const 
     {
@@ -25,22 +29,19 @@ struct Symbol
 };
 
 template <typename T>
-concept HasName = requires (T t) {
+concept ContainsName = requires (T t) {
     t.name_;
 };
 
 struct SymbolTable
 {
-    std::vector<std::unordered_map<std::string, SymbolID>> scopes_;
-    std::vector<Symbol> symbol_pool_;
-
-    SymbolID insert(const HasName auto& node, TypeID type_id) noexcept
+    SymbolID insert(ContainsName auto& node, TypeID type_id) noexcept
     {
         Symbol symbol{ 
             .identifier_ = node.name_,
             .type_id_ = type_id,
             .storage_ = StorageClass::Auto,
-            .linkage_ = Linkage::External
+            .linkage_ = Linkage::External,
         };
         
         auto id = symbol_pool_.size();
@@ -53,9 +54,13 @@ struct SymbolTable
 
     bool exists_in_scope(const std::string& ident) noexcept;
     SymbolID lookup(const std::string& ident) noexcept;
-    std::unordered_map<std::string, SymbolID>& cur_scope() noexcept;
     void enter_scope() noexcept;
     void exit_scope() noexcept;
     const Symbol& get_symbol(SymbolID symbol_ref) const noexcept;
     Symbol& get_symbol(SymbolID symbol_ref) noexcept;
+
+    std::unordered_map<std::string, SymbolID>& cur_scope() noexcept;
+
+    std::vector<std::unordered_map<std::string, SymbolID>> scopes_;
+    std::vector<Symbol> symbol_pool_;
 };

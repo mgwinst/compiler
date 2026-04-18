@@ -110,6 +110,7 @@ struct Field
 {
     std::string name_;          
     TypeID type_;
+    // uint16_t offset
 
     bool operator==(const Field& other) const = default;
 };
@@ -119,7 +120,8 @@ struct RecordType
     RecordKind kind_;
     std::string name_;
     std::vector<Field> fields_;
-    // uint64_t size_;
+    // uint32_t size_;
+    // uint16_t alignment
 
     RecordType(RecordKind kind, std::string name) :
         kind_{ kind },

@@ -5,7 +5,6 @@
 #include "../frontend/sema/desugar.hpp"
 #include "../frontend/sema/types/type_checker.hpp"
 #include "../lowering/LoweringEngine.hpp"
-#include "../lowering/ir.hpp"
 
 inline void report(const Diagnostics& diag)
 {

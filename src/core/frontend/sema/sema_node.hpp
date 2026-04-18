@@ -15,7 +15,7 @@ namespace Sema
     {
         std::string name_;
         std::vector<SemaNodeID> decls_;
-        SymbolID symbol_;
+        SymbolID symbol_id_;
         TypeID type_id_;
 
         ModuleDecl(std::string name) noexcept :
@@ -26,7 +26,7 @@ namespace Sema
 
     struct VarDecl
     {
-        SymbolID symbol_;
+        SymbolID symbol_id_;
         TypeID type_id_;
         std::optional<SemaNodeID> init_; // single expr or init_list
         SourceLoc source_loc_;
@@ -39,27 +39,27 @@ namespace Sema
 
     struct ParamDecl
     {
-        SymbolID symbol_;
+        SymbolID symbol_id_;
         TypeID type_id_;
         //std::optional<SemaNodeID> init_; // single expr or init_list
         SourceLoc source_loc_;
 
-        ParamDecl(SymbolID symbol, TypeID type_id_id, SourceLoc source_loc) noexcept :
-            symbol_{ symbol },
+        ParamDecl(SymbolID symbol_id, TypeID type_id_id, SourceLoc source_loc) noexcept :
+            symbol_id_{ symbol_id },
             type_id_{ type_id_id },
             source_loc_{ source_loc } {}
     };
 
     struct FuncDecl
     {
-        SymbolID symbol_;
+        SymbolID symbol_id_;
         TypeID type_id_;
         std::vector<SemaNodeID> params_;
         SemaNodeID body_;
         SourceLoc source_loc_;
 
-        FuncDecl(SymbolID symbol, TypeID type_id, std::vector<SemaNodeID> params, SemaNodeID body, SourceLoc source_loc) noexcept :
-            symbol_{ symbol },
+        FuncDecl(SymbolID symbol_id, TypeID type_id, std::vector<SemaNodeID> params, SemaNodeID body, SourceLoc source_loc) noexcept :
+            symbol_id_{ symbol_id },
             type_id_{ type_id },
             params_{ std::move(params) },
             body_{ body },
@@ -68,13 +68,13 @@ namespace Sema
 
     struct RecordDecl 
     {
-        SymbolID symbol_;
+        SymbolID symbol_id_;
         TypeID type_id_;
         std::vector<SemaNodeID> fields_;
         SourceLoc source_loc_;
         
-        RecordDecl(SymbolID symbol, TypeID type, std::vector<SemaNodeID> fields, SourceLoc source_loc) :
-            symbol_{ symbol }, 
+        RecordDecl(SymbolID symbol_id, TypeID type, std::vector<SemaNodeID> fields, SourceLoc source_loc) :
+            symbol_id_{ symbol_id }, 
             type_id_{ type }, 
             fields_{ std::move(fields) },
             source_loc_{ source_loc } {}
@@ -205,15 +205,15 @@ namespace Sema
     // invalid state to continue sema passes?
     struct ReferenceExpr
     {
-        SymbolID target_symbol_;
-        TypeID target_type_id_;
+        SymbolID symbol_id_;
+        TypeID type_id_;
         std::string name_;
         SourceLoc source_loc_;
         bool is_valid_;
 
-        ReferenceExpr(SymbolID target_symbol, TypeID target_type, std::string name, SourceLoc source_loc) noexcept : 
-            target_symbol_{ target_symbol },
-            target_type_id_{ target_type },
+        ReferenceExpr(SymbolID symbol_id, TypeID type_id, std::string name, SourceLoc source_loc) noexcept : 
+            symbol_id_{ symbol_id },
+            type_id_{ type_id },
             name_{ std::move(name) },
             source_loc_{ source_loc } {}
     };
@@ -284,7 +284,7 @@ namespace Sema
 template <typename T>
 inline constexpr SemaNodeKind sema_node_kind_v = SemaNodeKind::Invalid;
 
-template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::ModuleDecl>   = SemaNodeKind::ModuleDecl;
+template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::ModuleDecl>            = SemaNodeKind::ModuleDecl;
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::VarDecl>               = SemaNodeKind::VarDecl;
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::ParamDecl>             = SemaNodeKind::ParamDecl;
 template <> inline constexpr SemaNodeKind sema_node_kind_v<Sema::FuncDecl>              = SemaNodeKind::FuncDecl;
@@ -375,7 +375,7 @@ private:
     void move_construct_from(SemaNode& other)
     {
         switch (other.kind_) {
-            case SemaNodeKind::ModuleDecl: move_construct<Sema::ModuleDecl>(other); break;
+            case SemaNodeKind::ModuleDecl:          move_construct<Sema::ModuleDecl>(other);          break;
             case SemaNodeKind::VarDecl:             move_construct<Sema::VarDecl>(other);             break;
             case SemaNodeKind::ParamDecl:           move_construct<Sema::ParamDecl>(other);           break;
             case SemaNodeKind::FuncDecl:            move_construct<Sema::FuncDecl>(other);            break;
@@ -416,7 +416,7 @@ private:
     void destroy_active()
     {
         switch (kind_) {
-            case SemaNodeKind::ModuleDecl:      destroy<Sema::ModuleDecl>();  break;
+            case SemaNodeKind::ModuleDecl:               destroy<Sema::ModuleDecl>();           break;
             case SemaNodeKind::VarDecl:                  destroy<Sema::VarDecl>();              break;
             case SemaNodeKind::ParamDecl:                destroy<Sema::ParamDecl>();            break;
             case SemaNodeKind::FuncDecl:                 destroy<Sema::FuncDecl>();             break;

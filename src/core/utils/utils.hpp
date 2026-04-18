@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <string>
 #include <fstream>
 #include <iostream>
@@ -37,3 +38,9 @@ struct Overload : Lambdas...
 { 
     using Lambdas::operator()...; 
 };
+
+template <typename T, typename... Ts>
+constexpr auto combine(T first, Ts... rest)
+{
+    return std::array<T, 1 + sizeof...(Ts)>{first, rest...};
+}

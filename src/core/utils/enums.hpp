@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <unordered_map>
+#include <string>
 
 enum class ASTNodeKind : uint8_t 
 {
@@ -149,4 +151,46 @@ enum class ImplicitCastKind
     FunctionToPointerDecay,
 
     BitCast
+};
+
+enum class BinaryOp
+{
+    Assign,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Rem,
+    Xor,
+    Or,
+    And,
+    Shl,
+    Shr,
+    Eq,
+    Ne,
+    Slt,
+};
+
+inline std::unordered_map<std::string, BinaryOp> binary_ops = {
+    {"=", BinaryOp::Assign},
+    {"+", BinaryOp::Add},
+    {"-", BinaryOp::Sub},
+    {"*", BinaryOp::Mul},
+    {"/", BinaryOp::Div},
+    {"%", BinaryOp::Rem},
+    {"^", BinaryOp::Xor},
+    {"|", BinaryOp::Or},
+    {"&", BinaryOp::And},
+    {"<<", BinaryOp::Shl},
+    {">>", BinaryOp::Shr},
+    {"==", BinaryOp::Eq},
+    {"!=", BinaryOp::Ne},
+    {"<", BinaryOp::Slt},
+};
+
+enum class TerminatorKind
+{
+    Return,
+    Branch,
+    Switch
 };

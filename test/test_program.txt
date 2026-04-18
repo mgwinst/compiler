@@ -1,6 +1,0 @@
-fn func() -> void
-{
-    var a: int;
-    var b: int;
-    var x: int = a * b;
-}

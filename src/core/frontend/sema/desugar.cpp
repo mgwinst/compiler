@@ -37,6 +37,12 @@ SemaNodeID expand_compound_assignment(SemaTree& tree, const BinaryExpr& expr)
     return tree.emplace<BinaryExpr>("=", expr.left_, right, SourceLoc{});
 }
 
+void swap_greater_to_less_than(BinaryExpr& binary)
+{
+    binary.op_ = "<";
+    std::swap(binary.left_, binary.right_);
+}
+
 void TreeDesugarer::run()
 {
     desugar_node(tree_.root());
@@ -44,7 +50,7 @@ void TreeDesugarer::run()
 
 void TreeDesugarer::desugar_node(SemaNodeID node_id)
 {
-    const auto& node = tree_.nodes_[node_id];
+    auto& node = tree_.nodes_[node_id];
 
     switch (node.get_kind()) {
         case SemaNodeKind::ModuleDecl: {
@@ -121,16 +127,19 @@ void TreeDesugarer::desugar_node(SemaNodeID node_id)
         }
 
         // a += b -> a = a + b
+        // a > b -> b < a
         case SemaNodeKind::BinaryExpr: {
-            const auto& be = node.as<BinaryExpr>();
+            auto& binary = node.as<BinaryExpr>();
 
-            desugar_node(be.left_);
-            desugar_node(be.right_);
+            desugar_node(binary.left_);
+            desugar_node(binary.right_);
 
-            if (is_compound_assign(be.op_)) {
-                auto new_expr = expand_compound_assignment(tree_, be);
+            if (is_compound_assign(binary.op_)) {
+                auto new_expr = expand_compound_assignment(tree_, binary);
                 std::swap(tree_.nodes_[node_id], tree_.nodes_[new_expr]);
                 tree_.nodes_.pop_back();
+            } else if (binary.op_ == ">") {
+                swap_greater_to_less_than(binary);
             }
 
             break;

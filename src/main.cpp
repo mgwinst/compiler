@@ -4,11 +4,10 @@
 
 void test()
 {
-    std::vector<std::string> files{ "../../test/test_program.txt" }; // cli
+    std::vector<std::string> files{ "../../tests/test_program.txt" }; // cli
     CompilerContext compiler_ctx{ files };
 
     for (auto& file : compiler_ctx.source_files_) {
-        
         ModuleContext ctx;
 
         AST ast = parse(file);
@@ -29,5 +28,4 @@ int main()
 
 }
 
-
-
+// THE PROGRAM NEEDS TO STORE ALL VALUE* SO THAT IT CAN FREE THEM

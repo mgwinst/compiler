@@ -1,4 +1,5 @@
 #include "print.hpp"
+#include <iomanip>
 
 namespace
 {
@@ -110,7 +111,7 @@ std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const Se
         case SemaNodeKind::VarDecl: {
             const auto& var = node.as<Sema::VarDecl>();
 
-            const auto& symbol = ctx.symbol_table_.get_symbol(var.symbol_);
+            const auto& symbol = ctx.symbol_table_.get_symbol(var.symbol_id_);
 
             if (var.init_)
                 return indent + std::format("VarDecl ['{}', {}]\n{}", symbol.identifier_, type_to_str(ctx, symbol.type_id_), node_to_str(ctx, tree, *var.init_, indent + "  "));
@@ -121,7 +122,7 @@ std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const Se
         case SemaNodeKind::ParamDecl: {
             const auto& param = node.as<Sema::ParamDecl>();           
 
-            const auto& symbol = ctx.symbol_table_.get_symbol(param.symbol_);
+            const auto& symbol = ctx.symbol_table_.get_symbol(param.symbol_id_);
 
             return indent + std::format("ParamDecl ['{}', {}]", symbol.identifier_, type_to_str(ctx, symbol.type_id_));
         }
@@ -129,7 +130,7 @@ std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const Se
         case SemaNodeKind::FuncDecl: {
             const auto& func = node.as<Sema::FuncDecl>();
 
-            const auto& func_symbol = ctx.symbol_table_.get_symbol(func.symbol_);
+            const auto& func_symbol = ctx.symbol_table_.get_symbol(func.symbol_id_);
 
             auto ret_type = ctx.type_pool_.get_type(func_symbol.type_id_).as<FunctionType>().return_type_;
             auto ret_type_str = type_to_str(ctx, ret_type);
@@ -140,7 +141,7 @@ std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const Se
             if (func.params_.size() > 0) {
                 for (auto i = 0uz; i < func.params_.size(); i++) {
                     const auto& param = tree.nodes_[func.params_[i]].as<Sema::ParamDecl>();
-                    const auto& param_symbol = ctx.symbol_table_.get_symbol(param.symbol_);
+                    const auto& param_symbol = ctx.symbol_table_.get_symbol(param.symbol_id_);
                     param_type_list_str += type_to_str(ctx, param_symbol.type_id_);
 
                     param_decls_str += node_to_str(ctx, tree, func.params_[i], indent + "  ");
@@ -176,7 +177,7 @@ std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const Se
                     field_list_str += '\n';
             }
             
-            const auto& symbol = ctx.symbol_table_.get_symbol(rec.symbol_);
+            const auto& symbol = ctx.symbol_table_.get_symbol(rec.symbol_id_);
 
             return indent + std::format("RecordDecl ['{}']\n{}", type_to_str(ctx, symbol.type_id_), field_list_str);
         }
@@ -290,7 +291,7 @@ std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const Se
         case SemaNodeKind::ReferenceExpr: {
             const auto& r = node.as<Sema::ReferenceExpr>();
 
-            const auto& symbol = ctx.symbol_table_.get_symbol(r.target_symbol_);
+            const auto& symbol = ctx.symbol_table_.get_symbol(r.symbol_id_);
 
             return indent + std::format("RefExpr ['{}', {}]", symbol.identifier_, type_to_str(ctx, symbol.type_id_));
         }
@@ -351,26 +352,106 @@ std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const Se
 
 std::string ir_value_to_str(IR::Value* value)
 {
-    switch (value->kind_) {
-        case IR::ValueKind::InstructionVal: {
-            auto* inst = static_cast<IR::Instruction*>(value);
-            switch (inst->op_) {
-                case IR::Op::Alloca:
-                    return std::format("{} = alloca", inst->name_); // %x = alloca int32
-                case IR::Op::Load:
-                    return std::format("{} = load {}", inst->name_, inst->operands_[0]->name_);
-                case IR::Op::Store:
-                    return std::format("store {}, {}", inst->operands_[0]->name_, inst->operands_[1]->name_);
-                case IR::Op::Add:
-                    return std::format("{} = add {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
-                case IR::Op::Mul:
-                    return std::format("{} = mul {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
-                default:
-                    break;
-            }
+    switch (value->get_kind()) {
+        case IR::ValueKind::AllocaInstVal: {
+            auto* inst = static_cast<IR::AllocaInst*>(value);
+            return std::format("%{} = alloca", inst->get_name()); // %x = alloca int32
         }
-        
+
+        case IR::ValueKind::LoadInstVal: {
+            auto* inst = static_cast<IR::LoadInst*>(value);
+            return std::format("%{} = load %{}", inst->get_name(), inst->operands_[0]->get_name());
+        }
+
+        case IR::ValueKind::StoreInstVal: {
+            auto* inst = static_cast<IR::StoreInst*>(value);
+            return std::format("store %{}, %{}", inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
+        }
+
+        case IR::ValueKind::MulInstVal: {
+            auto* inst = static_cast<IR::MulInst*>(value);
+            return std::format("%{} = mul %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
+        }
+
+        case IR::ValueKind::SltInstVal: {
+            auto* inst = static_cast<IR::SltInst*>(value);
+            return std::format("%{} = slt %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
+        }
+
+        case IR::ValueKind::TerminatorVal: {
+            auto* inst = static_cast<IR::Terminator*>(value);
+            std::string inst_str;
+            switch (inst->terminator_kind_) {
+                case TerminatorKind::Branch: inst_str = "br"; break;
+                default: inst_str = "<ERROR>"; break;
+            }
+            
+            std::string target_label_list{};
+            for (auto target : inst->targets()) {
+                target_label_list += std::format("label %{}", target->get_name());
+                if (target != inst->targets().back())
+                    target_label_list += ", ";
+            }
+
+            return std::format("{} %{}, {}", inst_str, inst->condition()->get_name(), target_label_list); 
+        }
+
         default:
             break;
+    }
+}
+
+void PrettyPrinter::print(const SemaTree& tree) const
+{
+    std::println("{}\n", node_to_str(ctx_, tree, tree.root(), ""));
+}
+
+std::string get_arg_list_str(const std::unique_ptr<IR::Function>& function)
+{
+    std::string arg_list;
+
+    for (auto& arg : function->args_) {
+        arg_list += "%" + arg->get_name();
+        if (arg != function->args_.back()) {
+            arg_list += ", ";
+        }
+    }
+
+    return arg_list;
+}
+
+std::string get_pred_list_str(const std::unique_ptr<IR::BasicBlock>& block)
+{
+    std::string pred_list;
+
+    if (block->predecessors().size() > 0) {
+        pred_list = "preds: [";
+        for (auto pred : block->predecessors()) {
+            pred_list += "%" + pred->get_name();
+            if (pred != block->predecessors().back()) {
+                pred_list += ", ";
+            }
+        }
+        pred_list += ']';
+    }
+
+    return pred_list;
+}
+
+void PrettyPrinter::print(const IR::Program& program) const
+{
+    for (const auto& function : program.functions()) {
+        std::print("define @{}({}) -> () ", function->get_name(), get_arg_list_str(function));
+        std::cout << "{\n";
+        for (const auto& block : function->blocks_) {
+            std::println("{:<20}{}", block->get_name(), get_pred_list_str(block));
+            for (auto& inst : block->instruction_list()) {
+                std::println("  {}", ir_value_to_str(inst.get()));
+            }
+            if (block != function->blocks_.back()) {
+                std::println();
+            }
+        }
+        std::cout << "}\n\n";
     }
 }

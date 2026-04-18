@@ -1,0 +1,10 @@
+fn func(a: int, b: int) -> void
+{
+    if (a < b) {
+        a = b;
+    }
+
+    a = a - b;
+    b = a - b;
+    a = b + a;
+}

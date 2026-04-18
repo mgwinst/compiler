@@ -203,14 +203,14 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
 
         case SemaNodeKind::ReferenceExpr: {
             const auto& ref = tree_.nodes_[node_id].as<ReferenceExpr>();
-            return ref.target_type_id_;
+            return ref.type_id_;
         }
 
         case SemaNodeKind::CallExpr: {
             auto& call = node.as<CallExpr>();
 
             auto call_ref = tree_.nodes_[call.callee_].as<ReferenceExpr>();
-            auto& func_type = ctx_.type_pool_.get_type(call_ref.target_type_id_).as<FunctionType>();
+            auto& func_type = ctx_.type_pool_.get_type(call_ref.type_id_).as<FunctionType>();
             
             if (func_type.params_.size() != call.args_.size()) {
                 auto err = InvalidArguments{std::format("expected '{}' arguments in call expression", func_type.params_.size()), call.source_loc_};
@@ -235,10 +235,10 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
         case SemaNodeKind::MemberExpr: {
             auto& expr = node.as<MemberExpr>();
             auto& rec_ref = tree_.nodes_[expr.base_].as<ReferenceExpr>();
-            auto& rec_type = ctx_.type_pool_.get_type(rec_ref.target_type_id_).as<RecordType>();
+            auto& rec_type = ctx_.type_pool_.get_type(rec_ref.type_id_).as<RecordType>();
             
             if (Field* field = rec_type.lookup_field(expr.member_); !field) {
-                auto err = TypeError{std::format("no member named '{}' in '{}'", expr.member_, type_to_str(ctx_, rec_ref.target_type_id_)), expr.source_loc_};
+                auto err = TypeError{std::format("no member named '{}' in '{}'", expr.member_, type_to_str(ctx_, rec_ref.type_id_)), expr.source_loc_};
                 ctx_.diagnostics_.register_error(err);
                 return ERROR_TYPE;
             } else {
@@ -249,7 +249,7 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
         case SemaNodeKind::ArraySubscriptExpr: {
             auto& expr = node.as<ArraySubscriptExpr>();
             auto& arr_ref = tree_.nodes_[expr.base_].as<ReferenceExpr>();
-            auto& arr_symbol = ctx_.symbol_table_.get_symbol(arr_ref.target_symbol_);
+            auto& arr_symbol = ctx_.symbol_table_.get_symbol(arr_ref.symbol_id_);
             auto& arr_type = ctx_.type_pool_.get_type(arr_symbol.type_id_).as<ArrayType>();
 
             return arr_type.inner_type_;

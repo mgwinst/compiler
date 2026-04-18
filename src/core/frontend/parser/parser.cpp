@@ -564,10 +564,10 @@ std::expected<ASTNodeID, Error> Parser::nud(const Token token) noexcept
         case TokenType::BANG:
         case TokenType::CARROT: // move semantics later
         case TokenType::TILDE: {
-            auto op = parse_expr(prec::unary);
-            if (!op) return std::unexpected{ op.error() };
+            auto operand = parse_expr(prec::unary);
+            if (!operand) return std::unexpected{ operand.error() };
 
-            return ast_.emplace<Syntax::UnaryExpr>(std::string{ token.lexeme_ }, *op, false, SourceLoc{ prev_token_ }); // postfix = false (default value)
+            return ast_.emplace<Syntax::UnaryExpr>(std::string{ token.lexeme_ }, *operand, false, SourceLoc{ prev_token_ }); // postfix = false (default value)
         }
 
         case TokenType::IDENTIFIER: {
