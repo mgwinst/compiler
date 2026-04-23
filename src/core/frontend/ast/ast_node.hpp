@@ -157,9 +157,9 @@ namespace Syntax
 
     struct FloatLiteralExpr
     {
-        long double value_;
+        double value_;
 
-        FloatLiteralExpr(long double value) noexcept :
+        FloatLiteralExpr(double value) noexcept :
             value_{ value } {}
     };
 

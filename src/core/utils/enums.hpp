@@ -192,5 +192,6 @@ enum class TerminatorKind
 {
     Return,
     Branch,
+    CondBranch,
     Switch
 };

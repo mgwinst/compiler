@@ -44,3 +44,6 @@ constexpr auto combine(T first, Ts... rest)
 {
     return std::array<T, 1 + sizeof...(Ts)>{first, rest...};
 }
+
+template <typename T>
+inline constexpr bool always_false = false;

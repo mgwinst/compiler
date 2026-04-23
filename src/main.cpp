@@ -15,6 +15,7 @@ void test()
         type_check(ctx, sema_tree);
         desugar(ctx, sema_tree);
         IR::Program program = lower(ctx, sema_tree);
+        
 
         PrettyPrinter printer{ ctx };
         printer.print(sema_tree);

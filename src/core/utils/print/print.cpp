@@ -1,5 +1,7 @@
-#include "print.hpp"
 #include <iomanip>
+
+#include "print.hpp"
+#include "../casting.hpp"
 
 namespace
 {
@@ -350,6 +352,18 @@ std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const Se
     }
 }
 
+std::string get_target_list_str(IR::Terminator* inst)
+{
+    std::string target_label_list{};
+    for (auto target : inst->targets()) {
+    target_label_list += std::format("label %{}", target->get_name());
+    if (target != inst->targets().back())
+        target_label_list += ", ";
+    }
+
+    return target_label_list;
+}
+
 std::string ir_value_to_str(IR::Value* value)
 {
     switch (value->get_kind()) {
@@ -368,6 +382,11 @@ std::string ir_value_to_str(IR::Value* value)
             return std::format("store %{}, %{}", inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
         }
 
+        case IR::ValueKind::AddInstVal: {
+            auto* inst = static_cast<IR::MulInst*>(value);
+            return std::format("%{} = add %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
+        }
+
         case IR::ValueKind::MulInstVal: {
             auto* inst = static_cast<IR::MulInst*>(value);
             return std::format("%{} = mul %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
@@ -382,22 +401,21 @@ std::string ir_value_to_str(IR::Value* value)
             auto* inst = static_cast<IR::Terminator*>(value);
             std::string inst_str;
             switch (inst->terminator_kind_) {
-                case TerminatorKind::Branch: inst_str = "br"; break;
-                default: inst_str = "<ERROR>"; break;
+                case TerminatorKind::Return:
+                    return std::format("ret %{}", inst->operands_[0]->get_name());
+                case TerminatorKind::Branch:
+                    return std::format("br label %{}", inst->operands_[0]->get_name());
+                case TerminatorKind::CondBranch:
+                    return std::format("br label %{}, label %{}", inst_str, inst->condition()->get_name(), inst->targets()[0]->get_name(), inst->targets()[1]->get_name());
+                default:
+                    std::perror("Unknown TerminatorKind");
+                    std::terminate();
             }
-            
-            std::string target_label_list{};
-            for (auto target : inst->targets()) {
-                target_label_list += std::format("label %{}", target->get_name());
-                if (target != inst->targets().back())
-                    target_label_list += ", ";
-            }
-
-            return std::format("{} %{}, {}", inst_str, inst->condition()->get_name(), target_label_list); 
         }
 
         default:
-            break;
+            std::perror("Unknown ValueKind");
+            std::terminate();
     }
 }
 
@@ -405,6 +423,7 @@ void PrettyPrinter::print(const SemaTree& tree) const
 {
     std::println("{}\n", node_to_str(ctx_, tree, tree.root(), ""));
 }
+
 
 std::string get_arg_list_str(const std::unique_ptr<IR::Function>& function)
 {
@@ -437,7 +456,6 @@ std::string get_pred_list_str(const std::unique_ptr<IR::BasicBlock>& block)
 
     return pred_list;
 }
-
 void PrettyPrinter::print(const IR::Program& program) const
 {
     for (const auto& function : program.functions()) {
@@ -445,7 +463,7 @@ void PrettyPrinter::print(const IR::Program& program) const
         std::cout << "{\n";
         for (const auto& block : function->blocks_) {
             std::println("{:<20}{}", block->get_name(), get_pred_list_str(block));
-            for (auto& inst : block->instruction_list()) {
+            for (const auto& inst : block->instruction_list()) {
                 std::println("  {}", ir_value_to_str(inst.get()));
             }
             if (block != function->blocks_.back()) {

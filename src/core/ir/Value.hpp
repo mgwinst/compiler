@@ -26,24 +26,20 @@ enum class ValueKind : uint32_t
     AllocaInstVal,
     StoreInstVal,
     LoadInstVal,
-
     AddInstVal,
     SubInstVal,
     MulInstVal,
     DivInstVal,
-
     EqInstVal,
     NeInstVal,
     SltInstVal,
-    BranchInstVal,
 
     PhiInstVal,
     
-    ConstantIntVal,
-    ConstantFloatVal,
+    IntLiteralVal,
+    FloatLiteralVal,
 
     TerminatorVal,
-
 };
 
 
@@ -62,6 +58,11 @@ public:
         parent_{ nullptr } {}
 
     virtual ~Value() = default;
+
+    auto& users()
+    {
+        return use_list_;
+    }
 
     void set_parent(Value* parent)
     {
@@ -83,7 +84,7 @@ public:
         return kind_;
     }
 
-    std::string get_name()
+    std::string get_name() const
     {
         return name_;
     }
@@ -104,17 +105,20 @@ template <typename T>
 concept DerivedFromValue = std::derived_from<T, Value>;
 
 
-// ***************** CONSTANTS *****************
+// ***************** LITERALS *****************
 
 
-struct ConstantInt : Value
+struct Literal : Value
 {
+    std::variant<int64_t, double> data_;
 
-};
+    Literal(int64_t v) : 
+        Value{ValueKind::IntLiteralVal, std::to_string(v)},
+        data_{ v } {}
 
-struct ConstantFloat : Value
-{
-
+    Literal(double v) : 
+        Value{ValueKind::FloatLiteralVal, std::to_string(v)},
+        data_{ v } {}
 };
 
 
@@ -135,6 +139,9 @@ struct Instruction : public Value
             operand->add_use(this);
     }
 };
+
+template <typename T>
+concept DerivedFromInstruction = std::derived_from<T, Instruction>;
 
 struct AllocaInst : Instruction
 {
@@ -205,47 +212,19 @@ struct PhiInst : Instruction
     // std::initializer_list<std::pair<Value*, BasicBlock*>> [value, block], [value, block], ...
 };
 
-// ***************** TERMINATOR *****************
-
-struct BasicBlock;
-
-template <typename T>
-concept BasicBlock_t = std::same_as<T, BasicBlock>;
-
-
-struct Terminator : Instruction
-{
-    TerminatorKind terminator_kind_;   
-
-    template <BasicBlock_t... Ts>
-    Terminator(TerminatorKind terminator_kind, Value* arg, Ts*... labels) : // this breaks on ret because no labels on ret terminator instruction
-        Instruction{ValueKind::TerminatorVal, {arg, static_cast<Value*>(labels)...}},
-        terminator_kind_{ terminator_kind } {}
-
-    auto condition()
-    {
-        return operands_[0];
-    }   
-
-    // these getters are wrong because unconditional branch doesn't have cond in first slot
-
-    auto targets()
-    {
-        return operands_ | std::views::drop(1);
-    }
-};
-
 
 // ***************** BASIC BLOCK *****************
 
+
+struct Terminator;
 
 struct BasicBlock : Value
 {
     BasicBlock(std::string_view name = "") :
         Value{ValueKind::BasicBlockVal, name} {}
 
-    template <DerivedFromValue T>
-    Value* insert(std::unique_ptr<T> value)
+    template <DerivedFromInstruction T>
+    Instruction* insert(std::unique_ptr<T> value)
     {
         auto* ptr = value.get();
         value->set_parent(this);
@@ -258,10 +237,7 @@ struct BasicBlock : Value
         return instructions_;
     }
 
-    auto successors()
-    {
-        return get_terminator()->targets();
-    }
+    auto successors();
 
     auto predecessors()
     {
@@ -271,12 +247,52 @@ struct BasicBlock : Value
 private:
     std::list<std::unique_ptr<Value>> instructions_;
 
-    Terminator* get_terminator()
+    Terminator* get_terminator();
+};
+
+
+// ***************** TERMINATOR *****************
+
+
+struct Terminator : Instruction
+{
+    TerminatorKind terminator_kind_;   
+
+    Terminator(Value* value) :
+        Instruction{ValueKind::TerminatorVal, { value }},
+        terminator_kind_{ TerminatorKind::Return } {}
+
+    Terminator(BasicBlock* target) :
+        Instruction{ValueKind::TerminatorVal, { static_cast<Value*>(target) }},
+        terminator_kind_{ TerminatorKind::Branch } {}
+
+    Terminator(Value* cond, BasicBlock* bb_true, BasicBlock* bb_false) :
+        Instruction{ValueKind::TerminatorVal, {cond, static_cast<Value*>(bb_true), static_cast<Value*>(bb_false)}},
+        terminator_kind_{ TerminatorKind::CondBranch } {}
+
+    auto* condition()
+    {   
+        assert(terminator_kind_ == TerminatorKind::CondBranch);
+        return operands_[0];
+    }   
+
+    auto targets()
     {
-        return static_cast<Terminator*>(instructions_.back().get());
+        assert(terminator_kind_ != TerminatorKind::Return);
+        return operands_ | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value); });
     }
 };
- 
+
+inline Terminator* BasicBlock::get_terminator()
+{
+    return static_cast<Terminator*>(instructions_.back().get());
+}
+
+inline auto BasicBlock::successors()
+{
+    return get_terminator()->targets();
+}
+
 
 // ***************** FUNCTIONS *****************
 
@@ -297,16 +313,20 @@ struct Function : Value
     Function() :
         Value{ ValueKind::FunctionVal } {}
 
-    void add_argument(std::unique_ptr<Argument> arg)
+    BasicBlock* insert(std::unique_ptr<BasicBlock> block)
     {
-        arg->set_parent(this);
-        args_.push_back(std::move(arg));
-    }
-
-    void add_block(std::unique_ptr<BasicBlock> block)
-    {
+        auto* ptr = block.get();
         block->set_parent(this);
         blocks_.push_back(std::move(block));
+        return ptr;
+    }
+
+    Argument* insert(std::unique_ptr<Argument> arg)
+    {
+        auto* ptr = arg.get();
+        arg->set_parent(this);
+        args_.push_back(std::move(arg));
+        return ptr;
     }
 };
 
@@ -317,9 +337,11 @@ struct Function : Value
 class Program
 {
 public:
-    void insert(std::unique_ptr<Function> function) // right now only functions (value = function)
+    Function* insert(std::unique_ptr<Function> function)
     {
+        auto* ptr = function.get();
         functions_.push_back(std::move(function));
+        return ptr;
     }
 
     const auto& functions() const

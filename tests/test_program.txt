@@ -1,10 +1,6 @@
-fn func(a: int, b: int) -> void
+fn func() -> void
 {
-    if (a < b) {
-        a = b;
-    }
+    var x: int = 500;
+    
 
-    a = a - b;
-    b = a - b;
-    a = b + a;
 }
