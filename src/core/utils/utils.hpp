@@ -46,4 +46,4 @@ constexpr auto combine(T first, Ts... rest)
 }
 
 template <typename T>
-inline constexpr bool always_false = false;
+inline constexpr bool always_false_v = false;

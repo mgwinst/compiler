@@ -3,28 +3,29 @@
 #include "type_pool.hpp"
 #include "types.hpp"
 
-namespace
-{
-    std::unordered_map<std::string_view, TypeID> builtin_map = {
-        {"void",    VOID   },
-        {"byte",    BYTE   },
-        {"char",    CHAR   },
-        {"bool",    BOOL   },
-        {"int8",    INT8   },
-        {"int16",   INT16  },
-        {"int32",   INT32  },
-        {"int",     INT32  },
-        {"int64",   INT64  },
-        {"uint8",   UINT8  },
-        {"uint16",  UINT16 },
-        {"uint32",  UINT32 },
-        {"uint",    UINT32 },
-        {"uint64",  UINT64 },
-        {"float16", FLOAT16},
-        {"float32", FLOAT32},
-        {"float",   FLOAT32},
-        {"float64", FLOAT64}
-    };
+namespace {
+
+std::unordered_map<std::string_view, TypeID> builtin_map = {
+    {"void",    VOID   },
+    {"byte",    BYTE   },
+    {"char",    CHAR   },
+    {"bool",    BOOL   },
+    {"int8",    INT8   },
+    {"int16",   INT16  },
+    {"int32",   INT32  },
+    {"int",     INT32  },
+    {"int64",   INT64  },
+    {"uint8",   UINT8  },
+    {"uint16",  UINT16 },
+    {"uint32",  UINT32 },
+    {"uint",    UINT32 },
+    {"uint64",  UINT64 },
+    {"float16", FLOAT16},
+    {"float32", FLOAT32},
+    {"float",   FLOAT32},
+    {"float64", FLOAT64}
+};
+
 }
 
 TypePool::TypePool() noexcept
@@ -97,7 +98,7 @@ TypeID TypePool::resolve_type(const ASTNodeID type_expr, const AST& ast) noexcep
             if (auto it = builtin_map.find(named.name_); it != builtin_map.end())
                 return it->second;
 
-            if (auto it = user_defined_map.find(named.name_); it != user_defined_map.end())
+            if (auto it = user_defined_map_.find(named.name_); it != user_defined_map_.end())
                 return it->second;
 
             error_exit("type does not exist");
@@ -130,7 +131,7 @@ TypeID TypePool::resolve_type(const ASTNodeID type_expr, const AST& ast) noexcep
             auto type_id = get_or_create<RecordType>(rec.kind_, rec.name_);
             types_[type_id].as<RecordType>().fields_ = std::move(fields);
 
-            user_defined_map.emplace(rec.name_, type_id);
+            user_defined_map_.emplace(rec.name_, type_id);
             return type_id;
         }
 

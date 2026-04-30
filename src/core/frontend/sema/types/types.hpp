@@ -129,10 +129,17 @@ struct RecordType
 
     bool operator==(const RecordType& other) const = default;
 
-    Field* lookup_field(std::string_view name)
+    auto* lookup_field(std::string_view name)
     {
         auto it = std::ranges::find_if(fields_, [&](const Field& f) { return f.name_ == name; });
         return (it != fields_.end()) ? &(*it) : nullptr;
+    }
+
+    uint32_t field_position(std::string_view name) const
+    {
+        auto field = std::ranges::find_if(fields_, [&](const Field& f) { return f.name_ == name; });
+        assert(field != fields_.end());
+        return std::distance(fields_.begin(), field);
     }
 };
 

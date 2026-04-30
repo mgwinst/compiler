@@ -237,13 +237,14 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
             auto& rec_ref = tree_.nodes_[expr.base_].as<ReferenceExpr>();
             auto& rec_type = ctx_.type_pool_.get_type(rec_ref.type_id_).as<RecordType>();
             
-            if (Field* field = rec_type.lookup_field(expr.member_); !field) {
+            auto* field = rec_type.lookup_field(expr.member_);
+            if (field == nullptr) {
                 auto err = TypeError{std::format("no member named '{}' in '{}'", expr.member_, type_to_str(ctx_, rec_ref.type_id_)), expr.source_loc_};
                 ctx_.diagnostics_.register_error(err);
                 return ERROR_TYPE;
-            } else {
-                return field->type_;
             }
+
+            return field->type_;
         }
 
         case SemaNodeKind::ArraySubscriptExpr: {

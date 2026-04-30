@@ -9,23 +9,17 @@
 
 inline constexpr std::size_t INLINE_VEC_SIZE{ 8 };
 
-class TypePool
+struct TypePool
 {
-public:
-    TypePool() noexcept;
-
-    const Type& get_type(TypeID ref) const noexcept;
-    Type& get_type(TypeID ref) noexcept;
-
-    TypeID resolve_type(const ASTNodeID type_expr, const AST& ast) noexcept;
-
-
-
-
     std::vector<Type> types_;
     std::unordered_map<TypeID, boost::container::small_vector<TypeID, INLINE_VEC_SIZE>> buckets_;
+    std::unordered_map<std::string, TypeID> user_defined_map_; // fixes unknown type resolution problem
 
-    std::unordered_map<std::string, TypeID> user_defined_map; // fixes unknown type resolution problem
+    TypePool() noexcept;
+
+    const Type& get_type(TypeID type_id) const noexcept;
+    Type& get_type(TypeID type_id) noexcept;
+    TypeID resolve_type(const ASTNodeID type_expr, const AST& ast) noexcept;
 
     template <typename T, typename... Args>
         requires std::is_constructible_v<T, Args...>

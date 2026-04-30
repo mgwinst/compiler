@@ -1,9 +1,16 @@
+#include <ranges>
+#include <stack>
+
 #include "../context/context.hpp"
 #include "../frontend/sema/sematree.hpp"
 #include "../ir/Value.hpp"
 #include "../utils/alias.hpp"
 #include "../utils/casting.hpp"
-#include "ConstantPool.hpp"
+
+struct LoopContext
+{
+    IR::BasicBlock *preheader_, *header_, *body_, *end_;
+};
 
 class LoweringEngine
 {
@@ -20,75 +27,68 @@ private:
     IR::Program program_;
     IR::Function* current_function_ = nullptr;
     IR::BasicBlock* current_basic_block_ = nullptr;
-    std::unordered_map<std::string, IR::Value*> name_to_value_map_; // scope aware?
-    ConstantPool intern_pool_; // unique IR::Literal instances for int/float/string
-
+    std::unordered_map<std::string, IR::Value*> name_to_value_map_; // scope aware? // this must outlive the LoweringEngine object
+    std::stack<LoopContext> loop_context_stack_;
     uint32_t value_count_ = 0u; // reset per new function
 
     IR::Value* lower(SemaNodeID node_id);
 
-    IR::Function* current_function() const { return current_function_; } 
-    IR::BasicBlock* current_block() const { return current_basic_block_; } 
-    void set_current_function(const std::unique_ptr<IR::Function>& function) { current_function_ = function.get(); }
-    void set_current_block(const std::unique_ptr<IR::BasicBlock>& block) { current_basic_block_ = block.get(); }
-    void set_current_function(IR::Function* function) { current_function_ = function; }
-    void set_current_block(IR::BasicBlock* block) { current_basic_block_ = block; }
+    template <DerivedFromInstruction T, typename... Args>
+    IR::Instruction* create(IR::BasicBlock* block, Args&&... args);
 
     IR::Function* create_function(const Sema::FuncDecl& func);
-    IR::BasicBlock* create_basic_block(std::string_view name);
-    IR::Argument* create_argument(SemaNodeID node_id);
-
-    IR::Literal* create_literal(auto literal)
-    {
-        return intern_literal(literal);
-    }
-
-    template <std::same_as<IR::AllocaInst> T>
-    IR::Instruction* create_instruction(const ContainsSymbol auto& node)
-    {
-        auto& symbol = ctx_.get_symbol(node);
-        auto alloca = std::make_unique<T>(symbol.type_id_, symbol.identifier_);
-        name_to_value_map_[alloca->get_name()] = alloca.get();
-        return current_block()->insert(std::move(alloca));
-    }
-
-    template <DerivedFromInstruction T, typename... Args>
-        requires std::constructible_from<T, Args...>
-    IR::Instruction* create_instruction(Args&&... args)
-    {
-        auto inst = std::make_unique<T>(std::forward<Args>(args)...);
-        inst->set_name(std::to_string(value_count_));
-        update_value_count();
-        return current_block()->insert(std::move(inst));
-    }
-
-    // query value graph with name {name : value*}
-    IR::Value* get_value(const Sema::ReferenceExpr& ref) const
-    {
-        auto& name = ctx_.get_symbol(ref).identifier_;
-        if (auto it = name_to_value_map_.find(name); it != name_to_value_map_.end())
-            return it->second;
-
-        return nullptr;
-    }
-
-    IR::Literal* intern_literal(auto literal)
-    {
-        auto [it, inserted] = intern_pool_.try_insert(literal); 
-        return it->second.get();
-    }
-
-    void update_value_count()
-    {
-        ++value_count_;
-    }
+    IR::BasicBlock* create_basic_block(std::string_view name = ""); // option to where to place block?
+    IR::Argument* create_arg(std::string_view name = "");
+    IR::Literal* create_literal(auto literal);
+    IR::Instruction* create_alloca(TypeID type_id, std::string_view name, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_load(TypeID type_id, IR::Value* ptr, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_store(IR::Value* dst, IR::Value* src, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_add(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_sub(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_mul(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_div(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_eq(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_ne(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_slt(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_ret(IR::Value* src, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_br(IR::BasicBlock* target, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_br(IR::Value* cond, IR::BasicBlock* target1, IR::BasicBlock* target2, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_ptr_offset(IR::Value* base_ptr, IR::Value* index, IR::BasicBlock* block = nullptr);
     
-    void reset_value_count()
-    {
-        value_count_ = 0;
-    }
+    IR::Function* current_function() const;
+    IR::BasicBlock* current_block() const;
+    void set_current_function(IR::Function* function);
+    void set_current_block(IR::BasicBlock* block);
 
-    
+    IR::Value* get_value(const Sema::ReferenceExpr& ref) const; // map {ref.name : value*}
+    IR::Literal* intern_literal(auto literal);
+    void push_loop_context(BasicBlock* preheader, BasicBlock* header, BasicBlock* body, BasicBlock* end);
+    void pop_loop_context();
+    LoopContext& get_loop_context();
+    std::tuple<TypeID, std::string> extract_info(const ContainsSymbol auto& node);
 };
+
+template <DerivedFromInstruction T, typename... Args>
+IR::Instruction* LoweringEngine::create(IR::BasicBlock* block, Args&&... args)
+{
+    auto inst = std::make_unique<T>(std::forward<Args>(args)...);
+    inst->set_name(std::to_string(++value_count_));
+
+    if (!block)
+        block = current_block();
+
+    return block->insert(std::move(inst));
+}
+
+IR::Literal* LoweringEngine::intern_literal(auto literal)
+{
+    auto [it, inserted] = program_.constants().try_insert(literal); 
+    return it->second.get();
+}
+
+IR::Literal* LoweringEngine::create_literal(auto literal)
+{
+    return intern_literal(literal);
+}
 
 // also explore pass manager (passing in objects that inherit from 'pass')

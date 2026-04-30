@@ -1,6 +1,4 @@
-fn func() -> void
+fn add(x: int) -> int
 {
-    var x: int = 500;
-    
-
+    return x + 10;
 }

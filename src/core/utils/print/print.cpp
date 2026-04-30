@@ -17,29 +17,31 @@ namespace
     };
 }
 
+// ******************** TYPE PRINTING ********************
+
 std::string type_to_str(const ModuleContext& ctx, TypeID type_ref)
 {
     const auto& type = ctx.type_pool_.get_type(type_ref);
 
     switch (type.get_kind()) {
         case TypeKind::Error: {
-            return std::format("ErrorType");
+            return "ErrorType";
         }       
 
         case TypeKind::Void: {
-            return std::format("void");
+            return "void";
         }
 
         case TypeKind::Byte: {
-            return std::format("byte");
+            return "byte";
         }
 
         case TypeKind::Char: {
-            return std::format("char");
+            return "char";
         }
 
         case TypeKind::Bool: {
-            return std::format("bool");
+            return "bool";
         }
 
         case TypeKind::Integer: {
@@ -90,6 +92,8 @@ std::string type_to_str(const ModuleContext& ctx, TypeID type_ref)
             error_exit("type mismatch");
     }
 }
+
+// ******************** SEMANTIC NODE PRINTING ********************
 
 std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const SemaNodeID ref, std::string indent)
 {
@@ -344,13 +348,15 @@ std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const Se
         case SemaNodeKind::ExplicitCastExpr:
         case SemaNodeKind::ImplicitCastExpr: {
             const auto& cast = node.as<Sema::ImplicitCastExpr>();
-            return indent + std::format("ImplicitCastExpr <{}>\n{}", (int)cast.kind_, node_to_str(ctx, tree, cast.expr_, indent + "  "));
+            return indent + std::format("ImplicitCastExpr\n{}", (int)cast.kind_, node_to_str(ctx, tree, cast.expr_, indent + "  "));
         }
 
         default:
             return "parse error";
     }
 }
+
+// ******************** IR PRINTING ********************
 
 std::string get_target_list_str(IR::Terminator* inst)
 {
@@ -364,7 +370,70 @@ std::string get_target_list_str(IR::Terminator* inst)
     return target_label_list;
 }
 
-std::string ir_value_to_str(IR::Value* value)
+std::string PrettyPrinter::ir_type_str(TypeID type_id) const
+{
+    auto& type = ctx_.get_type(type_id);
+
+    switch (type.get_kind()) {
+        case TypeKind::Error: {
+            return "ErrorType";
+        }
+
+        case TypeKind::Void: {
+            return "void";
+        }
+
+        case TypeKind::Byte: {
+            return "u8";
+        }
+
+        case TypeKind::Char: {
+            return "u8";
+        }
+
+        case TypeKind::Bool: {
+            return "u8";
+        }
+
+        case TypeKind::Integer: {
+            const auto& t = type.as<IntegerType>();
+            if (t.is_signed_)
+                return std::format("i{}", t.bit_width_);
+            return std::format("u{}", t.bit_width_);
+        }
+
+        case TypeKind::Float: {
+            const auto& t = type.as<FloatType>();
+                return std::format("f{}", t.bit_width_);
+        }
+
+        case TypeKind::Pointer: {
+            return "ptr";
+        }
+
+        // FIX: print size
+        case TypeKind::Array: {
+            const auto& t = type.as<ArrayType>();
+            return std::format("[{} x {}]", t.size_, ir_type_str(t.inner_type_));
+        }
+
+        case TypeKind::Function: {
+            // just return type.
+        }
+
+        case TypeKind::Record: {
+            const auto& t = type.as<RecordType>();
+            return std::format("{} {}", record_kind_to_str[t.kind_], t.name_);
+        }
+
+        default:
+            std::println("{}", (int)type.get_kind());
+            error_exit("type mismatch");
+    }
+
+}
+
+std::string PrettyPrinter::ir_value_to_str(IR::Value* value) const
 {
     switch (value->get_kind()) {
         case IR::ValueKind::AllocaInstVal: {
@@ -374,7 +443,7 @@ std::string ir_value_to_str(IR::Value* value)
 
         case IR::ValueKind::LoadInstVal: {
             auto* inst = static_cast<IR::LoadInst*>(value);
-            return std::format("%{} = load %{}", inst->get_name(), inst->operands_[0]->get_name());
+            return std::format("%{} = load, %{}", inst->get_name(), inst->operands_[0]->get_name());
         }
 
         case IR::ValueKind::StoreInstVal: {
@@ -383,7 +452,7 @@ std::string ir_value_to_str(IR::Value* value)
         }
 
         case IR::ValueKind::AddInstVal: {
-            auto* inst = static_cast<IR::MulInst*>(value);
+            auto* inst = static_cast<IR::AddInst*>(value);
             return std::format("%{} = add %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
         }
 
@@ -392,30 +461,45 @@ std::string ir_value_to_str(IR::Value* value)
             return std::format("%{} = mul %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
         }
 
+        case IR::ValueKind::EqInstVal: {
+            auto* inst = static_cast<IR::EqInst*>(value);
+            return std::format("%{} = eq %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
+        }
+
+        case IR::ValueKind::NeInstVal: {
+            auto* inst = static_cast<IR::NeInst*>(value);
+            return std::format("%{} = ne %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
+        }
+
         case IR::ValueKind::SltInstVal: {
             auto* inst = static_cast<IR::SltInst*>(value);
             return std::format("%{} = slt %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
         }
 
+        case IR::ValueKind::PtrOffsetVal: {
+            auto* inst = static_cast<IR::PtrOffset*>(value);
+            return std::format("%{} = PtrOffset %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
+        };
+
         case IR::ValueKind::TerminatorVal: {
             auto* inst = static_cast<IR::Terminator*>(value);
-            std::string inst_str;
             switch (inst->terminator_kind_) {
                 case TerminatorKind::Return:
                     return std::format("ret %{}", inst->operands_[0]->get_name());
                 case TerminatorKind::Branch:
                     return std::format("br label %{}", inst->operands_[0]->get_name());
                 case TerminatorKind::CondBranch:
-                    return std::format("br label %{}, label %{}", inst_str, inst->condition()->get_name(), inst->targets()[0]->get_name(), inst->targets()[1]->get_name());
+                    return std::format("br %{}, label %{}, label %{}", inst->condition()->get_name(), inst->targets()[0]->get_name(), inst->targets()[1]->get_name());
                 default:
                     std::perror("Unknown TerminatorKind");
                     std::terminate();
             }
         }
 
-        default:
+        default: {
             std::perror("Unknown ValueKind");
             std::terminate();
+        }
     }
 }
 
@@ -456,13 +540,14 @@ std::string get_pred_list_str(const std::unique_ptr<IR::BasicBlock>& block)
 
     return pred_list;
 }
+
 void PrettyPrinter::print(const IR::Program& program) const
 {
     for (const auto& function : program.functions()) {
         std::print("define @{}({}) -> () ", function->get_name(), get_arg_list_str(function));
         std::cout << "{\n";
         for (const auto& block : function->blocks_) {
-            std::println("{:<20}{}", block->get_name(), get_pred_list_str(block));
+            std::println("{:<30}{}", block->get_name() + ":", get_pred_list_str(block));
             for (const auto& inst : block->instruction_list()) {
                 std::println("  {}", ir_value_to_str(inst.get()));
             }

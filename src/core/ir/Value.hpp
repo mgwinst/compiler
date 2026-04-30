@@ -13,6 +13,8 @@
 #include "../utils/alias.hpp"
 #include "../utils/utils.hpp"
 
+inline constexpr TypeID no_type = -1;
+
 namespace IR {
 
 enum class ValueKind : uint32_t
@@ -34,6 +36,8 @@ enum class ValueKind : uint32_t
     NeInstVal,
     SltInstVal,
 
+    PtrOffsetVal,
+
     PhiInstVal,
     
     IntLiteralVal,
@@ -51,8 +55,9 @@ enum class ValueKind : uint32_t
 class Value
 {
 public:
-    Value(ValueKind kind, std::string_view name = "") :
+    Value(ValueKind kind, TypeID type_id = no_type, std::string_view name = "") :
         kind_{ kind },
+        type_id_{ type_id },
         name_{ name },
         use_list_{ },
         parent_{ nullptr } {}
@@ -84,6 +89,12 @@ public:
         return kind_;
     }
 
+    TypeID get_type_id()
+    {
+        assert(type_id_ != no_type);
+        return type_id_;
+    }
+
     std::string get_name() const
     {
         return name_;
@@ -96,6 +107,7 @@ public:
 
 protected:
     ValueKind kind_;
+    TypeID type_id_;
     std::string name_;
     std::vector<Value*> use_list_;
     Value* parent_;
@@ -108,16 +120,18 @@ concept DerivedFromValue = std::derived_from<T, Value>;
 // ***************** LITERALS *****************
 
 
+// types are wrong here
 struct Literal : Value
 {
     std::variant<int64_t, double> data_;
 
+    // this will cause error mismatch between accepted literal and internal type
     Literal(int64_t v) : 
-        Value{ValueKind::IntLiteralVal, std::to_string(v)},
+        Value{ValueKind::IntLiteralVal, INT32, std::to_string(v)+"L"},
         data_{ v } {}
 
     Literal(double v) : 
-        Value{ValueKind::FloatLiteralVal, std::to_string(v)},
+        Value{ValueKind::FloatLiteralVal, FLOAT32, std::to_string(v)+"L"},
         data_{ v } {}
 };
 
@@ -131,12 +145,14 @@ struct Instruction : public Value
 
     Instruction(ValueKind kind,
                 std::initializer_list<Value*> operands,
+                TypeID type_id = no_type,
                 std::string_view name = "")
-        : Value{kind, name}
+        : Value{kind, type_id, name}
     {
         operands_ = operands;
-        for (auto* operand : operands_)
+        for (auto* operand : operands_) {
             operand->add_use(this);
+        }
     }
 };
 
@@ -145,17 +161,14 @@ concept DerivedFromInstruction = std::derived_from<T, Instruction>;
 
 struct AllocaInst : Instruction
 {
-    TypeID type_id_;
-
     AllocaInst(TypeID type_id, std::string_view name) :
-        Instruction{ValueKind::AllocaInstVal, {}, name},
-        type_id_{ type_id } {}
+        Instruction{ValueKind::AllocaInstVal, {}, type_id, name} {}
 };
 
 struct LoadInst : Instruction
 {
-    LoadInst(Value* ptr) :
-        Instruction{ValueKind::LoadInstVal, {ptr}} {}
+    LoadInst(TypeID type_id, Value* ptr) :
+        Instruction{ValueKind::LoadInstVal, {ptr}, type_id} {}
 };
 
 struct StoreInst : Instruction
@@ -209,9 +222,23 @@ struct SltInst : Instruction
 // should inherit from value instead of instruction? because of the std::pair<value, block> operands?
 struct PhiInst : Instruction
 {
-    // std::initializer_list<std::pair<Value*, BasicBlock*>> [value, block], [value, block], ...
+    // std::initializer_list<std::pair<Value*, BasicBlock*>> [value, block], [value, block], ... 
 };
 
+
+// ***************** PTROFFSET *****************
+
+
+// don't need to type this instruction,
+// it is just an opaque ptr, we know what it means from itself and first operand
+
+// essentially just index / address calculation
+
+struct PtrOffset : Instruction
+{
+    PtrOffset(Value* ptr, Value* offset) :
+        Instruction{ValueKind::PtrOffsetVal, {ptr, offset}} {}
+};
 
 // ***************** BASIC BLOCK *****************
 
@@ -221,7 +248,7 @@ struct Terminator;
 struct BasicBlock : Value
 {
     BasicBlock(std::string_view name = "") :
-        Value{ValueKind::BasicBlockVal, name} {}
+        Value{ValueKind::BasicBlockVal, no_type, name} {}
 
     template <DerivedFromInstruction T>
     Instruction* insert(std::unique_ptr<T> value)
@@ -241,7 +268,7 @@ struct BasicBlock : Value
 
     auto predecessors()
     {
-        return use_list_ | std::views::transform([](Value* value) { return value->get_parent(); });
+        return users() | std::views::transform([](Value* value) { return value->get_parent(); });
     }
 
 private:
@@ -258,6 +285,10 @@ struct Terminator : Instruction
 {
     TerminatorKind terminator_kind_;   
 
+    // is Value* and BasicBlock* overload dangerous? Will Value* always be matched?
+    // is this where a dyn_cast<T> is appropriate? would that work though with Terminator = T?
+    // actual dynamic_cast?
+
     Terminator(Value* value) :
         Instruction{ValueKind::TerminatorVal, { value }},
         terminator_kind_{ TerminatorKind::Return } {}
@@ -270,16 +301,24 @@ struct Terminator : Instruction
         Instruction{ValueKind::TerminatorVal, {cond, static_cast<Value*>(bb_true), static_cast<Value*>(bb_false)}},
         terminator_kind_{ TerminatorKind::CondBranch } {}
 
+    // this feels wrong to enforce correct polymorphic behavior with assert(tag)?
+
     auto* condition()
     {   
         assert(terminator_kind_ == TerminatorKind::CondBranch);
+
         return operands_[0];
     }   
 
     auto targets()
     {
         assert(terminator_kind_ != TerminatorKind::Return);
-        return operands_ | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value); });
+ 
+        auto operands = terminator_kind_ == TerminatorKind::CondBranch ?
+            operands_ | std::views::drop(1) :
+            operands_ | std::views::drop(0);
+
+        return operands | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value); });
     }
 };
 
@@ -307,8 +346,10 @@ struct Argument : Value
 // function use list is updated during call
 struct Function : Value
 {
-    std::vector<std::unique_ptr<Argument>> args_;
-    std::vector<std::unique_ptr<BasicBlock>> blocks_;
+    std::list<std::unique_ptr<Argument>> args_;
+    std::list<std::unique_ptr<BasicBlock>> blocks_;
+    IR::Value* return_value_ = nullptr;
+    IR::BasicBlock* return_block_ = nullptr;
 
     Function() :
         Value{ ValueKind::FunctionVal } {}
@@ -328,11 +369,47 @@ struct Function : Value
         args_.push_back(std::move(arg));
         return ptr;
     }
+
+    void initialize_return(IR::Value* return_value, IR::BasicBlock* return_block)
+    {
+        return_value_ = return_value;
+        return_block_ = return_block;
+    }
 };
 
 
 // ***************** PROGRAM *****************
 
+
+// THIS DOES NOT BELONG HERE
+
+class ConstantPool
+{
+public:
+    template <typename T>
+    auto try_insert(T literal)
+    {
+        return get_container<T>().try_emplace(literal, std::make_unique<IR::Literal>(literal));
+    }
+
+private:
+    std::unordered_map<int64_t, std::unique_ptr<IR::Literal>> integer_pool_;
+    std::unordered_map<double, std::unique_ptr<IR::Literal>> float_pool_;
+    std::unordered_map<std::string, std::unique_ptr<IR::Literal>> string_pool_;
+
+    template <typename T>
+    auto& get_container()
+    {
+        if constexpr (std::same_as<T, int64_t>)
+            return integer_pool_;
+        else if constexpr (std::same_as<T, double>)
+            return float_pool_;
+        else if constexpr (std::same_as<T, std::string>)
+            return string_pool_;
+        else
+            static_assert(always_false_v<T>, "T is not an internable type_id");
+    }
+};
 
 class Program
 {
@@ -349,8 +426,14 @@ public:
         return functions_;
     }
 
+    auto& constants()
+    {
+        return constant_pool_;
+    }
+
 private:
-    std::vector<std::unique_ptr<Function>> functions_;
+    std::list<std::unique_ptr<Function>> functions_;
+    ConstantPool constant_pool_;
 };
 
 
