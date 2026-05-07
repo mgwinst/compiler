@@ -476,9 +476,9 @@ std::string PrettyPrinter::ir_value_to_str(IR::Value* value) const
             return std::format("%{} = slt %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
         }
 
-        case IR::ValueKind::PtrOffsetVal: {
-            auto* inst = static_cast<IR::PtrOffset*>(value);
-            return std::format("%{} = PtrOffset %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
+        case IR::ValueKind::PtrAddVal: {
+            auto* inst = static_cast<IR::PtrAdd*>(value);
+            return std::format("%{} = ptradd %{}, %{}", inst->get_name(), inst->operands_[0]->get_name(), inst->operands_[1]->get_name());
         };
 
         case IR::ValueKind::TerminatorVal: {

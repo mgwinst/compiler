@@ -19,6 +19,9 @@ void test()
         PrettyPrinter printer{ ctx };
         printer.print(sema_tree);
         printer.print(program);
+
+        std::println();
+
     }
 }
 

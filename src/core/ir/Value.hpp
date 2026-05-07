@@ -1,17 +1,19 @@
 #pragma once
 
-#include <cstdint>
-#include <memory>
 #include <initializer_list>
-#include <vector>
 #include <string_view>
+#include <cstdint>
 #include <concepts>
+#include <memory>
+#include <vector>
 #include <list>
 #include <string>
 #include <ranges>
+#include <cassert>
 
 #include "../utils/alias.hpp"
 #include "../utils/utils.hpp"
+#include "../frontend/sema/types/types.hpp"
 
 inline constexpr TypeID no_type = -1;
 
@@ -36,7 +38,7 @@ enum class ValueKind : uint32_t
     NeInstVal,
     SltInstVal,
 
-    PtrOffsetVal,
+    PtrAddVal,
 
     PhiInstVal,
     
@@ -86,6 +88,7 @@ public:
 
     ValueKind get_kind() const 
     {
+        assert(kind_ != ValueKind::Invalid);
         return kind_;
     }
 
@@ -226,7 +229,7 @@ struct PhiInst : Instruction
 };
 
 
-// ***************** PTROFFSET *****************
+// ***************** PTRADD *****************
 
 
 // don't need to type this instruction,
@@ -234,11 +237,12 @@ struct PhiInst : Instruction
 
 // essentially just index / address calculation
 
-struct PtrOffset : Instruction
+struct PtrAdd : Instruction
 {
-    PtrOffset(Value* ptr, Value* offset) :
-        Instruction{ValueKind::PtrOffsetVal, {ptr, offset}} {}
+    PtrAdd(Value* ptr, Value* offset) :
+        Instruction{ValueKind::PtrAddVal, {ptr, offset}} {}
 };
+
 
 // ***************** BASIC BLOCK *****************
 
@@ -268,7 +272,7 @@ struct BasicBlock : Value
 
     auto predecessors()
     {
-        return users() | std::views::transform([](Value* value) { return value->get_parent(); });
+        return users() | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value->get_parent()); });
     }
 
 private:
@@ -301,6 +305,7 @@ struct Terminator : Instruction
         Instruction{ValueKind::TerminatorVal, {cond, static_cast<Value*>(bb_true), static_cast<Value*>(bb_false)}},
         terminator_kind_{ TerminatorKind::CondBranch } {}
 
+
     // this feels wrong to enforce correct polymorphic behavior with assert(tag)?
 
     auto* condition()
@@ -329,7 +334,12 @@ inline Terminator* BasicBlock::get_terminator()
 
 inline auto BasicBlock::successors()
 {
-    return get_terminator()->targets();
+    auto t = get_terminator();
+
+    if (t->terminator_kind_ == TerminatorKind::Return)
+        return std::vector<BasicBlock*>{};
+    else
+        return t->targets() | std::ranges::to<std::vector<BasicBlock*>>();
 }
 
 
@@ -422,6 +432,11 @@ public:
     }
 
     const auto& functions() const
+    {
+        return functions_;
+    }
+
+    auto& functions()
     {
         return functions_;
     }

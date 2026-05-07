@@ -1,4 +1,8 @@
-fn add(x: int) -> int
+fn max(a: int, b: int) -> int
 {
-    return x + 10;
+    var max: int = a;
+    if (a < b) {
+        max = b;
+    }
+    return max;
 }

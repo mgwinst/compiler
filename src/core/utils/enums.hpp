@@ -155,6 +155,7 @@ enum class ImplicitCastKind
 
 enum class BinaryOp
 {
+    Invalid,
     Assign,
     Add,
     Sub,

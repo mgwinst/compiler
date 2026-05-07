@@ -53,7 +53,7 @@ private:
     IR::Instruction* create_ret(IR::Value* src, IR::BasicBlock* block = nullptr);
     IR::Instruction* create_br(IR::BasicBlock* target, IR::BasicBlock* block = nullptr);
     IR::Instruction* create_br(IR::Value* cond, IR::BasicBlock* target1, IR::BasicBlock* target2, IR::BasicBlock* block = nullptr);
-    IR::Instruction* create_ptr_offset(IR::Value* base_ptr, IR::Value* index, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_ptradd(IR::Value* base_ptr, IR::Value* index, IR::BasicBlock* block = nullptr);
     
     IR::Function* current_function() const;
     IR::BasicBlock* current_block() const;

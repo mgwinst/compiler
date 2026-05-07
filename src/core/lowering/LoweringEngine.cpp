@@ -183,7 +183,7 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
             auto* right = lower(binary.right_);
 
             const BinaryOp op = binary_ops[binary.op_];
-            // assert(op != BinaryOp::invalid);
+            assert(op != BinaryOp::Invalid);
 
             switch (op) {
                 case BinaryOp::Assign: return create_store(left, right);
@@ -196,9 +196,7 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
                 case BinaryOp::Slt:    return create_slt(left, right);
 
                 default:
-                    std::println("binary op error");
-                    std::terminate();
-
+                    error_exit("binary op error");
             }
         }
 
@@ -224,7 +222,7 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
             // assert type is ptr or record
             auto* base_ptr = get_value(base);
 
-            return create_ptr_offset(base_ptr, index);
+            return create_ptradd(base_ptr, index);
         };
 
         case SemaNodeKind::ArraySubscriptExpr: {
@@ -236,7 +234,7 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
 
             auto* index = lower(expr.index_);
 
-            return create_ptr_offset(base_ptr, index);
+            return create_ptradd(base_ptr, index);
         }
 
         case SemaNodeKind::InitListExpr: {
@@ -351,9 +349,9 @@ IR::Instruction* LoweringEngine::create_br(IR::Value* cond, IR::BasicBlock* targ
     return create<IR::Terminator>(block, cond, target1, target2);
 }
 
-IR::Instruction* LoweringEngine::create_ptr_offset(IR::Value* base_ptr, IR::Value* index, IR::BasicBlock* block)
+IR::Instruction* LoweringEngine::create_ptradd(IR::Value* base_ptr, IR::Value* index, IR::BasicBlock* block)
 {
-    return create<IR::PtrOffset>(block, base_ptr, index);
+    return create<IR::PtrAdd>(block, base_ptr, index);
 }
 
 IR::Function* LoweringEngine::current_function() const 

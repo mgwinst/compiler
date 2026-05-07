@@ -1,0 +1,7 @@
+plan:
+    - cooper harvey kennedy dominance algorithm
+    - mem2reg (promote memory alloca/load/store to registers)
+    - SROA (picks up work mem2reg can't do) (optional? maybe skip for now)
+    - optimizations (SCCP -> GVN -> DCE -> LICM/unrolling) (first 3 are top priority)
+    - SSA destruction? (or keep in SSA?)
+    - pre-ra schedule -> register allocation -> post-ra schedule

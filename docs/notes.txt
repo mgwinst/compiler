@@ -1,31 +1,16 @@
-mem2reg -> promote memory to SSA registers
-    - alloca slots that are promotable
-
-type based alias analysi
+type based alias analysis:
     - float* and int* won't ever alias (can reorder)
     - foo* and bar* same thing (both called noalias)
     - int* and int* (may alias)
     - if no subtyping or inheritance (no common ancestor type node check?)
     
-memorySSA
+memorySSA:
     - memorydef
     - memoryuse
     - memoryphi
 
-escape analyis
+escape analyis:
 
-SROA (scalar replacement of aggregates)
+SROA (scalar replacement of aggregates):
     - break down small aggregates (structs / arrays) into individual scalar components
     - fields can be stored in registers instead of memory
-
-
-
-
-
-current plan:
-    - mem2reg
-    - SROA (picks up work mem2reg can't do)
-
-
-
-
