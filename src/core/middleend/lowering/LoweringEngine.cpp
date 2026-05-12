@@ -1,10 +1,10 @@
-#include <ranges>
 #include <unordered_map>
 #include <string_view>
+#include <ranges>
 #include <utility>
 
 #include "LoweringEngine.hpp"
-#include "../utils/enums.hpp"
+#include "../../utils/enums.hpp"
 
 IR::Program LoweringEngine::run()
 {
@@ -109,14 +109,22 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
             auto* cond = lower(if_stmt.cond_);
 
             auto* if_then_block = create_basic_block("if.then");
+            auto* if_else_block = create_basic_block("if.else");
             auto* if_end_block = create_basic_block("if.end");
 
             set_current_block(if_then_block);
             lower(if_stmt.then_stmt_);      
             create_br(if_end_block);
 
+            if (if_stmt.else_stmt_.has_value()) {
+                set_current_block(if_else_block);
+                lower(*if_stmt.else_stmt_);
+                create_br(if_end_block);
+            }
+
             set_current_block(starting_block);
-            create_br(cond, if_then_block, if_end_block);
+
+            create_br(cond, if_then_block, if_else_block);
             
             set_current_block(if_end_block);
 

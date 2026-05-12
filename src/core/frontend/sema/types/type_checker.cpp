@@ -82,7 +82,13 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
             }
 
             check_type(ifstmt.then_stmt_); // check types in body, then_stmt -> if body
+            
+            if (ifstmt.else_stmt_.has_value()) {
+                check_type(*ifstmt.else_stmt_);
+            }
 
+            // else doesn't have a type
+            /*
             if (ifstmt.else_stmt_) {
                 auto else_cond_type_id = check_type(*ifstmt.else_stmt_);
                 if (else_cond_type_id == ERROR_TYPE) return ERROR_TYPE;
@@ -93,6 +99,7 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
                     return ERROR_TYPE;
                 }
             }
+            */
 
             return std::nullopt;
         }

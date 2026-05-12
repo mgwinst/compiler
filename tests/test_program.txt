@@ -1,8 +1,10 @@
-fn max(a: int, b: int) -> int
+fn func() -> void
 {
-    var max: int = a;
-    if (a < b) {
-        max = b;
-    }
-    return max;
+    var x: int;
+    x = 3;
+    x = 4;
 }
+
+
+
+

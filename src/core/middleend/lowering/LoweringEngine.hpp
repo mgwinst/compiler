@@ -1,11 +1,11 @@
 #include <ranges>
 #include <stack>
 
-#include "../context/context.hpp"
-#include "../frontend/sema/sematree.hpp"
+#include "../../context/context.hpp"
+#include "../../frontend/sema/sematree.hpp"
 #include "../ir/Value.hpp"
-#include "../utils/alias.hpp"
-#include "../utils/casting.hpp"
+#include "../../utils/alias.hpp"
+#include "../../utils/casting.hpp"
 
 struct LoopContext
 {

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../ir/Value.hpp"
+#include "../middleend/ir/Value.hpp"
 
 using namespace IR;
 
@@ -36,9 +36,22 @@ bool isa(Value* value)
 }
 
 template <typename T>
+T* dyn_cast(const std::unique_ptr<Value>& value)
+{
+    if (value->get_kind() == value_kind_v<T>)
+        return static_cast<T*>(value.get());
+    return nullptr;
+}
+
+template <typename T>
 T* dyn_cast(Value* value)
 {
     if (value->get_kind() == value_kind_v<T>)
         return static_cast<T*>(value);
     return nullptr;
+}
+
+inline bool is_instruction(Value* value) 
+{
+    return value->get_kind() >= ValueKind::AllocaInstVal && value->get_kind() <= ValueKind::TerminatorVal;
 }

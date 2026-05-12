@@ -10,7 +10,31 @@ memorySSA:
     - memoryphi
 
 escape analyis:
+    - if the address of alloca escapes at ANY point in the function
+      we should treat the alloca unsafe for promotion / deletion
+
+    - for each alloca, walk it's uses recursively and look for
+      store of the alloca ptr, or gep of it into memory or another variable,
+      plain gep or other ptr escapes
+
+    - 
+
 
 SROA (scalar replacement of aggregates):
     - break down small aggregates (structs / arrays) into individual scalar components
     - fields can be stored in registers instead of memory
+
+
+pre-SSA memory op cleanup:
+    - find alloca's that don't escape
+    - walk over function and compute index for all instructions (densemap)
+
+    - pre-compute GEN[B] and KILL[B] per block
+        - GEN[B] -> true if there is a load that is not preceded by a store
+          to that alloca in this block (no store between block entry and load)
+        - KILL[B] -> true if there is at least one store to the alloca anywhere
+          in the block
+
+
+    - live[B] = bitset<N>
+       

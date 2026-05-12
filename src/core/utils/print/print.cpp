@@ -443,7 +443,7 @@ std::string PrettyPrinter::ir_value_to_str(IR::Value* value) const
 
         case IR::ValueKind::LoadInstVal: {
             auto* inst = static_cast<IR::LoadInst*>(value);
-            return std::format("%{} = load, %{}", inst->get_name(), inst->operands_[0]->get_name());
+            return std::format("%{} = load %{}", inst->get_name(), inst->operands_[0]->get_name());
         }
 
         case IR::ValueKind::StoreInstVal: {

@@ -3,7 +3,7 @@
 #include "../context/context.hpp"
 #include "../frontend/ast/ast.hpp"
 #include "../frontend/sema/sematree.hpp"
-#include "../ir/Value.hpp"
+#include "../middleend/ir/Value.hpp"
 
 AST parse(SourceFile& source_file);
 SemaTree decorate(ModuleContext& ctx, const AST& ast);

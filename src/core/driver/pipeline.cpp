@@ -4,7 +4,7 @@
 #include "../frontend/sema/sema_tree_builder.hpp"
 #include "../frontend/sema/desugar.hpp"
 #include "../frontend/sema/types/type_checker.hpp"
-#include "../lowering/LoweringEngine.hpp"
+#include "../middleend/lowering/LoweringEngine.hpp"
 
 inline void report(const Diagnostics& diag)
 {

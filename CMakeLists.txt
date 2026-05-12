@@ -18,7 +18,7 @@ add_library(compiler_lib STATIC
     src/core/frontend/sema/sema_tree_builder.cpp
     src/core/frontend/sema/symbol.cpp
     src/core/frontend/sema/desugar.cpp
-    src/core/lowering/LoweringEngine.cpp
+    src/core/middleend/lowering/LoweringEngine.cpp
     src/core/utils/print/print.cpp
 )
 

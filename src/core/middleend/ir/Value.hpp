@@ -11,9 +11,9 @@
 #include <ranges>
 #include <cassert>
 
-#include "../utils/alias.hpp"
-#include "../utils/utils.hpp"
-#include "../frontend/sema/types/types.hpp"
+#include "../../utils/alias.hpp"
+#include "../../utils/utils.hpp"
+#include "../../frontend/sema/types/types.hpp"
 
 inline constexpr TypeID no_type = -1;
 
@@ -26,10 +26,9 @@ enum class ValueKind : uint32_t
     BasicBlockVal,
     ArgumentVal,
 
-    // Instruction, instead testing if value, is instruction should be an enum range check
     AllocaInstVal,
-    StoreInstVal,
     LoadInstVal,
+    StoreInstVal,
     AddInstVal,
     SubInstVal,
     MulInstVal,
@@ -37,15 +36,13 @@ enum class ValueKind : uint32_t
     EqInstVal,
     NeInstVal,
     SltInstVal,
-
     PtrAddVal,
-
     PhiInstVal,
+    TerminatorVal, // is instruction
     
     IntLiteralVal,
     FloatLiteralVal,
 
-    TerminatorVal,
 };
 
 
