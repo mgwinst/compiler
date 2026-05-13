@@ -1,11 +1,7 @@
 fn func() -> void
 {
     var a: int;
-    var b: int;
 
-    a = a + b;
+    a = 5;
+    a = 5;
 }
-
-
-
-

@@ -40,6 +40,7 @@ enum class ValueKind : uint32_t
     PhiInstVal,
     TerminatorVal, // is instruction
     
+    // LiteralVal
     IntLiteralVal,
     FloatLiteralVal,
 };
@@ -159,10 +160,11 @@ struct Instruction : public Value
         }
     }
 
-    virtual ~Instruction() override
+    ~Instruction() override
     {
         for (auto* operand : operands_) {
-            std::erase(operand->users(), this);
+            if (operand)
+                std::erase(operand->users(), this);
         }
     }
 };
@@ -261,6 +263,13 @@ struct BasicBlock : Value
 {
     BasicBlock(std::string_view name = "") :
         Value{ValueKind::BasicBlockVal, no_type, name} {}
+    
+    ~BasicBlock() override
+    {
+        while (!instructions_.empty()) {
+            instructions_.pop_back();
+        }
+    }
 
     template <DerivedFromInstruction T>
     Instruction* insert(std::unique_ptr<T> value)
@@ -418,18 +427,12 @@ public:
 
 private:
     std::unordered_map<int64_t, std::unique_ptr<IR::Literal>> integer_pool_;
-    std::unordered_map<double, std::unique_ptr<IR::Literal>> float_pool_;
-    std::unordered_map<std::string, std::unique_ptr<IR::Literal>> string_pool_;
 
     template <typename T>
     auto& get_container()
     {
         if constexpr (std::same_as<T, int64_t>)
             return integer_pool_;
-        else if constexpr (std::same_as<T, double>)
-            return float_pool_;
-        else if constexpr (std::same_as<T, std::string>)
-            return string_pool_;
         else
             static_assert(always_false_v<T>, "T is not an internable type_id");
     }
@@ -461,8 +464,8 @@ public:
     }
 
 private:
-    std::list<std::unique_ptr<Function>> functions_;
     ConstantPool constant_pool_;
+    std::list<std::unique_ptr<Function>> functions_;
 };
 
 

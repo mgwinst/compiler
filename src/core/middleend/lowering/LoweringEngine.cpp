@@ -165,8 +165,7 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
         }
 
         case SemaNodeKind::FloatLiteralExpr: {
-            const auto& float_literal = node.as<Sema::FloatLiteralExpr>();
-            return intern_literal(float_literal.value_);
+            return nullptr;
         }
 
         case SemaNodeKind::CharLiteralExpr: {
@@ -194,11 +193,20 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
             assert(op != BinaryOp::Invalid);
 
             if (op == BinaryOp::Assign) {
-                return create_store(left, create_load(right));
+                if (isa<Literal>(right))
+                    return create_store(left, right);
+                else 
+                    return create_store(left, create_load(right));
             }
 
-            create_load(left);
-            create_load(right);
+            // don't load a literal
+            // should we forward later or handle here?
+
+            if (!isa<Literal>(left))
+                left = create_load(left);
+
+            if (!isa<Literal>(right))
+                right = create_load(right);
 
             switch (op) {
                 case BinaryOp::Add:    return create_add(left, right);

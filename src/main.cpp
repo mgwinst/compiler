@@ -13,6 +13,8 @@ void test()
     for (auto& file : compiler_ctx.source_files_) {
         ModuleContext ctx;
 
+        // ctx should always be the last argument in calls
+
         AST ast = parse(file);
         SemaTree sema_tree = decorate(ctx, ast);
         type_check(ctx, sema_tree);
@@ -26,8 +28,8 @@ void test()
 
         std::println();
 
-       //  simplify(program);
-        // printer.print(program);
+        simplify(program);
+        printer.print(program);
         
     }
 }
