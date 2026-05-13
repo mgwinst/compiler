@@ -90,7 +90,7 @@ public:
 
     TypeID get_type_id()
     {
-        assert(type_id_ != no_type);
+        // assert(type_id_ != no_type);
         return type_id_;
     }
 

@@ -41,7 +41,8 @@ private:
     IR::Argument* create_arg(std::string_view name = "");
     IR::Literal* create_literal(auto literal);
     IR::Instruction* create_alloca(TypeID type_id, std::string_view name, IR::BasicBlock* block = nullptr);
-    IR::Instruction* create_load(TypeID type_id, IR::Value* ptr, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_load(IR::Value* ptr, IR::BasicBlock* block = nullptr);
+    IR::Instruction* create_load(TypeID target_type_id, IR::Value* ptr, IR::BasicBlock* block = nullptr);
     IR::Instruction* create_store(IR::Value* dst, IR::Value* src, IR::BasicBlock* block = nullptr);
     IR::Instruction* create_add(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block = nullptr);
     IR::Instruction* create_sub(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block = nullptr);

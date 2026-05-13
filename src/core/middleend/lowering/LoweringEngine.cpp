@@ -193,8 +193,14 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
             const BinaryOp op = binary_ops[binary.op_];
             assert(op != BinaryOp::Invalid);
 
+            if (op == BinaryOp::Assign) {
+                return create_store(left, create_load(right));
+            }
+
+            create_load(left);
+            create_load(right);
+
             switch (op) {
-                case BinaryOp::Assign: return create_store(left, right);
                 case BinaryOp::Add:    return create_add(left, right);
                 case BinaryOp::Sub:    return create_sub(left, right);
                 case BinaryOp::Mul:    return create_mul(left, right);
@@ -208,9 +214,11 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
             }
         }
 
+        // what about a = b; We don't want to create a load for 'a' (left of assign)
         case SemaNodeKind::ReferenceExpr: {
             const auto& ref = node.as<Sema::ReferenceExpr>();
-            return create_load(ref.type_id_, get_value(ref));
+            return get_value(ref);
+            // return create_load(get_value(ref));
         }
 
         case SemaNodeKind::CallExpr: {
@@ -297,10 +305,16 @@ IR::Instruction* LoweringEngine::create_alloca(TypeID type_id, std::string_view 
     return block->insert(std::move(alloca));
 }
 
-IR::Instruction* LoweringEngine::create_load(TypeID type_id, IR::Value* ptr, IR::BasicBlock* block)
+IR::Instruction* LoweringEngine::create_load(IR::Value* ptr, IR::BasicBlock* block)
 {
-    return create<IR::LoadInst>(block, type_id, ptr);
+    return create<IR::LoadInst>(block, ptr->get_type_id(), ptr);
 }
+
+IR::Instruction* LoweringEngine::create_load(TypeID target_type_id, IR::Value* ptr, IR::BasicBlock* block)
+{
+    return create<IR::LoadInst>(block, target_type_id, ptr);
+}
+
 
 IR::Instruction* LoweringEngine::create_store(IR::Value* dst, IR::Value* src, IR::BasicBlock* block)
 {

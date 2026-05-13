@@ -1,12 +1,9 @@
 fn func() -> void
 {
-    var x: int;
-    var y: int;
-    var z: int;
+    var a: int;
+    var b: int;
 
-    x + 3;
-
-    x = 5;
+    a = a + b;
 }
 
 

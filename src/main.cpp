@@ -26,8 +26,8 @@ void test()
 
         std::println();
 
-        simplify(program);
-        printer.print(program);
+       //  simplify(program);
+        // printer.print(program);
         
     }
 }

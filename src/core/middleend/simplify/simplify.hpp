@@ -103,7 +103,7 @@ inline std::unordered_set<AllocaInst*> non_escaping_allocas(const std::unique_pt
 // return
 // call
 
-inline bool may_have_side_effect(std::unique_ptr<Instruction>& inst)
+inline bool may_have_side_effect(const std::unique_ptr<Instruction>& inst)
 {
     switch (inst->get_kind()) {
         case ValueKind::StoreInstVal: // mutating memory state is a side effect
@@ -139,4 +139,5 @@ inline void trivial_dce(Program& program)
 inline void simplify(Program& program)
 {
     trivial_dce(program);
+    // remove dead blocks
 }
