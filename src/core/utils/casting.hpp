@@ -23,35 +23,50 @@ template <> inline constexpr ValueKind value_kind_v<SltInst>    = ValueKind::Slt
 template <> inline constexpr ValueKind value_kind_v<PhiInst>    = ValueKind::PhiInstVal;
 template <> inline constexpr ValueKind value_kind_v<Terminator> = ValueKind::TerminatorVal;
 
-template <typename T>
-bool isa(const std::unique_ptr<Value>& value)
+template <typename T, DerivedFromValue V>
+bool isa(const std::unique_ptr<V>& value)
 {
     return value->get_kind() == value_kind_v<T>;
 }
 
-template <typename T>
-bool isa(Value* value)
+template <typename T, DerivedFromValue V>
+bool isa(V* value)
 {
     return value->get_kind() == value_kind_v<T>;
 }
 
-template <typename T>
-T* dyn_cast(const std::unique_ptr<Value>& value)
+template <typename T, DerivedFromValue V>
+T* dyn_cast(const std::unique_ptr<V>& value)
 {
+    if (!value)
+        return nullptr;
+
     if (value->get_kind() == value_kind_v<T>)
         return static_cast<T*>(value.get());
+
     return nullptr;
 }
 
-template <typename T>
-T* dyn_cast(Value* value)
+template <typename T, DerivedFromValue V>
+T* dyn_cast(V* value)
 {
+    if (!value)
+        return nullptr;
+
     if (value->get_kind() == value_kind_v<T>)
         return static_cast<T*>(value);
+
     return nullptr;
 }
 
-inline bool is_instruction(Value* value) 
+template <DerivedFromValue V>
+bool is_instruction(std::unique_ptr<V>& value) 
+{
+    return value->get_kind() >= ValueKind::AllocaInstVal && value->get_kind() <= ValueKind::TerminatorVal;
+}
+
+template <DerivedFromValue V>
+bool is_instruction(V* value) 
 {
     return value->get_kind() >= ValueKind::AllocaInstVal && value->get_kind() <= ValueKind::TerminatorVal;
 }

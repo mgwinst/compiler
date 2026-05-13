@@ -13,7 +13,6 @@
 
 #include "../../utils/alias.hpp"
 #include "../../utils/utils.hpp"
-#include "../../frontend/sema/types/types.hpp"
 
 inline constexpr TypeID no_type = -1;
 
@@ -36,13 +35,13 @@ enum class ValueKind : uint32_t
     EqInstVal,
     NeInstVal,
     SltInstVal,
+    CallInstVal, // add struct
     PtrAddVal,
     PhiInstVal,
     TerminatorVal, // is instruction
     
     IntLiteralVal,
     FloatLiteralVal,
-
 };
 
 
@@ -105,6 +104,11 @@ public:
         return parent_;
     }
 
+    bool no_users() const
+    {
+        return use_list_.empty();
+    }
+
 protected:
     ValueKind kind_;
     TypeID type_id_;
@@ -152,6 +156,13 @@ struct Instruction : public Value
         operands_ = operands;
         for (auto* operand : operands_) {
             operand->add_use(this);
+        }
+    }
+
+    virtual ~Instruction() override
+    {
+        for (auto* operand : operands_) {
+            std::erase(operand->users(), this);
         }
     }
 };
@@ -267,13 +278,14 @@ struct BasicBlock : Value
 
     auto successors();
 
+    // inheritance should be private so that you can't call users() on a basic block ptr
     auto predecessors()
     {
         return users() | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value->get_parent()); });
     }
 
 private:
-    std::list<std::unique_ptr<Value>> instructions_;
+    std::list<std::unique_ptr<Instruction>> instructions_;
 
     Terminator* get_terminator();
 };
@@ -321,6 +333,11 @@ struct Terminator : Instruction
             operands_ | std::views::drop(0);
 
         return operands | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value); });
+    }
+
+    bool is_return() const 
+    {
+        return terminator_kind_ == TerminatorKind::Return;
     }
 };
 

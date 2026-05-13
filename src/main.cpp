@@ -26,7 +26,7 @@ void test()
 
         std::println();
 
-        // dce(program);
+        simplify(program);
         printer.print(program);
         
     }
