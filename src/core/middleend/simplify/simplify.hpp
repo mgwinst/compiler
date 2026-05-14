@@ -47,6 +47,7 @@ inline bool escapes_via(Value* value, Value* target, std::unordered_set<Value*>&
             if (term->is_return()) {
                 return term->operands_[0] == target; // this is okay because this case is checking for returning the alloca itself, not a load of hte alloca, otherwise this operand would be a load instruction, not the alloca. the lowering engine will handle this case
             }
+            return false;
         }
 
         case ValueKind::PtrAddVal: {
@@ -58,6 +59,7 @@ inline bool escapes_via(Value* value, Value* target, std::unordered_set<Value*>&
                     }
                 }
             }
+            return false;
         }
 
         // call(&alloca) ... 
@@ -76,7 +78,6 @@ inline bool escapes(AllocaInst* alloca)
         if (escapes_via(use, alloca, v)) {
             return true;
         }
-        v.clear();
     }
 
     return false;
@@ -85,7 +86,7 @@ inline bool escapes(AllocaInst* alloca)
 inline std::unordered_set<AllocaInst*> non_escaping_allocas(const std::unique_ptr<Function>& f)
 {
     std::unordered_set<AllocaInst*> allocas;
-    for (auto* block : reverse_post_order(f)) {
+    for (auto& block : f->blocks_) {
         for (auto& inst : block->instruction_list()) {
             if (auto* alloca = dyn_cast<AllocaInst>(inst)) {
                 if (escapes(alloca) == false) {
@@ -135,9 +136,82 @@ inline void trivial_dce(Program& program)
     }
 }
 
+// remove dead stores (delete a store when there is another store after in same block with no load between them)
+
+// store(%x, val)
+// store(%x, val)
+// load(%x)
+// store(%x, val)
+// store(%x, val)
+
+
+template <typename T>
+concept LoadOrStore = std::same_as<T, LoadInst> || std::same_as<T, StoreInst>;
+
+inline bool targets_same_alloca(LoadOrStore auto* inst1, LoadOrStore auto* inst2)
+{
+    return inst1->operands_[0] == inst2->operands_[0];
+}
+
+inline AllocaInst* get_alloca_operand(LoadOrStore auto* inst)
+{
+    if (inst) {
+        return dyn_cast<AllocaInst>(inst->operands_[0]);
+    }
+
+
+    return nullptr;
+}
+
+/*
+
+if store(x)
+    if x in last_store
+        mark_delete(inst)
+    last_store[x] = inst
+
+if load(x)
+    last_store.erase(x)
+    
+*/
+
+inline void remove_dead_stores(Program& program)
+{   
+    for (auto& f : program.functions()) {
+        auto alloca_set = non_escaping_allocas(f);
+        for (auto& block : f->blocks_) {
+            std::unordered_map<AllocaInst*, StoreInst*> last_store;
+            std::vector<StoreInst*> to_delete;
+            for (auto& inst : std::views::reverse(block->instruction_list())) {
+                if (auto* store = dyn_cast<StoreInst>(inst)) {
+                    auto* a = get_alloca_operand(store);
+                    if (alloca_set.contains(a)) {
+                        if (last_store.contains(a)) {
+                            to_delete.push_back(store);
+                        }
+                        last_store[a] = store;
+                    }
+                } else if (auto* load = dyn_cast<LoadInst>(inst)) {
+                    auto* a = get_alloca_operand(load);
+                    if (alloca_set.contains(a)) {
+                        last_store.erase(a);
+                    }
+                }
+            }
+
+            block->instruction_list().remove_if([&to_delete](std::unique_ptr<Instruction>& inst) {
+                return std::ranges::contains(to_delete, inst.get());
+            });
+        }
+    }
+}
+
+
 // pre-ssa simplification and cleanup
 inline void simplify(Program& program)
 {
     trivial_dce(program);
+    remove_dead_stores(program);
+
     // remove dead blocks
 }

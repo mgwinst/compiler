@@ -264,6 +264,7 @@ struct BasicBlock : Value
     BasicBlock(std::string_view name = "") :
         Value{ValueKind::BasicBlockVal, no_type, name} {}
     
+    // drop_all_references()
     ~BasicBlock() override
     {
         while (!instructions_.empty()) {
