@@ -1,22 +1,12 @@
 #pragma once
 
+#include <thread>
+
 #include "../frontend/sema/types/type_pool.hpp"
 #include "../frontend/sema/symbol.hpp"
 #include "../frontend/error/diagnostics.hpp"
 #include "../utils/utils.hpp"
-
-struct CompilerContext
-{
-    std::vector<SourceFile> source_files_;
-    // std::vector<ModuleContext> modules_;
-    // set<flags> ; if set then activate in pipeline
-
-    CompilerContext(std::vector<std::string> files, std::vector<std::string> flags)
-    {
-        for (const auto& file : files)
-            source_files_.push_back(get_source_file(file));
-    }
-};
+#include "../utils/print/print.hpp"
 
 template <typename T>
 concept ContainsSymbol = requires(T t){
@@ -43,4 +33,40 @@ struct ModuleContext
     Type& get_type(ContainsTypeID auto& node) { return type_pool_.get_type(node.type_id_); }
     const Type& get_type(TypeID type_id) const { return type_pool_.get_type(type_id); }
     Type& get_type(TypeID type_id) { return type_pool_.get_type(type_id); }
+};
+
+class CompilerContext
+{
+public:
+    CompilerContext(std::vector<std::string> modules, std::vector<std::string> flags)
+    {
+        for (const auto& module : modules)
+            modules_.push_back(get_module(module));
+
+        for (const auto& flag : flags) {
+            flags_.insert(flag);
+        }
+    }
+
+    const auto& modules() const
+    {
+        return modules_;
+    }
+
+    const auto& flags() const
+    {
+        return flags_;
+    }
+
+    uint64_t module_count() const
+    {
+        return modules_.size();
+    }
+
+private:
+    // std::vector<ModuleContext> modules_;
+
+    std::vector<Module> modules_;
+    std::unordered_set<std::string> flags_;
+
 };

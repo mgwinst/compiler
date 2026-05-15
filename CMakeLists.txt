@@ -9,7 +9,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(Boost REQUIRED)
 
 add_library(compiler_lib STATIC
-    src/core/driver/pipeline.cpp
+    src/core/driver/compile.cpp
     src/core/frontend/lexer/lexer.cpp 
     src/core/frontend/parser/parser.cpp 
     src/core/frontend/error/diagnostics.cpp

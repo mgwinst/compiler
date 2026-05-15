@@ -9,9 +9,9 @@
 #include "../../utils/alias.hpp"
 #include "../../utils/macros.hpp"
 
-Parser::Parser(SourceFile& source_file) noexcept :
-    source_file_{ source_file },
-    lexer_{ source_file.data },
+Parser::Parser(const Module& module) noexcept :
+    module_{ module },
+    lexer_{ module.data },
     ast_{ } {}
 
 const Token Parser::next_token() const noexcept
@@ -63,7 +63,7 @@ std::expected<std::string_view, Error> Parser::match(TokenType token_type) noexc
 
 void Parser::parse_compilation_unit() noexcept
 {
-    auto module = ast_.emplace<Syntax::ModuleDecl>(source_file_.file_path);
+    auto module = ast_.emplace<Syntax::ModuleDecl>(module_.file_path);
 
     eat_token();
 

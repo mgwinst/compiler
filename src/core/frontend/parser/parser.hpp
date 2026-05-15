@@ -9,13 +9,13 @@
 
 struct Parser 
 {
-    SourceFile& source_file_;
+    const Module& module_;
     Lexer lexer_;
     Token prev_token_, cur_token_;
     AST ast_;
     Diagnostics diagnostics_;
 
-    Parser(SourceFile& source_file) noexcept;
+    Parser(const Module& module) noexcept;
 
     Parser(const Parser&) = delete;
     Parser& operator=(const Parser&) = delete;

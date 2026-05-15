@@ -8,13 +8,13 @@
 #include <iterator>
 #include <print>
 
-struct SourceFile
+struct Module
 {
     std::string file_path;
     std::string data;
 };
 
-[[nodiscard]] inline SourceFile get_source_file(const std::string& file_path)
+[[nodiscard]] inline Module get_module(const std::string& file_path)
 {
     if (!std::filesystem::exists(file_path)) {
         std::println(std::cerr, "File: {} does not exist", file_path);

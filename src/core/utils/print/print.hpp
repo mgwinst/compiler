@@ -1,8 +1,9 @@
 #pragma once
 
 #include "../../frontend/sema/sematree.hpp"
-#include "../../context/context.hpp"
 #include "../../middleend/ir/Value.hpp"
+
+struct ModuleContext;
 
 // type_to_str is used in the type checker, so overload it in pretty printer
 std::string type_to_str(const ModuleContext&, TypeID type_ref);

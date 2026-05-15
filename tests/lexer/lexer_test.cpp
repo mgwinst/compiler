@@ -89,8 +89,8 @@ TokenType token_test_table[] = {
 };
 
 TEST(TestLexer, Tokens) {
-    SourceFile source_file = get_source_file("lexer/sample_tokens.txt");
-    Lexer lexer{source_file.data};
+    Module module = get_module("lexer/sample_tokens.txt");
+    Lexer lexer{module.data};
 
     int i = 0;
     while (1) {
@@ -108,8 +108,8 @@ TEST(TestLexer, Tokens) {
 
 TEST(TestLexer, GetAndPeekToken)
 {
-    SourceFile source_file = get_source_file("lexer/sample_tokens.txt");
-    Lexer lexer{source_file.data};
+    Module module = get_module("lexer/sample_tokens.txt");
+    Lexer lexer{module.data};
 
     EXPECT_EQ(lexer.get_token().type_, token_test_table[0]);
     EXPECT_EQ(lexer.peek_token().type_, token_test_table[1]);
