@@ -159,21 +159,10 @@ inline AllocaInst* get_alloca_operand(LoadOrStore auto* inst)
         return dyn_cast<AllocaInst>(inst->operands_[0]);
     }
 
-
     return nullptr;
 }
 
-/*
-
-if store(x)
-    if x in last_store
-        mark_delete(inst)
-    last_store[x] = inst
-
-if load(x)
-    last_store.erase(x)
-    
-*/
+// clean this up
 
 inline void remove_dead_stores(Program& program)
 {   
@@ -206,12 +195,15 @@ inline void remove_dead_stores(Program& program)
     }
 }
 
-
 // pre-ssa simplification and cleanup
 inline void simplify(Program& program)
-{
+{   
     trivial_dce(program);
     remove_dead_stores(program);
+    // fold_constants(program)
+    
+
+
 
     // remove dead blocks
 }

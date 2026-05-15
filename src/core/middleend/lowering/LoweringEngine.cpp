@@ -36,6 +36,8 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
                 return alloca;
             } else {
                 auto* init_value = lower(*var.init_);
+                if (isa<AllocaInst>(init_value))
+                    init_value = create_load(init_value);
                 return create_store(alloca, init_value);
             }
         }
@@ -190,17 +192,16 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
             auto* right = lower(binary.right_);
 
             const BinaryOp op = binary_ops[binary.op_];
+
             assert(op != BinaryOp::Invalid);
 
             if (op == BinaryOp::Assign) {
-                if (isa<Literal>(right))
+                if (isa<Literal>(right)) {
                     return create_store(left, right);
-                else 
+                } else {
                     return create_store(left, create_load(right));
+                }
             }
-
-            // don't load a literal
-            // should we forward later or handle here?
 
             if (!isa<Literal>(left))
                 left = create_load(left);

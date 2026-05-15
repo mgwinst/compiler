@@ -20,10 +20,12 @@ void test()
         type_check(ctx, sema_tree);
         desugar(ctx, sema_tree);
 
+
         // when we dump IR, we prob want to emit non simplified, pre mem2reg IR
         IR::Program program = lower(ctx, sema_tree);
 
         PrettyPrinter printer{ ctx };
+        printer.print(sema_tree);
         printer.print(program);
 
         std::println();
