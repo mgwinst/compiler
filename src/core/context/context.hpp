@@ -9,8 +9,9 @@ struct CompilerContext
 {
     std::vector<SourceFile> source_files_;
     // std::vector<ModuleContext> modules_;
+    // set<flags> ; if set then activate in pipeline
 
-    CompilerContext(std::vector<std::string> files)
+    CompilerContext(std::vector<std::string> files, std::vector<std::string> flags)
     {
         for (const auto& file : files)
             source_files_.push_back(get_source_file(file));

@@ -3,6 +3,8 @@
 #include "core/utils/print/print.hpp"
 #include "core/middleend/analysis/dominator.hpp"
 
+
+
 void test()
 {
     std::vector<std::string> files{ "../../tests/test_program.txt" }; // cli
@@ -34,7 +36,13 @@ void test()
     }
 }
 
-int main()
+#include "core/driver/cli.hpp"
+
+int main(int argc, const char** argv)
 {
-    test();
+    // test();
+
+    parse_command(argc, argv);
+    
+
 }
