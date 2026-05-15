@@ -1,13 +1,14 @@
+#include <unordered_map>
+#include <unordered_set>
 #include <algorithm>
 #include <ranges>
-#include <boost/dynamic_bitset/dynamic_bitset.hpp>
 
-#include "../ir/Value.hpp"
+#include "EarlyOptimizer.hpp"
 #include "../../utils/casting.hpp"
 
 using namespace IR;
 
-inline std::vector<BasicBlock*> reverse_post_order(const std::unique_ptr<Function>& f)
+std::vector<BasicBlock*> reverse_post_order(const std::unique_ptr<Function>& f)
 {
     auto& entry = f->blocks_.front();
 
@@ -28,7 +29,7 @@ inline std::vector<BasicBlock*> reverse_post_order(const std::unique_ptr<Functio
     return post_order;
 }
 
-inline bool escapes_via(Value* value, Value* target, std::unordered_set<Value*>& visited)
+bool escapes_via(Value* value, Value* target, std::unordered_set<Value*>& visited)
 {
     if (visited.contains(value)) {
         return false;
@@ -70,7 +71,7 @@ inline bool escapes_via(Value* value, Value* target, std::unordered_set<Value*>&
     }
 }
 
-inline bool escapes(AllocaInst* alloca)
+bool escapes(AllocaInst* alloca)
 {
     std::unordered_set<Value*> v;
 
@@ -83,7 +84,7 @@ inline bool escapes(AllocaInst* alloca)
     return false;
 }
 
-inline std::unordered_set<AllocaInst*> non_escaping_allocas(const std::unique_ptr<Function>& f)
+std::unordered_set<AllocaInst*> non_escaping_allocas(const std::unique_ptr<Function>& f)
 {
     std::unordered_set<AllocaInst*> allocas;
     for (auto& block : f->blocks_) {
@@ -98,13 +99,7 @@ inline std::unordered_set<AllocaInst*> non_escaping_allocas(const std::unique_pt
     return allocas;
 }
 
-// what instructions are obviously side effect free with little to no analysis?
-
-// branch
-// return
-// call
-
-inline bool may_have_side_effect(const std::unique_ptr<Instruction>& inst)
+bool may_have_side_effect(const std::unique_ptr<Instruction>& inst)
 {
     switch (inst->get_kind()) {
         case ValueKind::StoreInstVal: // mutating memory state is a side effect
@@ -116,9 +111,9 @@ inline bool may_have_side_effect(const std::unique_ptr<Instruction>& inst)
     }
 }
 
-inline void trivial_dce(Program& program)
+void EarlyOptimizer::trivial_dce()
 {
-    for (auto& f : program.functions()) {
+    for (auto& f : program_.functions()) {
         bool changed = true;
         while (changed) {
             changed = false;
@@ -136,24 +131,15 @@ inline void trivial_dce(Program& program)
     }
 }
 
-// remove dead stores (delete a store when there is another store after in same block with no load between them)
-
-// store(%x, val)
-// store(%x, val)
-// load(%x)
-// store(%x, val)
-// store(%x, val)
-
-
 template <typename T>
 concept LoadOrStore = std::same_as<T, LoadInst> || std::same_as<T, StoreInst>;
 
-inline bool targets_same_alloca(LoadOrStore auto* inst1, LoadOrStore auto* inst2)
+bool targets_same_alloca(LoadOrStore auto* inst1, LoadOrStore auto* inst2)
 {
     return inst1->operands_[0] == inst2->operands_[0];
 }
 
-inline AllocaInst* get_alloca_operand(LoadOrStore auto* inst)
+AllocaInst* get_alloca_operand(LoadOrStore auto* inst)
 {
     if (inst) {
         return dyn_cast<AllocaInst>(inst->operands_[0]);
@@ -162,11 +148,9 @@ inline AllocaInst* get_alloca_operand(LoadOrStore auto* inst)
     return nullptr;
 }
 
-// clean this up
-
-inline void remove_dead_stores(Program& program)
+void EarlyOptimizer::remove_dead_stores()
 {   
-    for (auto& f : program.functions()) {
+    for (auto& f : program_.functions()) {
         auto alloca_set = non_escaping_allocas(f);
         for (auto& block : f->blocks_) {
             std::unordered_map<AllocaInst*, StoreInst*> last_store;
@@ -193,17 +177,4 @@ inline void remove_dead_stores(Program& program)
             });
         }
     }
-}
-
-// pre-ssa simplification and cleanup
-inline void simplify(Program& program)
-{   
-    trivial_dce(program);
-    remove_dead_stores(program);
-    // fold_constants(program)
-    
-
-
-
-    // remove dead blocks
 }

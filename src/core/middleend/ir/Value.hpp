@@ -11,8 +11,10 @@
 #include <ranges>
 #include <cassert>
 
+#include "../../frontend/sema/types/types.hpp"
 #include "../../utils/alias.hpp"
 #include "../../utils/utils.hpp"
+#include "../../utils/enums.hpp"
 
 inline constexpr TypeID no_type = -1;
 

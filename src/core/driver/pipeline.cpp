@@ -5,6 +5,7 @@
 #include "../frontend/sema/desugar.hpp"
 #include "../frontend/sema/types/type_checker.hpp"
 #include "../middleend/lowering/LoweringEngine.hpp"
+#include "../middleend/opt/EarlyOptimizer.hpp"
 
 inline void report(const Diagnostics& diag)
 {
@@ -43,10 +44,15 @@ void type_check(ModuleContext& ctx, const SemaTree& tree)
 
 void desugar(ModuleContext& ctx, SemaTree& tree)
 {
-    TreeDesugarer(ctx, tree).run();
+    TreeDesugarer{ctx, tree}.run();
 }
 
 IR::Program lower(const ModuleContext& ctx, const SemaTree& tree)
 {
     return LoweringEngine{ctx, tree}.run();
+}
+
+void early_optimize(Program& program)
+{
+    EarlyOptimizer{program}.run();
 }

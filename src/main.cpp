@@ -2,8 +2,6 @@
 #include "core/driver/pipeline.hpp"
 #include "core/utils/print/print.hpp"
 #include "core/middleend/analysis/dominator.hpp"
-#include "core/middleend/simplify/simplify.hpp"
-
 
 void test()
 {
@@ -25,14 +23,14 @@ void test()
         IR::Program program = lower(ctx, sema_tree);
 
         PrettyPrinter printer{ ctx };
-        printer.print(sema_tree);
+        // printer.print(sema_tree);
         printer.print(program);
 
         std::println();
 
-        simplify(program);
+        early_optimize(program);
+
         printer.print(program);
-        
     }
 }
 
