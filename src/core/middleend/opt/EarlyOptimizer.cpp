@@ -29,6 +29,26 @@ std::vector<BasicBlock*> reverse_post_order(const std::unique_ptr<Function>& f)
     return post_order;
 }
 
+std::vector<BasicBlock*> post_order(const std::unique_ptr<Function>& f)
+{
+    auto& entry = f->blocks_.front();
+
+    std::unordered_set<BasicBlock*> visited;   
+    std::vector<BasicBlock*> post_order;
+
+    auto dfs = [&](this auto& self, BasicBlock* block) {
+        if (visited.contains(block)) 
+            return;
+        visited.insert(block);
+        for (auto* succ : block->successors())
+            self(succ);
+        post_order.push_back(block);
+    };
+
+    dfs(entry.get());
+    return post_order;
+}
+
 bool escapes_via(Value* value, Value* target, std::unordered_set<Value*>& visited)
 {
     if (visited.contains(value)) {

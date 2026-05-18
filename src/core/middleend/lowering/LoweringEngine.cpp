@@ -30,6 +30,7 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
         case SemaNodeKind::VarDecl: {
             const auto& var = node.as<Sema::VarDecl>();
             auto [type, name] = extract_info(var);
+
             auto* alloca = create_alloca(type, name);
 
             if (!var.has_initializer()) {
@@ -51,10 +52,11 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
 
             return nullptr;
         }
-
+    
         case SemaNodeKind::FuncDecl: {
             const auto& func = node.as<Sema::FuncDecl>();
-            auto* function = create_function(func);
+            auto [_, name] = extract_info(func);
+            auto* function = create_function(name);
 
             auto ret_type = ctx_.get_type(func.type_id_).as<FunctionType>().return_type_;
             if (ret_type != VOID) {
@@ -126,7 +128,7 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
 
             set_current_block(starting_block);
 
-            create_br(cond, if_then_block, if_else_block);
+            create_condbr(cond, if_then_block, if_else_block);
             
             set_current_block(if_end_block);
 
@@ -148,7 +150,7 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
 
             set_current_block(cond);
             auto* cmp = lower(while_stmt.cond_); // assert(cmp is binary instruction)
-            create_br(cmp, body, end);
+            create_condbr(cmp, body, end);
             
             set_current_block(body);
             lower(while_stmt.body_);
@@ -314,76 +316,15 @@ IR::Instruction* LoweringEngine::create_alloca(TypeID type_id, std::string_view 
     return block->insert(std::move(alloca));
 }
 
-IR::Instruction* LoweringEngine::create_load(IR::Value* ptr, IR::BasicBlock* block)
-{
-    return create<IR::LoadInst>(block, ptr->get_type_id(), ptr);
-}
-
-IR::Instruction* LoweringEngine::create_load(TypeID target_type_id, IR::Value* ptr, IR::BasicBlock* block)
-{
-    return create<IR::LoadInst>(block, target_type_id, ptr);
-}
 
 
-IR::Instruction* LoweringEngine::create_store(IR::Value* dst, IR::Value* src, IR::BasicBlock* block)
-{
-    return create<IR::StoreInst>(block, dst, src);
-}
 
-IR::Instruction* LoweringEngine::create_add(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block)
-{
-    return create<IR::AddInst>(block, src1, src2);
-}
 
-IR::Instruction* LoweringEngine::create_sub(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block)
-{
-    return create<IR::SubInst>(block, src1, src2);
-}
 
-IR::Instruction* LoweringEngine::create_mul(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block)
-{
-    return create<IR::MulInst>(block, src1, src2);
-}
 
-IR::Instruction* LoweringEngine::create_div(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block)
-{
-    return create<IR::DivInst>(block, src1, src2);
-}
 
-IR::Instruction* LoweringEngine::create_eq(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block)
-{
-    return create<IR::EqInst>(block, src1, src2);
-}
 
-IR::Instruction* LoweringEngine::create_ne(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block)
-{
-    return create<IR::NeInst>(block, src1, src2);
-}
 
-IR::Instruction* LoweringEngine::create_slt(IR::Value* src1, IR::Value* src2, IR::BasicBlock* block)
-{
-    return create<IR::SltInst>(block, src1, src2);
-}
-
-IR::Instruction* LoweringEngine::create_ret(IR::Value* src, IR::BasicBlock* block)
-{
-    return create<IR::Terminator>(block, src);
-}
-
-IR::Instruction* LoweringEngine::create_br(IR::BasicBlock* target, IR::BasicBlock* block)
-{
-    return create<IR::Terminator>(block, target);
-}
-
-IR::Instruction* LoweringEngine::create_br(IR::Value* cond, IR::BasicBlock* target1, IR::BasicBlock* target2, IR::BasicBlock* block)
-{
-    return create<IR::Terminator>(block, cond, target1, target2);
-}
-
-IR::Instruction* LoweringEngine::create_ptradd(IR::Value* base_ptr, IR::Value* index, IR::BasicBlock* block)
-{
-    return create<IR::PtrAdd>(block, base_ptr, index);
-}
 
 IR::Function* LoweringEngine::current_function() const 
 { 

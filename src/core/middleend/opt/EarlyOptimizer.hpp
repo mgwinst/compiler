@@ -22,5 +22,5 @@ private:
     void trivial_dce();
     void remove_dead_stores();
     void fold_instructions();
-    void merge_trivial_blocks(); // handle dead blocks also
+    void merge_blocks(); // handle dead blocks also
 };

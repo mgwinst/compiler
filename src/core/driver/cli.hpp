@@ -1,8 +1,5 @@
 #pragma once
 
-// winc main.w file1.w file2.w ...
-// winc -ir -ast main.w
-
 #include <span>
 #include <string_view>
 #include <cstdint>
@@ -18,7 +15,8 @@ namespace fs = std::filesystem;
 
 inline const std::unordered_set<std::string> winc_flags {
     "-ast",
-    "-ir"
+    "-ir",
+    "-opt"
 };
 
 inline void print_winc_help()
@@ -38,7 +36,7 @@ inline CompilerContext parse_command(int argc, const char** argv)
               | std::ranges::to<std::unordered_set<std::string>>();
 
     if (args.empty()) {
-        std::println("winc: error -> no input files");
+        std::println("winc: error: no input files");
         std::exit(1);
     }
 
@@ -56,13 +54,13 @@ inline CompilerContext parse_command(int argc, const char** argv)
             if (fs::exists(arg)) {
                 files.push_back(arg);
             } else {
-                std::println(std::cerr, "winc: error -> '{}' file not found ", arg);
+                std::println(std::cerr, "winc: error: '{}' file not found", arg);
                 ++errors;
             }
         } else if (winc_flags.contains(arg)) {
             flags.push_back(arg);
         } else {
-            std::println(std::cerr, "winc: error -> '{}' unsupported argument", arg);
+            std::println(std::cerr, "winc: error: unsupported argument '{}'", arg);
             ++errors;
         }
     }
@@ -72,7 +70,7 @@ inline CompilerContext parse_command(int argc, const char** argv)
     }
 
     if (files.empty()) {
-        std::println("winc: error -> no input files");
+        std::println("winc: error: no input files");
         std::exit(1);
     }
 

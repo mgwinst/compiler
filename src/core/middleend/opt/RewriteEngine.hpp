@@ -7,7 +7,7 @@ using boost::container::small_vector;
 
 using namespace IR;
 
-void rewrite()
+class RewriteEngine
 {
 
-}
+};

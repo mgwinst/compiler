@@ -30,6 +30,10 @@ void Compiler::compile(const Module& module)
     }
 
     early_optimize(program);
+
+    if (context_.flags().contains("-opt")) {
+        printer.print(program);
+    }
 }
 
 void report(const Diagnostics& diag)

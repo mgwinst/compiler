@@ -275,12 +275,11 @@ struct BasicBlock : Value
     }
 
     template <DerivedFromInstruction T>
-    Instruction* insert(std::unique_ptr<T> value)
+    T* insert(T* value)
     {
-        auto* ptr = value.get();
         value->set_parent(this);
-        instructions_.push_back(std::move(value));
-        return ptr;
+        instructions_.push_back(std::unique_ptr<Instruction>{ value });
+        return value;
     }
 
     auto& instruction_list()
@@ -296,10 +295,10 @@ struct BasicBlock : Value
         return users() | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value->get_parent()); });
     }
 
+    Terminator* get_terminator();
+
 private:
     std::list<std::unique_ptr<Instruction>> instructions_;
-
-    Terminator* get_terminator();
 };
 
 
@@ -308,7 +307,7 @@ private:
 
 struct Terminator : Instruction
 {
-    TerminatorKind terminator_kind_;   
+    TerminatorKind terminator_kind_;
 
     // is Value* and BasicBlock* overload dangerous? Will Value* always be matched?
     // is this where a dyn_cast<T> is appropriate? would that work though with Terminator = T?
@@ -375,8 +374,8 @@ inline auto BasicBlock::successors()
 // parent -> function, not basic block
 struct Argument : Value
 {
-    Argument() :
-        Value{ ValueKind::ArgumentVal } {}
+    Argument(TypeID type_id = no_type, std::string_view name = "") :
+        Value{ ValueKind::ArgumentVal, type_id, name} {}
 };
 
 // function use list is updated during call
@@ -387,23 +386,21 @@ struct Function : Value
     IR::Value* return_value_ = nullptr;
     IR::BasicBlock* return_block_ = nullptr;
 
-    Function() :
-        Value{ ValueKind::FunctionVal } {}
+    Function(std::string_view name = "") :
+        Value{ ValueKind::FunctionVal, no_type, name} {}
 
-    BasicBlock* insert(std::unique_ptr<BasicBlock> block)
+    BasicBlock* insert(BasicBlock* block)
     {
-        auto* ptr = block.get();
         block->set_parent(this);
-        blocks_.push_back(std::move(block));
-        return ptr;
+        blocks_.push_back(std::unique_ptr<BasicBlock>{ block });
+        return block;
     }
 
-    Argument* insert(std::unique_ptr<Argument> arg)
+    Argument* insert(Argument* arg)
     {
-        auto* ptr = arg.get();
         arg->set_parent(this);
-        args_.push_back(std::move(arg));
-        return ptr;
+        args_.push_back(std::unique_ptr<Argument>{ arg });
+        return arg;
     }
 
     void initialize_return(IR::Value* return_value, IR::BasicBlock* return_block)
@@ -415,31 +412,6 @@ struct Function : Value
 
 
 // ***************** PROGRAM *****************
-
-
-// THIS DOES NOT BELONG HERE
-
-class ConstantPool
-{
-public:
-    template <typename T>
-    auto try_insert(T literal)
-    {
-        return get_container<T>().try_emplace(literal, std::make_unique<IR::Literal>(literal));
-    }
-
-private:
-    std::unordered_map<int64_t, std::unique_ptr<IR::Literal>> integer_pool_;
-
-    template <typename T>
-    auto& get_container()
-    {
-        if constexpr (std::same_as<T, int64_t>)
-            return integer_pool_;
-        else
-            static_assert(always_false_v<T>, "T is not an internable type_id");
-    }
-};
 
 class Program
 {

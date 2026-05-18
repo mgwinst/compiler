@@ -22,6 +22,7 @@ private:
     const CompilerContext context_;
 
     void compile(const Module& module);
+    void debug_compile(const Module& module);
 
     AST parse(const Module& module);
     SemaTree decorate(ModuleContext& ctx, const AST& ast);
