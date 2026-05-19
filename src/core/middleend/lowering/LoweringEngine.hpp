@@ -3,9 +3,9 @@
 
 #include "../../context/context.hpp"
 #include "../../frontend/sema/sematree.hpp"
-#include "../ir/Value.hpp"
 #include "../../utils/alias.hpp"
 #include "../../utils/casting.hpp"
+#include "../ir/Value.hpp"
 #include "../ir/IRBuilder.hpp"
 
 struct LoopContext
@@ -18,7 +18,9 @@ class LoweringEngine
 public:
     LoweringEngine(const ModuleContext& ctx, const SemaTree& tree) :
         ctx_{ ctx }, 
-        tree_{ tree } {}
+        tree_{ tree },
+        program_{ },
+        builder_{ program_ } {}
 
     IR::Program run();
 
@@ -26,8 +28,8 @@ private:
     const ModuleContext& ctx_;
     const SemaTree& tree_;
     IR::Program program_;
-    IR::Function* current_function_ = nullptr;
-    IR::BasicBlock* current_basic_block_ = nullptr;
+    IRBuilder builder_;
+
     std::unordered_map<std::string, IR::Value*> name_to_value_map_; // scope aware? // this must outlive the LoweringEngine object
     std::stack<LoopContext> loop_context_stack_;
     uint32_t value_count_ = 0u; // reset per new function

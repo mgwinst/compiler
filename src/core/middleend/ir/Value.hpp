@@ -11,10 +11,14 @@
 #include <ranges>
 #include <cassert>
 
+#include "boost/container/small_vector.hpp"
+
 #include "../../frontend/sema/types/types.hpp"
 #include "../../utils/alias.hpp"
 #include "../../utils/utils.hpp"
 #include "../../utils/enums.hpp"
+
+using boost::container::small_vector;
 
 inline constexpr TypeID no_type = -1;
 
@@ -38,9 +42,10 @@ enum class ValueKind : uint32_t
     NeInstVal,
     SltInstVal,
     CallInstVal, // add struct
+    RetInstVal,
+    BranchInstVal,
     PtrAddVal,
     PhiInstVal,
-    TerminatorVal, // is instruction
     
     // LiteralVal
     IntLiteralVal,
@@ -148,7 +153,7 @@ struct Literal : Value
 
 struct Instruction : public Value
 {
-    std::vector<Value*> operands_;
+    small_vector<Value*, 2> operands_;
 
     Instruction(ValueKind kind,
                 std::initializer_list<Value*> operands,
@@ -234,19 +239,54 @@ struct SltInst : Instruction
         Instruction{ValueKind::SltInstVal, {src1, src2}} {}
 };
 
-// should inherit from value instead of instruction? because of the std::pair<value, block> operands?
-struct PhiInst : Instruction
+struct CallInst : Instruction
 {
-    // std::initializer_list<std::pair<Value*, BasicBlock*>> [value, block], [value, block], ... 
+
 };
 
+struct RetInst : Instruction
+{
+    RetInst(Value* value) :
+        Instruction{ValueKind::RetInstVal, { value }} {}
+};
 
-// ***************** PTRADD *****************
+struct BasicBlock;
+
+struct BranchInst : Instruction
+{      
+    BranchInst(BasicBlock* target) :
+        Instruction{ValueKind::BranchInstVal, { target }},
+        branch_kind_{ BranchKind::Unconditional } {}
+
+    // will any DerivedFromValue* bind to the block pointer parameters? 
+    BranchInst(Value* cond, BasicBlock* bb_true, BasicBlock* bb_false) :
+        Instruction{ValueKind::BranchInstVal, {cond, bb_true, bb_false}},
+        branch_kind_{ BranchKind::Conditional} {}
+
+    bool is_conditional() const
+    {
+        return branch_kind_ == BranchKind::Conditional;
+    }
+
+    auto condition()
+    {
+        assert(is_conditional());
+
+        return operands_[0];
+    }
+
+    auto targets()
+    {
+        return is_conditional ? std::span{operands_}.subspan(1) : std::span{operands_};
+    }
+
+private:
+    BranchKind branch_kind_;
+};
 
 
 // don't need to type this instruction,
 // it is just an opaque ptr, we know what it means from itself and first operand
-
 // essentially just index / address calculation
 
 struct PtrAdd : Instruction
@@ -255,14 +295,20 @@ struct PtrAdd : Instruction
         Instruction{ValueKind::PtrAddVal, {ptr, offset}} {}
 };
 
+// should inherit from value instead of instruction? because of the std::pair<value, block> operands?
+// struct Phi : Value
+struct PhiInst : Instruction
+{
+    // std::initializer_list<std::pair<Value*, BasicBlock*>> [value, block], [value, block], ... 
+};
+
 
 // ***************** BASIC BLOCK *****************
 
-
-struct Terminator;
-
 struct BasicBlock : Value
 {
+    std::list<std::unique_ptr<Instruction>> instructions_;
+
     BasicBlock(std::string_view name = "") :
         Value{ValueKind::BasicBlockVal, no_type, name} {}
     
@@ -282,90 +328,27 @@ struct BasicBlock : Value
         return value;
     }
 
-    auto& instruction_list()
+    auto* terminator()
     {
-        return instructions_;
+        assert(is_terminator(instructions_.back()));
+
+        return instructions_.back().get();
     }
 
-    auto successors();
+    auto successors() -> small_vector<BasicBlock*, 2>
+    {
+        if (auto* branch = dyn_cast<BranchInst>(terminator())) {
+            return branch->targets() | std::ranges::to<small_vector<BasicBlock*, 2>>();
+        }
 
-    // inheritance should be private so that you can't call users() on a basic block ptr
+        return {};
+    }
+
     auto predecessors()
     {
         return users() | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value->get_parent()); });
     }
-
-    Terminator* get_terminator();
-
-private:
-    std::list<std::unique_ptr<Instruction>> instructions_;
 };
-
-
-// ***************** TERMINATOR *****************
-
-
-struct Terminator : Instruction
-{
-    TerminatorKind terminator_kind_;
-
-    // is Value* and BasicBlock* overload dangerous? Will Value* always be matched?
-    // is this where a dyn_cast<T> is appropriate? would that work though with Terminator = T?
-    // actual dynamic_cast?
-
-    Terminator(Value* value) :
-        Instruction{ValueKind::TerminatorVal, { value }},
-        terminator_kind_{ TerminatorKind::Return } {}
-
-    Terminator(BasicBlock* target) :
-        Instruction{ValueKind::TerminatorVal, { static_cast<Value*>(target) }},
-        terminator_kind_{ TerminatorKind::Branch } {}
-
-    Terminator(Value* cond, BasicBlock* bb_true, BasicBlock* bb_false) :
-        Instruction{ValueKind::TerminatorVal, {cond, static_cast<Value*>(bb_true), static_cast<Value*>(bb_false)}},
-        terminator_kind_{ TerminatorKind::CondBranch } {}
-
-
-    // this feels wrong to enforce correct polymorphic behavior with assert(tag)?
-
-    auto* condition()
-    {   
-        assert(terminator_kind_ == TerminatorKind::CondBranch);
-
-        return operands_[0];
-    }   
-
-    auto targets()
-    {
-        assert(terminator_kind_ != TerminatorKind::Return);
- 
-        auto operands = terminator_kind_ == TerminatorKind::CondBranch ?
-            operands_ | std::views::drop(1) :
-            operands_ | std::views::drop(0);
-
-        return operands | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value); });
-    }
-
-    bool is_return() const 
-    {
-        return terminator_kind_ == TerminatorKind::Return;
-    }
-};
-
-inline Terminator* BasicBlock::get_terminator()
-{
-    return static_cast<Terminator*>(instructions_.back().get());
-}
-
-inline auto BasicBlock::successors()
-{
-    auto t = get_terminator();
-
-    if (t->terminator_kind_ == TerminatorKind::Return)
-        return std::vector<BasicBlock*>{};
-    else
-        return t->targets() | std::ranges::to<std::vector<BasicBlock*>>();
-}
 
 
 // ***************** FUNCTIONS *****************
@@ -383,6 +366,7 @@ struct Function : Value
 {
     std::list<std::unique_ptr<Argument>> args_;
     std::list<std::unique_ptr<BasicBlock>> blocks_;
+    
     IR::Value* return_value_ = nullptr;
     IR::BasicBlock* return_block_ = nullptr;
 
@@ -413,32 +397,14 @@ struct Function : Value
 
 // ***************** PROGRAM *****************
 
-class Program
+struct Program
 {
-public:
-    Function* insert(std::unique_ptr<Function> function)
+    Function* insert(Function* function)
     {
-        auto* ptr = function.get();
-        functions_.push_back(std::move(function));
-        return ptr;
+        functions_.push_back(std::unique_ptr<Function>(function));
+        return function;
     }
 
-    const auto& functions() const
-    {
-        return functions_;
-    }
-
-    auto& functions()
-    {
-        return functions_;
-    }
-
-    auto& constants()
-    {
-        return constant_pool_;
-    }
-
-private:
     ConstantPool constant_pool_;
     std::list<std::unique_ptr<Function>> functions_;
 };

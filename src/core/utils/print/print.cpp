@@ -484,7 +484,7 @@ std::string PrettyPrinter::ir_value_to_str(IR::Value* value) const
 
         case IR::ValueKind::TerminatorVal: {
             auto* inst = static_cast<IR::Terminator*>(value);
-            switch (inst->terminator_kind_) {
+            switch (inst->term_kind_) {
                 case TerminatorKind::Return:
                     return std::format("ret %{}", inst->operands_[0]->get_name());
                 case TerminatorKind::Branch:

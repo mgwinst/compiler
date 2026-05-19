@@ -196,3 +196,9 @@ enum class TerminatorKind
     CondBranch,
     Switch
 };
+
+enum class BranchKind
+{
+    Unconditional,
+    Conditional
+};

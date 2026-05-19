@@ -20,10 +20,14 @@ template <> inline constexpr ValueKind value_kind_v<DivInst>    = ValueKind::Div
 template <> inline constexpr ValueKind value_kind_v<EqInst>     = ValueKind::EqInstVal;
 template <> inline constexpr ValueKind value_kind_v<NeInst>     = ValueKind::NeInstVal;
 template <> inline constexpr ValueKind value_kind_v<SltInst>    = ValueKind::SltInstVal;
+template <> inline constexpr ValueKind value_kind_v<CallInst>   = ValueKind::CallInstVal;
+template <> inline constexpr ValueKind value_kind_v<RetInst>    = ValueKind::RetInstVal;
+template <> inline constexpr ValueKind value_kind_v<BrInst>     = ValueKind::BrInstVal;
+template <> inline constexpr ValueKind value_kind_v<CondBrInst> = ValueKind::CondBrInstVal;
+template <> inline constexpr ValueKind value_kind_v<PtrAdd>     = ValueKind::PtrAddVal;
 template <> inline constexpr ValueKind value_kind_v<PhiInst>    = ValueKind::PhiInstVal;
-template <> inline constexpr ValueKind value_kind_v<Terminator> = ValueKind::TerminatorVal;
-
 template <> inline constexpr ValueKind value_kind_v<Literal>    = ValueKind::IntLiteralVal;
+
 
 template <typename T, DerivedFromValue V>
 bool isa(const std::unique_ptr<V>& value)
@@ -64,11 +68,25 @@ T* dyn_cast(V* value)
 template <DerivedFromValue V>
 bool is_instruction(std::unique_ptr<V>& value) 
 {
-    return value->get_kind() >= ValueKind::AllocaInstVal && value->get_kind() <= ValueKind::TerminatorVal;
+    return value->get_kind() >= ValueKind::AllocaInstVal && value->get_kind() <= ValueKind::PhiInstVal;
 }
 
 template <DerivedFromValue V>
 bool is_instruction(V* value) 
 {
-    return value->get_kind() >= ValueKind::AllocaInstVal && value->get_kind() <= ValueKind::TerminatorVal;
+    return value->get_kind() >= ValueKind::AllocaInstVal && value->get_kind() <= ValueKind::PhiInstVal;
+}
+
+template <DerivedFromValue V>
+bool is_terminator(std::unique_ptr<V>& value) 
+{
+    return value->get_kind() == ValueKind::RetInstVal || 
+           value->get_kind() == ValueKind::BranchInstVal;
+}
+
+template <DerivedFromValue V>
+bool is_terminator(V* value) 
+{
+    return value->get_kind() == ValueKind::RetInstVal || 
+           value->get_kind() == ValueKind::BranchInstVal;
 }

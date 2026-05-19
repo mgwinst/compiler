@@ -26,36 +26,18 @@ private:
     }
 };
 
-class IRBuilder
+struct IRBuilder
 {
 public:
-    Function* create_function(std::string_view name = "");
-    BasicBlock* create_basic_block(std::string_view name = "");
-    Argument* create_arg(TypeID type_id, std::string_view name = "");
-    Literal* create_literal(auto literal);
-    AllocaInst* create_alloca(TypeID type_id, std::string_view name);
-    LoadInst* create_load(Value* ptr);
-    LoadInst* create_load(TypeID target_type_id, Value* ptr);
-    StoreInst* create_store(Value* dst, Value* src);
-    AddInst* create_add(Value* src1, Value* src2);
-    SubInst* create_sub(Value* src1, Value* src2);
-    MulInst* create_mul(Value* src1, Value* src2);
-    DivInst* create_div(Value* src1, Value* src2);
-    EqInst* create_eq(Value* src1, Value* src2);
-    NeInst* create_ne(Value* src1, Value* src2);
-    SltInst* create_slt(Value* src1, Value* src2);
-    Terminator* create_ret(Value* src);
-    Terminator* create_br(BasicBlock* target);
-    Terminator* create_condbr(Value* cond, BasicBlock* target1, BasicBlock* target2);
-    PtrAdd* create_ptradd(Value* base_ptr, Value* index);
-
-    // inst->set_name(std::to_string(++value_count_));
-
-private:
-    // assert these are initialized
-    Program* current_program_ = nullptr;
+    Program& program_;
     Function* current_function_ = nullptr;
     BasicBlock* current_block_ = nullptr;
+    ConstantPool constant_pool_;
+
+    IRBuilder(Program& program) : 
+        program_{ program } {}
+
+    // inst->set_name(std::to_string(++value_count_));
 
     template <DerivedFromValue T, typename... Args>
     T* create(Args&&... args)
@@ -72,15 +54,9 @@ private:
             return current_block_ ? current_block_->insert(inst) : inst;
     }
 
+    Literal* get_or_create_literal(auto literal)
+    {
+        auto [it, _] = program_.constants().try_insert(literal); 
+        return it->second.get();
+    }
 };
-
-Literal* intern_literal(auto literal)
-{
-    auto [it, inserted] = program_.constants().try_insert(literal); 
-    return it->second.get();
-}
-
-Literal* IRBuilder::create_literal(auto literal)
-{
-    return intern_literal(literal);
-}
