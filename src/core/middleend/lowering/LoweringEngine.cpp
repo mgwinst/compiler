@@ -99,7 +99,10 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
         case SemaNodeKind::ReturnStmt: {
             const auto& return_stmt = node.as<Sema::ReturnStmt>();
             auto* value = lower(return_stmt.value_);
-            builder_.create<StoreInst>(current_function()->return_value_, value);
+
+            auto* load = builder_.create<LoadInst>(value);
+
+            builder_.create<StoreInst>(current_function()->return_value_, load);
             builder_.create<BranchInst>(current_function()->return_block_);
 
             return nullptr;
