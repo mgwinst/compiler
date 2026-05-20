@@ -1,5 +1,7 @@
 #include "compile.hpp"
 
+#include "../utils/temp_ir_naming.hpp"
+
 void Compiler::compile_modules()
 {
     std::vector<std::jthread> threads;
@@ -18,6 +20,7 @@ void Compiler::compile(const Module& module)
     desugar(ctx, sema_tree);
 
     IR::Program program = lower(ctx, sema_tree);
+    name_values(program); // temporary debug
 
     PrettyPrinter printer{ ctx };
     

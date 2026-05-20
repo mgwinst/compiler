@@ -31,12 +31,18 @@ template <> inline constexpr ValueKind value_kind_v<Literal>    = ValueKind::Int
 template <typename T, DerivedFromValue V>
 bool isa(const std::unique_ptr<V>& value)
 {
+    if (!value)
+        return false;
+
     return value->kind_ == value_kind_v<T>;
 }
 
 template <typename T, DerivedFromValue V>
 bool isa(V* value)
 {
+    if (!value)
+        return false;
+
     return value->kind_ == value_kind_v<T>;
 }
 

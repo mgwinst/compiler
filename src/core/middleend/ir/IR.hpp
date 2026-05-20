@@ -32,8 +32,8 @@ enum class ValueKind : uint32_t
     BasicBlockVal,
     ArgumentVal,
     AllocaInstVal,
-    LoadInstVal,
     StoreInstVal,
+    LoadInstVal,
     AddInstVal,
     SubInstVal,
     MulInstVal,
@@ -42,9 +42,9 @@ enum class ValueKind : uint32_t
     NeInstVal,
     SltInstVal,
     CallInstVal,
+    PtrAddVal,
     RetInstVal,
     BranchInstVal,
-    PtrAddVal,
     PhiInstVal,
     IntLiteralVal,
     FloatLiteralVal,
@@ -146,6 +146,7 @@ struct LoadInst : Instruction
 {
     LoadInst(Value* ptr) :
         Instruction{ValueKind::LoadInstVal, {ptr}, ptr->type_id_} {}
+
     LoadInst(TypeID type_id, Value* ptr) :
         Instruction{ValueKind::LoadInstVal, {ptr}, type_id} {}
 };

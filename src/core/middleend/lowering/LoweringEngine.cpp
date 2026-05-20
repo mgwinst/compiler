@@ -7,13 +7,21 @@
 #include "../../utils/enums.hpp"
 #include "../../utils/casting.hpp"
 
-IR::Program LoweringEngine::run()
+using namespace IR;
+
+LoweringEngine::LoweringEngine(const ModuleContext& ctx, const SemaTree& tree) :
+    ctx_{ ctx }, 
+    tree_{ tree },
+    program_{ },
+    builder_{ &program_ } {}
+
+Program LoweringEngine::run()
 {
     lower(tree_.root());
     return std::move(program_);
 }
 
-IR::Value* LoweringEngine::lower(SemaNodeID node_id)
+Value* LoweringEngine::lower(SemaNodeID node_id)
 {
     const auto& node = tree_.nodes_[node_id];
 
@@ -50,6 +58,7 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
             auto [type, name] = extract_info(param);
             auto* arg = builder_.create<Argument>(type, name);
             auto* alloca = builder_.create<AllocaInst>(type, name);
+            name_to_value_map_[name] = alloca;
             auto* store = builder_.create<StoreInst>(alloca, arg);
 
             return nullptr;
@@ -67,7 +76,7 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
 
             auto ret_type = ctx_.get_type(func.type_id_).as<FunctionType>().return_type_;
             if (ret_type != VOID) {
-                auto* ret_val = builder_.create<AllocaInst>(ret_type, "retval");
+                auto* ret_val = builder_.create<AllocaInst>(ret_type, "retval"); // technically doesn't need to be in name:value map
                 auto* ret_block = builder_.create<BasicBlock>("return");
                 current_function()->initialize_return(ret_val, ret_block);
 
@@ -299,12 +308,12 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
 
 
 
-IR::Function* LoweringEngine::current_function() const 
+Function* LoweringEngine::current_function() const 
 { 
     return builder_.current_function_; 
 }
 
-IR::BasicBlock* LoweringEngine::current_block() const 
+BasicBlock* LoweringEngine::current_block() const 
 { 
     return builder_.current_block_;
 }
@@ -319,7 +328,7 @@ void LoweringEngine::set_current_block(BasicBlock* block)
     builder_.current_block_ = block;
 }
 
-IR::Value* LoweringEngine::get_value(const Sema::ReferenceExpr& ref) const
+Value* LoweringEngine::get_value(const Sema::ReferenceExpr& ref) const
 {
     auto& name = ctx_.get_symbol(ref).identifier_;
     if (auto it = name_to_value_map_.find(name); it != name_to_value_map_.end())
@@ -345,7 +354,7 @@ LoopContext& LoweringEngine::get_loop_context()
     return loop_context_stack_.top();
 }
 
-std::tuple<TypeID, std::string> LoweringEngine::extract_info(const ContainsSymbol auto& node)
+std::tuple<TypeID, const std::string&> LoweringEngine::extract_info(const ContainsSymbol auto& node)
 {
     auto& symbol = ctx_.get_symbol(node);
     return {symbol.type_id_, symbol.identifier_};
