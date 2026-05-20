@@ -23,9 +23,18 @@ using namespace IR;
 
 class RewriteEngine
 {
+    void fold();
 
 private:
     Program& program_;
     IRBuilder builder_;
-    
 };
+
+void RewriteEngine::fold()
+{
+    for (auto& function : program_.functions_) {
+        for (auto& block : function->blocks_) {
+            
+        }
+    }
+}

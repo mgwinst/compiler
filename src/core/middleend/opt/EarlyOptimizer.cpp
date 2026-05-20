@@ -8,9 +8,9 @@
 
 using namespace IR;
 
-std::vector<BasicBlock*> reverse_post_order(const std::unique_ptr<Function>& f)
+std::vector<BasicBlock*> reverse_post_order(const std::unique_ptr<Function>& function)
 {
-    auto& entry = f->blocks_.front();
+    auto& entry = function->blocks_.front();
 
     std::unordered_set<BasicBlock*> visited;   
     std::vector<BasicBlock*> post_order;
@@ -29,9 +29,9 @@ std::vector<BasicBlock*> reverse_post_order(const std::unique_ptr<Function>& f)
     return post_order;
 }
 
-std::vector<BasicBlock*> post_order(const std::unique_ptr<Function>& f)
+std::vector<BasicBlock*> post_order(const std::unique_ptr<Function>& function)
 {
-    auto& entry = f->blocks_.front();
+    auto& entry = function->blocks_.front();
 
     std::unordered_set<BasicBlock*> visited;   
     std::vector<BasicBlock*> post_order;
@@ -101,10 +101,10 @@ bool escapes(AllocaInst* alloca)
     return false;
 }
 
-std::unordered_set<AllocaInst*> non_escaping_allocas(const std::unique_ptr<Function>& f)
+std::unordered_set<AllocaInst*> non_escaping_allocas(const std::unique_ptr<Function>& function)
 {
     std::unordered_set<AllocaInst*> allocas;
-    for (auto& block : f->blocks_) {
+    for (auto& block : function->blocks_) {
         for (auto& inst : block->instructions_) {
             if (auto* alloca = dyn_cast<AllocaInst>(inst)) {
                 if (escapes(alloca) == false) {
@@ -131,11 +131,11 @@ bool may_have_side_effect(const std::unique_ptr<Instruction>& inst)
 
 void EarlyOptimizer::trivial_dce()
 {
-    for (auto& f : program_.functions_) {
+    for (auto& function : program_.functions_) {
         bool changed = true;
         while (changed) {
             changed = false;
-            for (auto& block : f->blocks_) {
+            for (auto& block : function->blocks_) {
                 for (auto it = block->instructions_.begin(); it != block->instructions_.end(); ) {
                     if ((*it)->users_.empty() && !may_have_side_effect(*it)) {
                         it = block->instructions_.erase(it);
@@ -168,9 +168,9 @@ AllocaInst* get_alloca_operand(LoadOrStore auto* inst)
 
 void EarlyOptimizer::remove_dead_stores()
 {   
-    for (auto& f : program_.functions_) {
-        auto alloca_set = non_escaping_allocas(f);
-        for (auto& block : f->blocks_) {
+    for (auto& function : program_.functions_) {
+        auto alloca_set = non_escaping_allocas(function);
+        for (auto& block : function->blocks_) {
             std::unordered_map<AllocaInst*, StoreInst*> last_store;
             std::vector<StoreInst*> to_delete;
             for (auto& inst : std::views::reverse(block->instructions_)) {
@@ -193,6 +193,33 @@ void EarlyOptimizer::remove_dead_stores()
             block->instructions_.remove_if([&to_delete](std::unique_ptr<Instruction>& inst) {
                 return std::ranges::contains(to_delete, inst.get());
             });
+        }
+    }
+}
+
+// remove double branch instructions to expose dead branches
+// do this during the merge pass to expose dead blocks during scan
+// what traversal will make this most efficient
+
+bool double_branch(BasicBlock* block)
+{
+    auto& insts = block->instructions_;
+
+    if (insts.size() >= 2) {
+        auto a = std::prev(insts.end(), 2);
+        auto b = std::prev(insts.end());
+     
+        return isa<BranchInst>(*a) && isa<BranchInst>(*b);
+    }
+
+    return false;
+}
+
+void EarlyOptimizer::merge_blocks()
+{
+    for (auto& function : program_.functions_) {
+        for (auto* block : reverse_post_order(function)) {
+
         }
     }
 }

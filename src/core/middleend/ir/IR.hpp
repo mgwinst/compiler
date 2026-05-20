@@ -284,8 +284,11 @@ struct BasicBlock : Value
         return value;
     }
 
-    auto* terminator()
+    Instruction* terminator()
     {
+        if (instructions_.empty())
+            return nullptr;
+
         assert(instructions_.back()->kind_ == ValueKind::RetInstVal ||
                instructions_.back()->kind_ == ValueKind::BranchInstVal);
 
@@ -396,13 +399,7 @@ struct Program
 
 
 
-
-
-
-
-
-
-
+// some out of line definitions (circular deps)
 
 
 inline BranchInst::BranchInst(BasicBlock* target) : 
@@ -415,13 +412,21 @@ inline BranchInst::BranchInst(Value* cond, BasicBlock* bb_true, BasicBlock* bb_f
 
 inline auto BasicBlock::successors()
 {
-    auto* t = terminator();
-    auto targets = std::span<Value*>{};
+    small_vector<BasicBlock*, 2> result{};   
 
-    if (t->kind_ == ValueKind::BranchInstVal)
-        targets = static_cast<BranchInst*>(t)->targets();
+    auto* term = terminator();
+    if (!term)
+        return result;
 
-    return static_cast_view<BasicBlock>(targets);
+    if (term->kind_ != ValueKind::BranchInstVal)
+        return result;
+
+    auto* branch = static_cast<BranchInst*>(term);
+
+    for (auto target : static_cast_view<BasicBlock>(branch->targets()))
+        result.push_back(target);
+
+    return result;
 }
 
 } // namespace IR

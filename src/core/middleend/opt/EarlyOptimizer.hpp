@@ -14,6 +14,7 @@ public:
     {
         trivial_dce();
         remove_dead_stores();
+        merge_blocks();
     }
 
 private:
@@ -22,10 +23,10 @@ private:
     void trivial_dce(); // run once before opts
 
     void remove_dead_stores();
+    void merge_blocks(); // handle dead blocks also, do this early so less blocks to traverse in graph
     // void fold_instructions();
-    // void merge_blocks(); // handle dead blocks also
-    
+ 
+        
 
 
-    void trivial_dce(); // run once after opts
 };
