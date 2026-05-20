@@ -17,6 +17,7 @@
 #include "../../utils/alias.hpp"
 #include "../../utils/utils.hpp"
 #include "../../utils/enums.hpp"
+#include "../../utils/cast_range.hpp"
 
 using boost::container::small_vector;
 
@@ -30,7 +31,6 @@ enum class ValueKind : uint32_t
     FunctionVal,
     BasicBlockVal,
     ArgumentVal,
-
     AllocaInstVal,
     LoadInstVal,
     StoreInstVal,
@@ -41,13 +41,11 @@ enum class ValueKind : uint32_t
     EqInstVal,
     NeInstVal,
     SltInstVal,
-    CallInstVal, // add struct
+    CallInstVal,
     RetInstVal,
     BranchInstVal,
     PtrAddVal,
     PhiInstVal,
-    
-    // LiteralVal
     IntLiteralVal,
     FloatLiteralVal,
 };
@@ -56,24 +54,22 @@ enum class ValueKind : uint32_t
 // ***************** VALUE *****************
 
 
-// Everything in the IR is a "Value" (similar to LLVM architecture)
-
-class Value
+struct Value
 {
-public:
+    ValueKind kind_;
+    TypeID type_id_;
+    std::string name_;
+    std::vector<Value*> users_;
+    Value* parent_;
+
     Value(ValueKind kind, TypeID type_id = no_type, std::string_view name = "") :
         kind_{ kind },
         type_id_{ type_id },
         name_{ name },
-        use_list_{ },
+        users_{ },
         parent_{ nullptr } {}
 
     virtual ~Value() = default;
-
-    auto& users()
-    {
-        return use_list_;
-    }
 
     void set_parent(Value* parent)
     {
@@ -82,47 +78,8 @@ public:
 
     void add_use(Value* value) 
     {
-        use_list_.push_back(value);
+        users_.push_back(value);
     }
-
-    void set_name(std::string_view name) 
-    {
-        name_ = name;
-    }
-
-    ValueKind get_kind() const 
-    {
-        assert(kind_ != ValueKind::Invalid);
-        return kind_;
-    }
-
-    TypeID get_type_id()
-    {
-        // assert(type_id_ != no_type);
-        return type_id_;
-    }
-
-    std::string get_name() const
-    {
-        return name_;
-    }
-
-    auto* get_parent()
-    {
-        return parent_;
-    }
-
-    bool no_users() const
-    {
-        return use_list_.empty();
-    }
-
-protected:
-    ValueKind kind_;
-    TypeID type_id_;
-    std::string name_;
-    std::vector<Value*> use_list_;
-    Value* parent_;
 };
 
 template <typename T>
@@ -171,7 +128,7 @@ struct Instruction : public Value
     {
         for (auto* operand : operands_) {
             if (operand)
-                std::erase(operand->users(), this);
+                std::erase(operand->users_, this);
         }
     }
 };
@@ -187,6 +144,8 @@ struct AllocaInst : Instruction
 
 struct LoadInst : Instruction
 {
+    LoadInst(Value* ptr) :
+        Instruction{ValueKind::LoadInstVal, {ptr}, ptr->type_id_} {}
     LoadInst(TypeID type_id, Value* ptr) :
         Instruction{ValueKind::LoadInstVal, {ptr}, type_id} {}
 };
@@ -254,14 +213,9 @@ struct BasicBlock;
 
 struct BranchInst : Instruction
 {      
-    BranchInst(BasicBlock* target) :
-        Instruction{ValueKind::BranchInstVal, { target }},
-        branch_kind_{ BranchKind::Unconditional } {}
-
     // will any DerivedFromValue* bind to the block pointer parameters? 
-    BranchInst(Value* cond, BasicBlock* bb_true, BasicBlock* bb_false) :
-        Instruction{ValueKind::BranchInstVal, {cond, bb_true, bb_false}},
-        branch_kind_{ BranchKind::Conditional} {}
+    BranchInst(BasicBlock* target);
+    BranchInst(Value* cond, BasicBlock* bb_true, BasicBlock* bb_false);
 
     bool is_conditional() const
     {
@@ -277,7 +231,7 @@ struct BranchInst : Instruction
 
     auto targets()
     {
-        return is_conditional ? std::span{operands_}.subspan(1) : std::span{operands_};
+        return is_conditional() ? std::span{operands_}.subspan(1) : std::span{operands_};
     }
 
 private:
@@ -305,6 +259,7 @@ struct PhiInst : Instruction
 
 // ***************** BASIC BLOCK *****************
 
+
 struct BasicBlock : Value
 {
     std::list<std::unique_ptr<Instruction>> instructions_;
@@ -330,23 +285,17 @@ struct BasicBlock : Value
 
     auto* terminator()
     {
-        assert(is_terminator(instructions_.back()));
+        assert(instructions_.back()->kind_ == ValueKind::RetInstVal ||
+               instructions_.back()->kind_ == ValueKind::BranchInstVal);
 
         return instructions_.back().get();
     }
 
-    auto successors() -> small_vector<BasicBlock*, 2>
-    {
-        if (auto* branch = dyn_cast<BranchInst>(terminator())) {
-            return branch->targets() | std::ranges::to<small_vector<BasicBlock*, 2>>();
-        }
-
-        return {};
-    }
+    auto successors();
 
     auto predecessors()
     {
-        return users() | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value->get_parent()); });
+        return users_ | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value->parent_); });
     }
 };
 
@@ -367,8 +316,9 @@ struct Function : Value
     std::list<std::unique_ptr<Argument>> args_;
     std::list<std::unique_ptr<BasicBlock>> blocks_;
     
-    IR::Value* return_value_ = nullptr;
-    IR::BasicBlock* return_block_ = nullptr;
+    // memory leak
+    Value* return_value_ = nullptr;
+    BasicBlock* return_block_ = nullptr;
 
     Function(std::string_view name = "") :
         Value{ ValueKind::FunctionVal, no_type, name} {}
@@ -397,17 +347,80 @@ struct Function : Value
 
 // ***************** PROGRAM *****************
 
+
+class ConstantPool
+{
+public:
+    template <typename T>
+    auto try_insert(T literal)
+    {
+        return get_container<T>().try_emplace(literal, std::make_unique<Literal>(literal));
+    }
+
+private:
+    std::unordered_map<int64_t, std::unique_ptr<Literal>> integer_pool_;
+
+    template <typename T>
+    auto& get_container()
+    {
+        if constexpr (std::same_as<T, int64_t>)
+            return integer_pool_;
+        else
+            static_assert(always_false_v<T>, "T is not an internable type_id");
+    }
+};
+
 struct Program
 {
+    ConstantPool constant_pool_;
+    std::list<std::unique_ptr<Function>> functions_;
+
     Function* insert(Function* function)
     {
         functions_.push_back(std::unique_ptr<Function>(function));
         return function;
     }
-
-    ConstantPool constant_pool_;
-    std::list<std::unique_ptr<Function>> functions_;
 };
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+inline BranchInst::BranchInst(BasicBlock* target) : 
+    Instruction{ValueKind::BranchInstVal, {static_cast<Value*>(target)}},
+    branch_kind_{BranchKind::Unconditional} {}
+
+inline BranchInst::BranchInst(Value* cond, BasicBlock* bb_true, BasicBlock* bb_false) :
+    Instruction{ValueKind::BranchInstVal, {cond, static_cast<Value*>(bb_true), static_cast<Value*>(bb_false)}},
+    branch_kind_{BranchKind::Conditional} {}
+
+inline auto BasicBlock::successors()
+{
+    auto* t = terminator();
+    auto targets = std::span<Value*>{};
+
+    if (t->kind_ == ValueKind::BranchInstVal)
+        targets = static_cast<BranchInst*>(t)->targets();
+
+    return static_cast_view<BasicBlock>(targets);
+}
 
 } // namespace IR

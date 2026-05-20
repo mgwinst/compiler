@@ -5,6 +5,7 @@
 
 #include "LoweringEngine.hpp"
 #include "../../utils/enums.hpp"
+#include "../../utils/casting.hpp"
 
 IR::Program LoweringEngine::run()
 {
@@ -32,6 +33,7 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
             auto [type, name] = extract_info(var);
 
             auto* alloca = builder_.create<AllocaInst>(type, name);
+            name_to_value_map_[name] = alloca;
 
             if (!var.has_initializer()) {
                 return alloca;
@@ -46,7 +48,7 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
         case SemaNodeKind::ParamDecl: {
             const auto& param = node.as<Sema::ParamDecl>();
             auto [type, name] = extract_info(param);
-            auto* arg = builder_.create<Argument>(name);
+            auto* arg = builder_.create<Argument>(type, name);
             auto* alloca = builder_.create<AllocaInst>(type, name);
             auto* store = builder_.create<StoreInst>(alloca, arg);
 
@@ -56,7 +58,12 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
         case SemaNodeKind::FuncDecl: {
             const auto& func = node.as<Sema::FuncDecl>();
             auto [_, name] = extract_info(func);
+
             auto* function = builder_.create<Function>(name);
+            set_current_function(function);
+
+            auto* entry = builder_.create<BasicBlock>("entry");
+            set_current_block(entry);
 
             auto ret_type = ctx_.get_type(func.type_id_).as<FunctionType>().return_type_;
             if (ret_type != VOID) {
@@ -64,8 +71,10 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
                 auto* ret_block = builder_.create<BasicBlock>("return");
                 current_function()->initialize_return(ret_val, ret_block);
 
-                auto* ret = builder_.create<LoadInst>(ret_type, ret_val, ret_block);
-                builder_.create<RetInst>(ret, ret_block);
+                set_current_block(ret_block);
+                auto* ret = builder_.create<LoadInst>(ret_type, ret_val);
+                builder_.create<RetInst>(ret);
+                set_current_block(entry);
             }
 
             for (auto p : func.params_) {
@@ -91,25 +100,25 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
             const auto& return_stmt = node.as<Sema::ReturnStmt>();
             auto* value = lower(return_stmt.value_);
             builder_.create<StoreInst>(current_function()->return_value_, value);
-            builder_.create<BrInst>(current_function()->return_block_);
+            builder_.create<BranchInst>(current_function()->return_block_);
 
             return nullptr;
         }
 
         case SemaNodeKind::BreakStmt: {
             const auto& brk_stmt = node.as<Sema::BreakStmt>();
-            return builder_.create<BrInst>(get_loop_context().end_);
+            return builder_.create<BranchInst>(get_loop_context().end_);
         };
 
         case SemaNodeKind::ContinueStmt: {
             const auto& cont_stmt = node.as<Sema::BreakStmt>();
-            return builder_.create<BrInst>(get_loop_context().header_);
+            return builder_.create<BranchInst>(get_loop_context().header_);
         };
 
         case SemaNodeKind::IfStmt: {
             const auto& if_stmt = node.as<Sema::IfStmt>();
     
-            auto* starting_block = current_block();
+            auto* header = current_block();
             auto* cond = lower(if_stmt.cond_);
 
             auto* if_then_block = builder_.create<BasicBlock>("if.then");
@@ -118,17 +127,17 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
 
             set_current_block(if_then_block);
             lower(if_stmt.then_stmt_);      
-            builder_.create<BrInst>(if_end_block);
+            builder_.create<BranchInst>(if_end_block);
 
             if (if_stmt.else_stmt_.has_value()) {
                 set_current_block(if_else_block);
                 lower(*if_stmt.else_stmt_);
-                builder_.create<BrInst>(if_end_block);
+                builder_.create<BranchInst>(if_end_block);
             }
 
-            set_current_block(starting_block);
+            set_current_block(header);
 
-            builder_.create<CondBrInst>(cond, if_then_block, if_else_block);
+            builder_.create<BranchInst>(cond, if_then_block, if_else_block);
             
             set_current_block(if_end_block);
 
@@ -145,16 +154,15 @@ IR::Value* LoweringEngine::lower(SemaNodeID node_id)
 
             push_loop_context(preheader, cond, body, end);
 
-            set_current_block(preheader);
-            builder_.create<BrInst>(cond);
+            builder_.create<BranchInst>(cond);
 
             set_current_block(cond);
             auto* cmp = lower(while_stmt.cond_); // assert(cmp is binary instruction)
-            builder_.create<CondBrInst>(cmp, body, end);
+            builder_.create<BranchInst>(cmp, body, end);
             
             set_current_block(body);
             lower(while_stmt.body_);
-            builder_.create<BrInst>(cond);
+            builder_.create<BranchInst>(cond);
 
             set_current_block(end);
 

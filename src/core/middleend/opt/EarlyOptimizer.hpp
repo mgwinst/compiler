@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../ir/Value.hpp"
+#include "../ir/IR.hpp"
 
 using namespace IR;
 

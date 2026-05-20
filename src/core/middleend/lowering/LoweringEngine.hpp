@@ -4,8 +4,6 @@
 #include "../../context/context.hpp"
 #include "../../frontend/sema/sematree.hpp"
 #include "../../utils/alias.hpp"
-#include "../../utils/casting.hpp"
-#include "../ir/Value.hpp"
 #include "../ir/IRBuilder.hpp"
 
 struct LoopContext

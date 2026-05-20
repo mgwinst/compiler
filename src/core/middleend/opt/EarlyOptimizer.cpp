@@ -57,24 +57,21 @@ bool escapes_via(Value* value, Value* target, std::unordered_set<Value*>& visite
 
     visited.insert(value);
 
-    switch (value->get_kind()) {
+    switch (value->kind_) {
         case ValueKind::StoreInstVal: {
             auto* store = static_cast<StoreInst*>(value);
             return store->operands_[1] == target; // are we storing this alloca ptr, (since we are storing, we lost value flow because it has left ssa world)
         }
 
-        case ValueKind::TerminatorVal: { // ex. of terminator being clunky (fix)
-            auto* term = static_cast<Terminator*>(value);
-            if (term->is_return()) {
-                return term->operands_[0] == target; // this is okay because this case is checking for returning the alloca itself, not a load of hte alloca, otherwise this operand would be a load instruction, not the alloca. the lowering engine will handle this case
-            }
-            return false;
+        case ValueKind::RetInstVal: {
+            auto* ret = static_cast<RetInst*>(value);
+            return ret->operands_[0] == target; // this is okay because this case is checking for returning the alloca itself, not a load of hte alloca, otherwise this operand would be a load instruction, not the alloca. the lowering engine will handle this case
         }
 
         case ValueKind::PtrAddVal: {
             auto* ptradd = static_cast<PtrAdd*>(value);
             if (ptradd->operands_[0] == target) {
-                for (auto* use : ptradd->users()) {
+                for (auto* use : ptradd->users_) {
                     if (escapes_via(use, ptradd, visited)) {
                         return true;
                     }
@@ -95,7 +92,7 @@ bool escapes(AllocaInst* alloca)
 {
     std::unordered_set<Value*> v;
 
-    for (auto* use : alloca->users()) {
+    for (auto* use : alloca->users_) {
         if (escapes_via(use, alloca, v)) {
             return true;
         }
@@ -108,7 +105,7 @@ std::unordered_set<AllocaInst*> non_escaping_allocas(const std::unique_ptr<Funct
 {
     std::unordered_set<AllocaInst*> allocas;
     for (auto& block : f->blocks_) {
-        for (auto& inst : block->instruction_list()) {
+        for (auto& inst : block->instructions_) {
             if (auto* alloca = dyn_cast<AllocaInst>(inst)) {
                 if (escapes(alloca) == false) {
                     allocas.insert(alloca);
@@ -121,10 +118,11 @@ std::unordered_set<AllocaInst*> non_escaping_allocas(const std::unique_ptr<Funct
 
 bool may_have_side_effect(const std::unique_ptr<Instruction>& inst)
 {
-    switch (inst->get_kind()) {
+    switch (inst->kind_) {
         case ValueKind::StoreInstVal: // mutating memory state is a side effect
         case ValueKind::CallInstVal:
-        case ValueKind::TerminatorVal:
+        case ValueKind::RetInstVal:
+        case ValueKind::BranchInstVal:
             return true;
         default:
             return false;
@@ -133,14 +131,14 @@ bool may_have_side_effect(const std::unique_ptr<Instruction>& inst)
 
 void EarlyOptimizer::trivial_dce()
 {
-    for (auto& f : program_.functions()) {
+    for (auto& f : program_.functions_) {
         bool changed = true;
         while (changed) {
             changed = false;
             for (auto& block : f->blocks_) {
-                for (auto it = block->instruction_list().begin(); it != block->instruction_list().end(); ) {
-                    if ((*it)->no_users() && !may_have_side_effect(*it)) {
-                        it = block->instruction_list().erase(it);
+                for (auto it = block->instructions_.begin(); it != block->instructions_.end(); ) {
+                    if ((*it)->users_.empty() && !may_have_side_effect(*it)) {
+                        it = block->instructions_.erase(it);
                         changed = true;
                     } else {
                         ++it;
@@ -170,12 +168,12 @@ AllocaInst* get_alloca_operand(LoadOrStore auto* inst)
 
 void EarlyOptimizer::remove_dead_stores()
 {   
-    for (auto& f : program_.functions()) {
+    for (auto& f : program_.functions_) {
         auto alloca_set = non_escaping_allocas(f);
         for (auto& block : f->blocks_) {
             std::unordered_map<AllocaInst*, StoreInst*> last_store;
             std::vector<StoreInst*> to_delete;
-            for (auto& inst : std::views::reverse(block->instruction_list())) {
+            for (auto& inst : std::views::reverse(block->instructions_)) {
                 if (auto* store = dyn_cast<StoreInst>(inst)) {
                     auto* a = get_alloca_operand(store);
                     if (alloca_set.contains(a)) {
@@ -192,7 +190,7 @@ void EarlyOptimizer::remove_dead_stores()
                 }
             }
 
-            block->instruction_list().remove_if([&to_delete](std::unique_ptr<Instruction>& inst) {
+            block->instructions_.remove_if([&to_delete](std::unique_ptr<Instruction>& inst) {
                 return std::ranges::contains(to_delete, inst.get());
             });
         }

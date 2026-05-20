@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../frontend/sema/sematree.hpp"
-#include "../../middleend/ir/Value.hpp"
+#include "../../middleend/ir/IR.hpp"
 
 struct ModuleContext;
 
