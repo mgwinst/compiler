@@ -1,7 +1,3 @@
-
-/*
-
-
 #include <unordered_map>
 #include <unordered_set>
 #include <algorithm>
@@ -10,9 +6,12 @@
 #include "EarlyOptimizer.hpp"
 #include "../../utils/casting.hpp"
 
-std::vector<BasicBlock*> post_order(const std::unique_ptr<Function>& function, bool reverse_order = false)
+std::vector<BasicBlock*> post_order(Function& function, bool reverse = false)
 {
-    auto& entry = function->blocks_.front();
+    if (function.blocks_.empty())
+        return { };
+
+    BasicBlock* entry = &(function.blocks_.front());
 
     std::unordered_set<BasicBlock*> visited;   
     std::vector<BasicBlock*> post_order;
@@ -26,9 +25,9 @@ std::vector<BasicBlock*> post_order(const std::unique_ptr<Function>& function, b
         post_order.push_back(block);
     };
 
-    dfs(entry.get());
+    dfs(entry);
 
-    if (reverse_order)
+    if (reverse)
         std::ranges::reverse(post_order);
 
     return post_order;
@@ -86,12 +85,12 @@ bool escapes(Alloca* alloca)
     return false;
 }
 
-std::unordered_set<Alloca*> non_escaping_allocas(const std::unique_ptr<Function>& function)
+std::unordered_set<Alloca*> non_escaping_allocas(Function& function)
 {
     std::unordered_set<Alloca*> allocas;
-    for (auto& block : function->blocks_) {
-        for (auto& inst : block->instructions_) {
-            if (auto* alloca = dyn_cast<Alloca>(inst)) {
+    for (auto& block : function.blocks_) {
+        for (auto& inst : block.instructions_) {
+            if (auto* alloca = dyn_cast<Alloca>(&inst)) {
                 if (escapes(alloca) == false) {
                     allocas.insert(alloca);
                 }
@@ -101,9 +100,9 @@ std::unordered_set<Alloca*> non_escaping_allocas(const std::unique_ptr<Function>
     return allocas;
 }
 
-bool may_have_side_effect(const std::unique_ptr<Instruction>& inst)
+bool may_have_side_effect(const Instruction& inst)
 {
-    switch (inst->kind_) {
+    switch (inst.kind_) {
         case ValueKind::Store: // mutating memory state is a side effect
         case ValueKind::Call:
         case ValueKind::Return:
@@ -120,10 +119,10 @@ void EarlyOptimizer::trivial_dce()
         bool changed = true;
         while (changed) {
             changed = false;
-            for (auto& block : function->blocks_) {
-                for (auto it = block->instructions_.begin(); it != block->instructions_.end(); ) {
-                    if ((*it)->users_.empty() && !may_have_side_effect(*it)) {
-                        it = block->instructions_.erase(it);
+            for (auto& block : function.blocks_) {
+                for (auto it = block.instructions_.begin(); it != block.instructions_.end(); ) {
+                    if (it->users_.empty() && !may_have_side_effect(*it)) {
+                        it = block.instructions_.erase(it);
                         changed = true;
                     } else {
                         ++it;
@@ -155,11 +154,11 @@ void EarlyOptimizer::remove_dead_stores()
 {   
     for (auto& function : program_.functions_) {
         auto alloca_set = non_escaping_allocas(function);
-        for (auto& block : function->blocks_) {
+        for (auto& block : function.blocks_) {
             std::unordered_map<Alloca*, Store*> last_store;
             std::vector<Store*> to_delete;
-            for (auto& inst : std::views::reverse(block->instructions_)) {
-                if (auto* store = dyn_cast<Store>(inst)) {
+            for (auto& inst : std::views::reverse(block.instructions_)) {
+                if (auto* store = dyn_cast<Store>(&inst)) {
                     auto* a = get_alloca_operand(store);
                     if (alloca_set.contains(a)) {
                         if (last_store.contains(a)) {
@@ -167,7 +166,7 @@ void EarlyOptimizer::remove_dead_stores()
                         }
                         last_store[a] = store;
                     }
-                } else if (auto* load = dyn_cast<Load>(inst)) {
+                } else if (auto* load = dyn_cast<Load>(&inst)) {
                     auto* a = get_alloca_operand(load);
                     if (alloca_set.contains(a)) {
                         last_store.erase(a);
@@ -175,8 +174,8 @@ void EarlyOptimizer::remove_dead_stores()
                 }
             }
 
-            block->instructions_.remove_if([&to_delete](std::unique_ptr<Instruction>& inst) {
-                return std::ranges::contains(to_delete, inst.get());
+            block.instructions_.remove_if([&to_delete](const Instruction& inst) {
+                return std::ranges::contains(to_delete, &inst);
             });
         }
     }
@@ -186,6 +185,7 @@ void EarlyOptimizer::remove_dead_stores()
 // do this during the merge pass to expose dead blocks during scan
 // what traversal will make this most efficient
 
+/*
 bool double_branch(std::unique_ptr<BasicBlock>& block)
 {
     auto& insts = block->instructions_;
@@ -233,7 +233,6 @@ void EarlyOptimizer::merge_blocks()
         while (changed) {
             changed = false;
             for (auto it = blocks.begin(); it != blocks.end(); ) {
-                /*
                 
                 if collapsible(it, it->succ())
                     it.merge(it->succ())
@@ -267,8 +266,13 @@ void EarlyOptimizer::merge_blocks()
 }
 
 
+*/
+
 // if empty block : remove block
 // if block as one succ and that succ has one pred : delete terminator and insert range pred into end of this block
 // if 
 
-*/
+
+// return block will always exist for function with non void return type
+// but the type checker should not allow this to happen in the first place
+// so dont worry about this case in graph merger

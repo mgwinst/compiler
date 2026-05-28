@@ -254,9 +254,13 @@ struct BasicBlock : Value
             }
         }
 
+        /* doesn't actually destroy IR values, just removes from intrusive list owned by this block, so we can just clear
         while (!instructions_.empty()) {
             instructions_.pop_back();
         }
+        */
+
+        instructions_.clear();
     }
 
     template <DerivedFromInstruction T>
@@ -285,6 +289,35 @@ struct BasicBlock : Value
         return users_ | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value->parent_); });
     }
 };
+
+// some out of line definitions (circular deps)
+
+inline Branch::Branch(BasicBlock* target) : 
+    Instruction{ValueKind::Branch, {static_cast<Value*>(target)}},
+    branch_kind_{BranchKind::Unconditional} {}
+
+inline Branch::Branch(Value* cond, BasicBlock* bb_true, BasicBlock* bb_false) :
+    Instruction{ValueKind::Branch, {cond, static_cast<Value*>(bb_true), static_cast<Value*>(bb_false)}},
+    branch_kind_{BranchKind::Conditional} {}
+
+inline auto BasicBlock::successors()
+{
+    small_vector<BasicBlock*, 2> result{};   
+
+    auto* term = terminator();
+    if (!term)
+        return result;
+
+    if (term->kind_ != ValueKind::Branch)
+        return result;
+
+    auto* branch = static_cast<Branch*>(term);
+
+    for (auto* target : static_cast_view<BasicBlock>(branch->targets()))
+        result.push_back(target);
+
+    return result;
+}
 
 struct Argument : Value
 {
@@ -360,7 +393,7 @@ private:
 
 struct Program
 {
-    std::vector<std::unique_ptr<Value>> global_values_; 
+    std::vector<std::unique_ptr<Value>> values_;
 
     ConstantPool constant_pool_;
     list<Function> functions_;
@@ -380,32 +413,3 @@ struct Program
 
 
 
-
-// some out of line definitions (circular deps)
-
-inline Branch::Branch(BasicBlock* target) : 
-    Instruction{ValueKind::Branch, {static_cast<Value*>(target)}},
-    branch_kind_{BranchKind::Unconditional} {}
-
-inline Branch::Branch(Value* cond, BasicBlock* bb_true, BasicBlock* bb_false) :
-    Instruction{ValueKind::Branch, {cond, static_cast<Value*>(bb_true), static_cast<Value*>(bb_false)}},
-    branch_kind_{BranchKind::Conditional} {}
-
-inline auto BasicBlock::successors()
-{
-    small_vector<BasicBlock*, 2> result{};   
-
-    auto* term = terminator();
-    if (!term)
-        return result;
-
-    if (term->kind_ != ValueKind::Branch)
-        return result;
-
-    auto* branch = static_cast<Branch*>(term);
-
-    for (auto* target : static_cast_view<BasicBlock>(branch->targets()))
-        result.push_back(target);
-
-    return result;
-}

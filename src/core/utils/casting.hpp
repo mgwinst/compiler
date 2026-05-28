@@ -32,6 +32,15 @@ bool isa(V* value)
 }
 
 template <typename T, DerivedFromValue V>
+const T* dyn_cast(const V* value)
+{
+    if (value && value->kind_ == value_kind_v<T>)
+        return static_cast<const T*>(value);
+
+    return nullptr;
+}
+
+template <typename T, DerivedFromValue V>
 T* dyn_cast(V* value)
 {
     if (value && value->kind_ == value_kind_v<T>)
@@ -39,6 +48,7 @@ T* dyn_cast(V* value)
 
     return nullptr;
 }
+
 
 template <DerivedFromValue V>
 bool is_instruction(V* value) 

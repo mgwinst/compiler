@@ -32,7 +32,7 @@ void Compiler::compile(const Module& module)
         printer.print(program);
     }
 
-    // early_optimize(program);
+    early_optimize(program);
 
     if (context_.flags().contains("-opt")) {
         printer.print(program);
@@ -84,9 +84,7 @@ Program Compiler::lower(const ModuleContext& ctx, const SemaTree& tree)
     return LoweringEngine{ctx, tree}.run();
 }
 
-/*
 void Compiler::early_optimize(Program& program)
 {
     EarlyOptimizer{program}.run();
 }
-*/
