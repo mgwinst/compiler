@@ -19,7 +19,7 @@ void Compiler::compile(const Module& module)
     type_check(ctx, sema_tree);
     desugar(ctx, sema_tree);
 
-    IR::Program program = lower(ctx, sema_tree);
+    Program program = lower(ctx, sema_tree);
     name_values(program); // temporary debug
 
     PrettyPrinter printer{ ctx };
@@ -32,7 +32,7 @@ void Compiler::compile(const Module& module)
         printer.print(program);
     }
 
-    early_optimize(program);
+    // early_optimize(program);
 
     if (context_.flags().contains("-opt")) {
         printer.print(program);
@@ -79,12 +79,14 @@ void Compiler::desugar(ModuleContext& ctx, SemaTree& tree)
     TreeDesugarer{ctx, tree}.run();
 }
 
-IR::Program Compiler::lower(const ModuleContext& ctx, const SemaTree& tree)
+Program Compiler::lower(const ModuleContext& ctx, const SemaTree& tree)
 {
     return LoweringEngine{ctx, tree}.run();
 }
 
+/*
 void Compiler::early_optimize(Program& program)
 {
     EarlyOptimizer{program}.run();
 }
+*/

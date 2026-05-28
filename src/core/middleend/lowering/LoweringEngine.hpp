@@ -6,8 +6,6 @@
 #include "../../utils/alias.hpp"
 #include "../ir/IRBuilder.hpp"
 
-using namespace IR;
-
 struct LoopContext
 {
     BasicBlock *preheader_, *header_, *body_, *end_;

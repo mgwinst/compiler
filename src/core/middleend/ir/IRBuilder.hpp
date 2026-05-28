@@ -1,8 +1,7 @@
 #pragma once
 
 #include "IR.hpp"
-
-using namespace IR;
+#include "../../utils/casting.hpp"
 
 struct IRBuilder
 {
@@ -17,10 +16,9 @@ public:
     template <DerivedFromValue T, typename... Args>
     T* create(Args&&... args)
     {
-        auto* value = new T{ std::forward<Args>(args)... };
+        program_->global_values_.push_back(std::make_unique<T>(std::forward<Args>(args)...));
 
-        if (!value) 
-            return nullptr;
+        T* value = dyn_cast<T>(program_->global_values_.back().get());
 
         if constexpr (std::same_as<T, Function>) {
             return program_ ? program_->insert(value) : value;

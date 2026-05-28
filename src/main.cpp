@@ -4,7 +4,6 @@
 int main(int argc, const char** argv)
 {
     CompilerContext ctx = parse_command(argc, argv);
-
     Compiler{ctx}.compile_modules();
 }
 

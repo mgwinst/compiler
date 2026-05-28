@@ -7,8 +7,6 @@
 #include "../../utils/enums.hpp"
 #include "../../utils/casting.hpp"
 
-using namespace IR;
-
 LoweringEngine::LoweringEngine(const ModuleContext& ctx, const SemaTree& tree) :
     ctx_{ ctx }, 
     tree_{ tree },
@@ -40,16 +38,16 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
             const auto& var = node.as<Sema::VarDecl>();
             auto [type, name] = extract_info(var);
 
-            auto* alloca = builder_.create<AllocaInst>(type, name);
+            auto* alloca = builder_.create<Alloca>(type, name);
             name_to_value_map_[name] = alloca;
 
             if (!var.has_initializer()) {
                 return alloca;
             } else {
                 auto* init_value = lower(*var.init_);
-                if (isa<AllocaInst>(init_value))
-                    init_value = builder_.create<LoadInst>(init_value);
-                return builder_.create<StoreInst>(alloca, init_value);
+                if (isa<Alloca>(init_value))
+                    init_value = builder_.create<Load>(init_value);
+                return builder_.create<Store>(alloca, init_value);
             }
         }
 
@@ -57,9 +55,9 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
             const auto& param = node.as<Sema::ParamDecl>();
             auto [type, name] = extract_info(param);
             auto* arg = builder_.create<Argument>(type, name);
-            auto* alloca = builder_.create<AllocaInst>(type, name);
+            auto* alloca = builder_.create<Alloca>(type, name);
             name_to_value_map_[name] = alloca;
-            auto* store = builder_.create<StoreInst>(alloca, arg);
+            auto* store = builder_.create<Store>(alloca, arg);
 
             return nullptr;
         }
@@ -76,13 +74,13 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
 
             auto ret_type = ctx_.get_type(func.type_id_).as<FunctionType>().return_type_;
             if (ret_type != VOID) {
-                auto* ret_val = builder_.create<AllocaInst>(ret_type, "retval"); // technically doesn't need to be in name:value map
+                auto* ret_val = builder_.create<Alloca>(ret_type, "retval"); // technically doesn't need to be in name:value map
                 auto* ret_block = builder_.create<BasicBlock>("return");
                 current_function()->initialize_return(ret_val, ret_block);
 
                 set_current_block(ret_block);
-                auto* ret = builder_.create<LoadInst>(ret_type, ret_val);
-                builder_.create<RetInst>(ret);
+                auto* ret = builder_.create<Load>(ret_type, ret_val);
+                builder_.create<Return>(ret);
                 set_current_block(entry);
             }
 
@@ -109,22 +107,22 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
             const auto& return_stmt = node.as<Sema::ReturnStmt>();
             auto* value = lower(return_stmt.value_);
 
-            auto* load = builder_.create<LoadInst>(value);
+            auto* load = builder_.create<Load>(value);
 
-            builder_.create<StoreInst>(current_function()->return_value_, load);
-            builder_.create<BranchInst>(current_function()->return_block_);
+            builder_.create<Store>(current_function()->return_value_, load);
+            builder_.create<Branch>(current_function()->return_block_);
 
             return nullptr;
         }
 
         case SemaNodeKind::BreakStmt: {
             const auto& brk_stmt = node.as<Sema::BreakStmt>();
-            return builder_.create<BranchInst>(get_loop_context().end_);
+            return builder_.create<Branch>(get_loop_context().end_);
         };
 
         case SemaNodeKind::ContinueStmt: {
             const auto& cont_stmt = node.as<Sema::BreakStmt>();
-            return builder_.create<BranchInst>(get_loop_context().header_);
+            return builder_.create<Branch>(get_loop_context().header_);
         };
 
         case SemaNodeKind::IfStmt: {
@@ -139,17 +137,17 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
 
             set_current_block(if_then_block);
             lower(if_stmt.then_stmt_);      
-            builder_.create<BranchInst>(if_end_block);
+            builder_.create<Branch>(if_end_block);
 
             if (if_stmt.else_stmt_.has_value()) {
                 set_current_block(if_else_block);
                 lower(*if_stmt.else_stmt_);
-                builder_.create<BranchInst>(if_end_block);
+                builder_.create<Branch>(if_end_block);
             }
 
             set_current_block(header);
 
-            builder_.create<BranchInst>(cond, if_then_block, if_else_block);
+            builder_.create<Branch>(cond, if_then_block, if_else_block);
             
             set_current_block(if_end_block);
 
@@ -166,15 +164,15 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
 
             push_loop_context(preheader, cond, body, end);
 
-            builder_.create<BranchInst>(cond);
+            builder_.create<Branch>(cond);
 
             set_current_block(cond);
             auto* cmp = lower(while_stmt.cond_); // assert(cmp is binary instruction)
-            builder_.create<BranchInst>(cmp, body, end);
+            builder_.create<Branch>(cmp, body, end);
             
             set_current_block(body);
             lower(while_stmt.body_);
-            builder_.create<BranchInst>(cond);
+            builder_.create<Branch>(cond);
 
             set_current_block(end);
 
@@ -219,26 +217,26 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
 
             if (op == BinaryOp::Assign) {
                 if (isa<Literal>(right)) {
-                    return builder_.create<StoreInst>(left, right);
+                    return builder_.create<Store>(left, right);
                 } else {
-                    return builder_.create<StoreInst>(left, builder_.create<LoadInst>(right));
+                    return builder_.create<Store>(left, builder_.create<Load>(right));
                 }
             }
 
             if (!isa<Literal>(left))
-                left = builder_.create<LoadInst>(left);
+                left = builder_.create<Load>(left);
 
             if (!isa<Literal>(right))
-                right = builder_.create<LoadInst>(right);
+                right = builder_.create<Load>(right);
 
             switch (op) {
-                case BinaryOp::Add:    return builder_.create<AddInst>(left, right);
-                case BinaryOp::Sub:    return builder_.create<SubInst>(left, right);
-                case BinaryOp::Mul:    return builder_.create<MulInst>(left, right);
-                case BinaryOp::Div:    return builder_.create<DivInst>(left, right);
-                case BinaryOp::Eq:     return builder_.create<EqInst>(left, right);
-                case BinaryOp::Ne:     return builder_.create<NeInst>(left, right);
-                case BinaryOp::Slt:    return builder_.create<SltInst>(left, right);
+                case BinaryOp::Add:    return builder_.create<Add>(left, right);
+                case BinaryOp::Sub:    return builder_.create<Sub>(left, right);
+                case BinaryOp::Mul:    return builder_.create<Mul>(left, right);
+                case BinaryOp::Div:    return builder_.create<Div>(left, right);
+                case BinaryOp::Eq:     return builder_.create<Eq>(left, right);
+                case BinaryOp::Ne:     return builder_.create<Ne>(left, right);
+                case BinaryOp::Slt:    return builder_.create<Slt>(left, right);
 
                 default:
                     error_exit("binary op error");

@@ -359,7 +359,7 @@ std::string node_to_str(const ModuleContext& ctx, const SemaTree& tree, const Se
 
 // ******************** IR PRINTING ********************
 
-std::string get_target_list_str(IR::BranchInst* branch)
+std::string get_target_list_str(Branch* branch)
 {
     std::string target_label_list{};
     for (auto target : branch->targets()) {
@@ -433,65 +433,65 @@ std::string PrettyPrinter::ir_type_str(TypeID type_id) const
     }
 }
 
-std::string PrettyPrinter::ir_value_to_str(IR::Value* value) const
+std::string PrettyPrinter::ir_value_to_str(Value& value) const
 {
-    switch (value->kind_) {
-        case IR::ValueKind::AllocaInstVal: {
-            auto* inst = static_cast<IR::AllocaInst*>(value);
-            return std::format("%{} = alloca", inst->name_); // %x = alloca int32
+    switch (value.kind_) {
+        case ValueKind::Alloca: {
+            auto& inst = static_cast<Alloca&>(value);
+            return std::format("%{} = alloca", inst.name_); // %x = alloca int32
         }
 
-        case IR::ValueKind::LoadInstVal: {
-            auto* inst = static_cast<IR::LoadInst*>(value);
-            return std::format("%{} = load %{}", inst->name_, inst->operands_[0]->name_);
+        case ValueKind::Load: {
+            auto& inst = static_cast<Load&>(value);
+            return std::format("%{} = load %{}", inst.name_, inst.operands_[0]->name_);
         }
 
-        case IR::ValueKind::StoreInstVal: {
-            auto* inst = static_cast<IR::StoreInst*>(value);
-            return std::format("store %{}, %{}", inst->operands_[0]->name_, inst->operands_[1]->name_);
+        case ValueKind::Store: {
+            auto& inst = static_cast<Store&>(value);
+            return std::format("store %{}, %{}", inst.operands_[0]->name_, inst.operands_[1]->name_);
         }
 
-        case IR::ValueKind::AddInstVal: {
-            auto* inst = static_cast<IR::AddInst*>(value);
-            return std::format("%{} = add %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        case ValueKind::Add: {
+            auto& inst = static_cast<Add&>(value);
+            return std::format("%{} = add %{}, %{}", inst.name_, inst.operands_[0]->name_, inst.operands_[1]->name_);
         }
 
-        case IR::ValueKind::MulInstVal: {
-            auto* inst = static_cast<IR::MulInst*>(value);
-            return std::format("%{} = mul %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        case ValueKind::Mul: {
+            auto& inst = static_cast<Mul&>(value);
+            return std::format("%{} = mul %{}, %{}", inst.name_, inst.operands_[0]->name_, inst.operands_[1]->name_);
         }
 
-        case IR::ValueKind::EqInstVal: {
-            auto* inst = static_cast<IR::EqInst*>(value);
-            return std::format("%{} = eq %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        case ValueKind::Eq: {
+            auto& inst = static_cast<Eq&>(value);
+            return std::format("%{} = eq %{}, %{}", inst.name_, inst.operands_[0]->name_, inst.operands_[1]->name_);
         }
 
-        case IR::ValueKind::NeInstVal: {
-            auto* inst = static_cast<IR::NeInst*>(value);
-            return std::format("%{} = ne %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        case ValueKind::Ne: {
+            auto& inst = static_cast<Ne&>(value);
+            return std::format("%{} = ne %{}, %{}", inst.name_, inst.operands_[0]->name_, inst.operands_[1]->name_);
         }
 
-        case IR::ValueKind::SltInstVal: {
-            auto* inst = static_cast<IR::SltInst*>(value);
-            return std::format("%{} = slt %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        case ValueKind::Slt: {
+            auto& inst = static_cast<Slt&>(value);
+            return std::format("%{} = slt %{}, %{}", inst.name_, inst.operands_[0]->name_, inst.operands_[1]->name_);
         }
 
-        case IR::ValueKind::RetInstVal: {
-            auto* inst = static_cast<IR::BranchInst*>(value);
-            return std::format("ret %{}", inst->operands_[0]->name_);
+        case ValueKind::Return: {
+            auto& inst = static_cast<Branch&>(value);
+            return std::format("ret %{}", inst.operands_[0]->name_);
         }
 
-        case IR::ValueKind::BranchInstVal: {
-            auto* inst = static_cast<IR::BranchInst*>(value);
+        case ValueKind::Branch: {
+            auto& inst = static_cast<Branch&>(value);
             
-            return inst->is_conditional() ? 
-                std::format("br %{}, label %{}, label %{}", inst->condition()->name_, inst->targets()[0]->name_, inst->targets()[1]->name_) :
-                std::format("br label %{}", inst->operands_[0]->name_);
+            return inst.is_conditional() ? 
+                std::format("br %{}, label %{}, label %{}", inst.condition()->name_, inst.targets()[0]->name_, inst.targets()[1]->name_) :
+                std::format("br label %{}", inst.operands_[0]->name_);
         }
 
-        case IR::ValueKind::PtrAddVal: {
-            auto* inst = static_cast<IR::PtrAdd*>(value);
-            return std::format("%{} = ptradd %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        case ValueKind::PtrAdd: {
+            auto& inst = static_cast<PtrAdd&>(value);
+            return std::format("%{} = ptradd %{}, %{}", inst.name_, inst.operands_[0]->name_, inst.operands_[1]->name_);
         };
 
         default: {
@@ -507,13 +507,14 @@ void PrettyPrinter::print(const SemaTree& tree) const
 }
 
 
-std::string get_arg_list_str(const std::unique_ptr<IR::Function>& function)
+std::string get_arg_list_str(Function& function)
 {
     std::string arg_list;
 
-    for (auto& arg : function->args_) {
-        arg_list += "%" + arg->name_;
-        if (arg != function->args_.back()) {
+    for (auto& arg : function.args_) {
+        arg_list += "%" + arg.name_;
+
+        if (function.args_.iterator_to(arg) != std::prev(function.args_.end())) {
             arg_list += ", ";
         }
     }
@@ -521,15 +522,15 @@ std::string get_arg_list_str(const std::unique_ptr<IR::Function>& function)
     return arg_list;
 }
 
-std::string get_pred_list_str(const std::unique_ptr<IR::BasicBlock>& block)
+std::string get_pred_list_str(BasicBlock& block)
 {
     std::string pred_list;
 
-    if (block->predecessors().size() > 0) {
+    if (block.predecessors().size() > 0) {
         pred_list = "preds: [";
-        for (auto pred : block->predecessors()) {
+        for (auto pred : block.predecessors()) {
             pred_list += "%" + pred->name_;
-            if (pred != block->predecessors().back()) {
+            if (pred != block.predecessors().back()) {
                 pred_list += ", ";
             }
         }
@@ -539,17 +540,18 @@ std::string get_pred_list_str(const std::unique_ptr<IR::BasicBlock>& block)
     return pred_list;
 }
 
-void PrettyPrinter::print(const IR::Program& program) const
+void PrettyPrinter::print(Program& program) const
 {
-    for (const auto& function : program.functions_) {
-        std::print("define @{}({}) -> () ", function->name_, get_arg_list_str(function));
+    for (auto& function : program.functions_) {
+        std::print("define @{}({}) -> () ", function.name_, get_arg_list_str(function));
         std::cout << "{\n";
-        for (const auto& block : function->blocks_) {
-            std::println("{:<30}{}", block->name_ + ":", get_pred_list_str(block));
-            for (const auto& inst : block->instructions_) {
-                std::println("  {}", ir_value_to_str(inst.get()));
+        for (auto& block : function.blocks_) {
+            std::println("{:<30}{}", block.name_ + ":", get_pred_list_str(block));
+            for (auto& inst : block.instructions_) {
+                std::println("  {}", ir_value_to_str(inst));
             }
-            if (block != function->blocks_.back()) {
+            
+            if (function.blocks_.iterator_to(block) != std::prev(function.blocks_.end())) {
                 std::println();
             }
         }

@@ -8,6 +8,8 @@
 #include <iterator>
 #include <print>
 
+#include "boost/container/small_vector.hpp"
+
 struct Module
 {
     std::string file_path;
@@ -45,5 +47,23 @@ constexpr auto combine(T first, Ts... rest)
     return std::array<T, 1 + sizeof...(Ts)>{first, rest...};
 }
 
+using boost::container::small_vector;
+
 template <typename T>
 inline constexpr bool always_false_v = false;
+
+void swap_pop(std::ranges::contiguous_range auto& container, auto it)
+{
+    if (it >= container.begin() && it < container.end()) {
+        std::swap(*it, container.back());
+        container.pop_back();
+    }
+}
+
+void swap_pop(std::ranges::contiguous_range auto& container, std::size_t index)
+{
+    if (index >= 0 && index < container.size()) {
+        std::swap(container[index], container.back());
+        container.pop_back();
+    }
+}

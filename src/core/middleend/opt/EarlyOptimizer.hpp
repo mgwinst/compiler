@@ -2,8 +2,6 @@
 
 #include "../ir/IR.hpp"
 
-using namespace IR;
-
 class EarlyOptimizer
 {
 public:
@@ -14,7 +12,7 @@ public:
     {
         trivial_dce();
         remove_dead_stores();
-        merge_blocks();
+        // merge_blocks();
     }
 
 private:

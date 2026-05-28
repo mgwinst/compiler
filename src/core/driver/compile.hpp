@@ -28,7 +28,7 @@ private:
     SemaTree decorate(ModuleContext& ctx, const AST& ast);
     void type_check(ModuleContext& ctx, const SemaTree& tree);
     void desugar(ModuleContext& ctx, SemaTree& tree);
-    IR::Program lower(const ModuleContext& ctx, const SemaTree& tree);
-    void early_optimize(IR::Program& program);
+    Program lower(const ModuleContext& ctx, const SemaTree& tree);
+    void early_optimize(Program& program);
 };
 

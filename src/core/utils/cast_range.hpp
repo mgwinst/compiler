@@ -5,5 +5,7 @@
 template <typename T>
 auto static_cast_view(auto&& range)
 {
-    return std::forward<decltype(range)>(range) | std::views::transform([](auto* p) { return static_cast<T*>(p); });
+    return std::forward<decltype(range)>(range)
+        | std::views::filter([](auto* p) { return p != nullptr; })
+        | std::views::transform([](auto* p) { return static_cast<T*>(p); });
 }

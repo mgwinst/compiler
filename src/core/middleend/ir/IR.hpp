@@ -9,126 +9,98 @@
 #include <list>
 #include <string>
 #include <ranges>
+#include <utility>
 #include <cassert>
 
 #include "boost/container/small_vector.hpp"
+#include "boost/intrusive/list.hpp"
 
 #include "../../frontend/sema/types/types.hpp"
 #include "../../utils/alias.hpp"
 #include "../../utils/utils.hpp"
 #include "../../utils/enums.hpp"
 #include "../../utils/cast_range.hpp"
+#include <algorithm>
 
 using boost::container::small_vector;
+using boost::intrusive::list;
 
-inline constexpr TypeID no_type = -1;
+namespace ranges = std::ranges;
+namespace views = std::views;
 
-namespace IR {
+inline constexpr TypeID none = -1;
 
-enum class ValueKind : uint32_t
+enum class ValueKind
 {
     Invalid,
-    FunctionVal,
-    BasicBlockVal,
-    ArgumentVal,
-    AllocaInstVal,
-    StoreInstVal,
-    LoadInstVal,
-    AddInstVal,
-    SubInstVal,
-    MulInstVal,
-    DivInstVal,
-    EqInstVal,
-    NeInstVal,
-    SltInstVal,
-    CallInstVal,
-    PtrAddVal,
-    RetInstVal,
-    BranchInstVal,
-    PhiInstVal,
-    IntLiteralVal,
-    FloatLiteralVal,
+    Function,
+    BasicBlock,
+    Argument,
+    Alloca,
+    Load,
+    Store,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Eq,
+    Ne,
+    Slt,
+    Call,
+    PtrAdd,
+    Return,
+    Branch,
+    Phi,
+    Const,
 };
 
-
-// ***************** VALUE *****************
-
-
-struct Value
+struct Value : boost::intrusive::list_base_hook<>
 {
     ValueKind kind_;
     TypeID type_id_;
     std::string name_;
-    std::vector<Value*> users_;
+    small_vector<Value*, 4> users_;
     Value* parent_;
 
-    Value(ValueKind kind, TypeID type_id = no_type, std::string_view name = "") :
+    Value(ValueKind kind, TypeID type_id = none, std::string_view name = "", Value* parent = nullptr) :
         kind_{ kind },
         type_id_{ type_id },
         name_{ name },
         users_{ },
-        parent_{ nullptr } {}
+        parent_{ parent } {}
 
     virtual ~Value() = default;
 
-    void set_parent(Value* parent)
+    void add_use(Value* value)
     {
-        parent_ = parent;
-    }
-
-    void add_use(Value* value) 
-    {
-        users_.push_back(value);
+        if (value)
+            users_.push_back(value);
     }
 };
 
 template <typename T>
 concept DerivedFromValue = std::derived_from<T, Value>;
 
-
-// ***************** LITERALS *****************
-
-
-// types are wrong here
-struct Literal : Value
-{
-    std::variant<int64_t, double> data_;
-
-    // this will cause error mismatch between accepted literal and internal type
-    Literal(int64_t v) : 
-        Value{ValueKind::IntLiteralVal, INT32, std::to_string(v)+"L"},
-        data_{ v } {}
-
-    Literal(double v) : 
-        Value{ValueKind::FloatLiteralVal, FLOAT32, std::to_string(v)+"L"},
-        data_{ v } {}
-};
-
-
-// ***************** INSTRUCTIONS *****************
-
-
-struct Instruction : public Value
+struct Instruction : Value
 {
     small_vector<Value*, 2> operands_;
 
-    Instruction(ValueKind kind,
-                std::initializer_list<Value*> operands,
-                TypeID type_id = no_type,
-                std::string_view name = "")
-        : Value{kind, type_id, name}
+    Instruction(ValueKind kind, std::initializer_list<Value*> operands, TypeID type_id = none, std::string_view name = "") : 
+    Value{kind, type_id, name}
     {
         operands_ = operands;
-        for (auto* operand : operands_) {
-            operand->add_use(this);
+        for (auto* arg : operands_) {
+            arg->add_use(this);
         }
     }
 
     ~Instruction() override
     {
-        for (auto* operand : operands_) {
-            if (operand)
-                std::erase(operand->users_, this);
+        for (auto* arg : operands_) {
+            if (arg) {
+                auto it = ranges::find(arg->users_, this);
+                swap_pop(arg->users_, it);
+            }
         }
     }
 };
@@ -136,87 +108,95 @@ struct Instruction : public Value
 template <typename T>
 concept DerivedFromInstruction = std::derived_from<T, Instruction>;
 
-struct AllocaInst : Instruction
+struct Alloca : Instruction
 {
-    AllocaInst(TypeID type_id, std::string_view name) :
-        Instruction{ValueKind::AllocaInstVal, {}, type_id, name} {}
+    Alloca(TypeID type_id, std::string_view name) :
+        Instruction{ValueKind::Alloca, {}, type_id, name} {}
 };
 
-struct LoadInst : Instruction
+struct Load : Instruction
 {
-    LoadInst(Value* ptr) :
-        Instruction{ValueKind::LoadInstVal, {ptr}, ptr->type_id_} {}
+    Load(TypeID type_id, Value* ptr) :
+        Instruction{ValueKind::Load, {ptr}, type_id} {}
 
-    LoadInst(TypeID type_id, Value* ptr) :
-        Instruction{ValueKind::LoadInstVal, {ptr}, type_id} {}
+    Load(Value* ptr) :
+        Instruction{ValueKind::Load, {ptr}} {}
 };
 
-struct StoreInst : Instruction
+struct Store : Instruction
 {
-    StoreInst(Value* dst, Value* src) :
-        Instruction{ValueKind::StoreInstVal, {dst, src}} {}
+    Store(Value* dst, Value* src) :
+        Instruction{ValueKind::Store, {dst, src}} {}
 };
 
-struct AddInst : Instruction
+struct Add : Instruction
 {
-    AddInst(Value* src1, Value* src2) :
-        Instruction{ValueKind::AddInstVal, {src1, src2}} {}
+    Add(Value* src1, Value* src2) :
+        Instruction{ValueKind::Add, {src1, src2}} {}
 };
 
-struct SubInst : Instruction
+struct Sub : Instruction
 {
-    SubInst(Value* src1, Value* src2) :
-        Instruction{ValueKind::SubInstVal, {src1, src2}} {}
+    Sub(Value* src1, Value* src2) :
+        Instruction{ValueKind::Sub, {src1, src2}} {}
 };
 
-struct MulInst : Instruction
+struct Mul : Instruction
 {
-    MulInst(Value* src1, Value* src2) :
-        Instruction{ValueKind::MulInstVal, {src1, src2}} {}
+    Mul(Value* src1, Value* src2) :
+        Instruction{ValueKind::Mul, {src1, src2}} {}
 };
 
-struct DivInst : Instruction
+struct Div : Instruction
 {
-    DivInst(Value* src1, Value* src2) :
-        Instruction{ValueKind::DivInstVal, {src1, src2}} {}
+    Div(Value* src1, Value* src2) :
+        Instruction{ValueKind::Div, {src1, src2}} {}
 };
 
-struct EqInst : Instruction
+struct Eq : Instruction
 {
-    EqInst(Value* src1, Value* src2) :
-        Instruction{ValueKind::EqInstVal, {src1, src2}} {}
+    Eq(Value* src1, Value* src2) :
+        Instruction{ValueKind::Eq, {src1, src2}} {}
 };
 
-struct NeInst : Instruction
+struct Ne : Instruction
 {
-    NeInst(Value* src1, Value* src2) :
-        Instruction{ValueKind::NeInstVal, {src1, src2}} {}
+    Ne(Value* src1, Value* src2) :
+        Instruction{ValueKind::Ne, {src1, src2}} {}
 };
 
-struct SltInst : Instruction
+struct Slt : Instruction
 {
-    SltInst(Value* src1, Value* src2) :
-        Instruction{ValueKind::SltInstVal, {src1, src2}} {}
+    Slt(Value* src1, Value* src2) :
+        Instruction{ValueKind::Slt, {src1, src2}} {}
 };
 
-struct CallInst : Instruction
+struct Call : Instruction
 {
-
+    // Call(Function* callee, Value* )
 };
 
-struct RetInst : Instruction
+struct Return : Instruction
 {
-    RetInst(Value* value) :
-        Instruction{ValueKind::RetInstVal, { value }} {}
+    Return(Value* value) :
+        Instruction{ValueKind::Return, {value}} {}
+};
+
+// don't need to type this instruction,
+// it is just an opaque ptr, we know what it means from itself and first operand
+struct PtrAdd : Instruction
+{
+    PtrAdd(Value* ptr, Value* offset) :
+        Instruction{ValueKind::PtrAdd, {ptr, offset}} {}
 };
 
 struct BasicBlock;
 
-struct BranchInst : Instruction
+struct Branch : Instruction
 {      
     // will any DerivedFromValue* bind to the block pointer parameters? 
-    BranchInst(BasicBlock* target);
-    BranchInst(Value* cond, BasicBlock* bb_true, BasicBlock* bb_false);
+    Branch(BasicBlock* target);
+    Branch(Value* cond, BasicBlock* bb_true, BasicBlock* bb_false);
 
     bool is_conditional() const
     {
@@ -239,38 +219,41 @@ private:
     BranchKind branch_kind_;
 };
 
-
-// don't need to type this instruction,
-// it is just an opaque ptr, we know what it means from itself and first operand
-// essentially just index / address calculation
-
-struct PtrAdd : Instruction
-{
-    PtrAdd(Value* ptr, Value* offset) :
-        Instruction{ValueKind::PtrAddVal, {ptr, offset}} {}
-};
-
-// should inherit from value instead of instruction? because of the std::pair<value, block> operands?
-// struct Phi : Value
-struct PhiInst : Instruction
+struct Phi : Value
 {
     // std::initializer_list<std::pair<Value*, BasicBlock*>> [value, block], [value, block], ... 
 };
 
+// types are wrong here
+struct Literal : Value
+{
+    int64_t data_;
 
-// ***************** BASIC BLOCK *****************
-
+    // this will cause error mismatch between accepted literal and internal type
+    Literal(int64_t data) : 
+        Value{ValueKind::Const, INT32, std::to_string(data)+"L"},
+        data_{ data } {}
+};
 
 struct BasicBlock : Value
 {
-    std::list<std::unique_ptr<Instruction>> instructions_;
+    list<Instruction> instructions_; // ordered
 
     BasicBlock(std::string_view name = "") :
-        Value{ValueKind::BasicBlockVal, no_type, name} {}
+        Value{ValueKind::BasicBlock, none, name} {}
     
-    // drop_all_references()
     ~BasicBlock() override
     {
+        // set all branches that point to this block to nullptr
+
+        for (Branch* branch : static_cast_view<Branch>(users_)) {
+            for (auto* target : branch->targets()) {
+                if (target == this) {
+                    target = nullptr;
+                }
+            }
+        }
+
         while (!instructions_.empty()) {
             instructions_.pop_back();
         }
@@ -279,8 +262,8 @@ struct BasicBlock : Value
     template <DerivedFromInstruction T>
     T* insert(T* value)
     {
-        value->set_parent(this);
-        instructions_.push_back(std::unique_ptr<Instruction>{ value });
+        value->parent_ = this;
+        instructions_.push_back(*value);
         return value;
     }
 
@@ -289,10 +272,10 @@ struct BasicBlock : Value
         if (instructions_.empty())
             return nullptr;
 
-        assert(instructions_.back()->kind_ == ValueKind::RetInstVal ||
-               instructions_.back()->kind_ == ValueKind::BranchInstVal);
+        assert(instructions_.back().kind_ == ValueKind::Return ||
+               instructions_.back().kind_ == ValueKind::Branch);
 
-        return instructions_.back().get();
+        return &instructions_.back();
     }
 
     auto successors();
@@ -303,54 +286,55 @@ struct BasicBlock : Value
     }
 };
 
-
-// ***************** FUNCTIONS *****************
-
-
-// parent -> function, not basic block
 struct Argument : Value
 {
-    Argument(TypeID type_id = no_type, std::string_view name = "") :
-        Value{ ValueKind::ArgumentVal, type_id, name} {}
+    Argument(TypeID type_id = none, std::string_view name = "") :
+        Value{ValueKind::Argument, type_id, name} {}
 };
 
-// function use list is updated during call
 struct Function : Value
 {
-    std::list<std::unique_ptr<Argument>> args_;
-    std::list<std::unique_ptr<BasicBlock>> blocks_;
+    list<Argument> args_;
+    list<BasicBlock> blocks_; // unordered
     
     // memory leak
     Value* return_value_ = nullptr;
     BasicBlock* return_block_ = nullptr;
 
     Function(std::string_view name = "") :
-        Value{ ValueKind::FunctionVal, no_type, name} {}
+        Value{ValueKind::Function, none, name} {}
+
+    ~Function() override
+    {
+        for (Instruction* user : static_cast_view<Instruction>(users_)) {
+            for (auto* operand : user->operands_) {
+                if (operand == this) {
+                    operand = nullptr;
+                }
+            }
+        }
+    }
 
     BasicBlock* insert(BasicBlock* block)
     {
-        block->set_parent(this);
-        blocks_.push_back(std::unique_ptr<BasicBlock>{ block });
+        block->parent_ = this;
+        blocks_.push_back(*block);
         return block;
     }
 
     Argument* insert(Argument* arg)
     {
-        arg->set_parent(this);
-        args_.push_back(std::unique_ptr<Argument>{ arg });
+        arg->parent_ = this;
+        args_.push_back(*arg);
         return arg;
     }
 
-    void initialize_return(IR::Value* return_value, IR::BasicBlock* return_block)
+    void initialize_return(Value* return_value, BasicBlock* return_block)
     {
         return_value_ = return_value;
         return_block_ = return_block;
     }
 };
-
-
-// ***************** PROGRAM *****************
-
 
 class ConstantPool
 {
@@ -370,18 +354,20 @@ private:
         if constexpr (std::same_as<T, int64_t>)
             return integer_pool_;
         else
-            static_assert(always_false_v<T>, "T is not an internable type_id");
+            static_assert(always_false_v<T>, "T is not an internable type");
     }
 };
 
 struct Program
 {
+    std::vector<std::unique_ptr<Value>> global_values_; 
+
     ConstantPool constant_pool_;
-    std::list<std::unique_ptr<Function>> functions_;
+    list<Function> functions_;
 
     Function* insert(Function* function)
     {
-        functions_.push_back(std::unique_ptr<Function>(function));
+        functions_.push_back(*function);
         return function;
     }
 };
@@ -395,19 +381,14 @@ struct Program
 
 
 
-
-
-
-
 // some out of line definitions (circular deps)
 
-
-inline BranchInst::BranchInst(BasicBlock* target) : 
-    Instruction{ValueKind::BranchInstVal, {static_cast<Value*>(target)}},
+inline Branch::Branch(BasicBlock* target) : 
+    Instruction{ValueKind::Branch, {static_cast<Value*>(target)}},
     branch_kind_{BranchKind::Unconditional} {}
 
-inline BranchInst::BranchInst(Value* cond, BasicBlock* bb_true, BasicBlock* bb_false) :
-    Instruction{ValueKind::BranchInstVal, {cond, static_cast<Value*>(bb_true), static_cast<Value*>(bb_false)}},
+inline Branch::Branch(Value* cond, BasicBlock* bb_true, BasicBlock* bb_false) :
+    Instruction{ValueKind::Branch, {cond, static_cast<Value*>(bb_true), static_cast<Value*>(bb_false)}},
     branch_kind_{BranchKind::Conditional} {}
 
 inline auto BasicBlock::successors()
@@ -418,15 +399,13 @@ inline auto BasicBlock::successors()
     if (!term)
         return result;
 
-    if (term->kind_ != ValueKind::BranchInstVal)
+    if (term->kind_ != ValueKind::Branch)
         return result;
 
-    auto* branch = static_cast<BranchInst*>(term);
+    auto* branch = static_cast<Branch*>(term);
 
-    for (auto target : static_cast_view<BasicBlock>(branch->targets()))
+    for (auto* target : static_cast_view<BasicBlock>(branch->targets()))
         result.push_back(target);
 
     return result;
 }
-
-} // namespace IR

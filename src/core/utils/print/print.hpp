@@ -16,12 +16,12 @@ public:
         ctx_{ ctx } {}  
 
     void print(const SemaTree& tree) const;
-    void print(const IR::Program& program) const;
+    void print(Program& program) const;
 
 private:
     ModuleContext& ctx_;
 
-    std::string ir_value_to_str(IR::Value* value) const;
+    std::string ir_value_to_str(Value& value) const;
     std::string ir_type_str(TypeID type_id) const;
 };
 
