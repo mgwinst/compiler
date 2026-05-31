@@ -19,11 +19,12 @@ SemaNodeID SemaTreeBuilder::build_sema_node(ASTNodeID ast_node_id)
 
     switch (ast_node.get_kind()) {
         case ASTNodeKind::ModuleDecl: {
-            SemaNodeID sema_root = sema_tree_.emplace<ModuleDecl>(std::string{ "source file" });
+            const auto& module = ast_node.as<Syntax::ModuleDecl>();
+
+            SemaNodeID sema_root = sema_tree_.emplace<ModuleDecl>(module.name_);
 
             ctx_.symbol_table_.enter_scope();
 
-            const auto& module = ast_node.as<Syntax::ModuleDecl>();
             for (auto decl : module.decls_) {
                 auto sema_node = build_sema_node(decl);
                 sema_tree_.nodes_[sema_root].as<ModuleDecl>().decls_.push_back(sema_node);

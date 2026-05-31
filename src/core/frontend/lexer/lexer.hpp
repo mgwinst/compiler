@@ -2,7 +2,8 @@
 
 #include "token.hpp"
 
-struct Lexer {
+struct Lexer 
+{
     std::string_view source_;
     std::string_view::iterator cur_, src_ln_beg_, src_ln_end_;
     std::size_t line_num_, col_num_;

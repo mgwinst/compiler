@@ -5,7 +5,6 @@
 
 struct IRBuilder
 {
-public:
     Program* program_;
     Function* current_function_ = nullptr;
     BasicBlock* current_block_ = nullptr;
@@ -16,9 +15,10 @@ public:
     template <DerivedFromValue T, typename... Args>
     T* create(Args&&... args)
     {
-        program_->values_.push_back(std::make_unique<T>(std::forward<Args>(args)...));
+        auto* value = new T{ std::forward<Args>(args)... };
 
-        T* value = dyn_cast<T>(program_->values_.back().get());
+        if (!value) 
+            return nullptr;
 
         if constexpr (std::same_as<T, Function>) {
             return program_ ? program_->insert(value) : value;

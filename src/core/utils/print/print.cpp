@@ -433,65 +433,65 @@ std::string PrettyPrinter::ir_type_str(TypeID type_id) const
     }
 }
 
-std::string PrettyPrinter::ir_value_to_str(Value& value) const
+std::string PrettyPrinter::ir_value_to_str(Value* value) const
 {
-    switch (value.kind_) {
+    switch (value->kind_) {
         case ValueKind::Alloca: {
-            auto& inst = static_cast<Alloca&>(value);
-            return std::format("%{} = alloca", inst.name_); // %x = alloca int32
+            auto* inst = static_cast<Alloca*>(value);
+            return std::format("%{} = alloca", inst->name_); // %x = alloca int32
         }
 
         case ValueKind::Load: {
-            auto& inst = static_cast<Load&>(value);
-            return std::format("%{} = load %{}", inst.name_, inst.operands_[0]->name_);
+            auto* inst = static_cast<Load*>(value);
+            return std::format("%{} = load %{}", inst->name_, inst->operands_[0]->name_);
         }
 
         case ValueKind::Store: {
-            auto& inst = static_cast<Store&>(value);
-            return std::format("store %{}, %{}", inst.operands_[0]->name_, inst.operands_[1]->name_);
+            auto* inst = static_cast<Store*>(value);
+            return std::format("store %{}, %{}", inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Add: {
-            auto& inst = static_cast<Add&>(value);
-            return std::format("%{} = add %{}, %{}", inst.name_, inst.operands_[0]->name_, inst.operands_[1]->name_);
+            auto* inst = static_cast<Add*>(value);
+            return std::format("%{} = add %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Mul: {
-            auto& inst = static_cast<Mul&>(value);
-            return std::format("%{} = mul %{}, %{}", inst.name_, inst.operands_[0]->name_, inst.operands_[1]->name_);
+            auto* inst = static_cast<Mul*>(value);
+            return std::format("%{} = mul %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Eq: {
-            auto& inst = static_cast<Eq&>(value);
-            return std::format("%{} = eq %{}, %{}", inst.name_, inst.operands_[0]->name_, inst.operands_[1]->name_);
+            auto* inst = static_cast<Eq*>(value);
+            return std::format("%{} = eq %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Ne: {
-            auto& inst = static_cast<Ne&>(value);
-            return std::format("%{} = ne %{}, %{}", inst.name_, inst.operands_[0]->name_, inst.operands_[1]->name_);
+            auto* inst = static_cast<Ne*>(value);
+            return std::format("%{} = ne %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Slt: {
-            auto& inst = static_cast<Slt&>(value);
-            return std::format("%{} = slt %{}, %{}", inst.name_, inst.operands_[0]->name_, inst.operands_[1]->name_);
+            auto* inst = static_cast<Slt*>(value);
+            return std::format("%{} = slt %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Return: {
-            auto& inst = static_cast<Branch&>(value);
-            return std::format("ret %{}", inst.operands_[0]->name_);
+            auto* inst = static_cast<Return*>(value);
+            return std::format("ret %{}", inst->operands_[0]->name_);
         }
 
         case ValueKind::Branch: {
-            auto& inst = static_cast<Branch&>(value);
+            auto* inst = static_cast<Branch*>(value);
             
-            return inst.is_conditional() ? 
-                std::format("br %{}, label %{}, label %{}", inst.condition()->name_, inst.targets()[0]->name_, inst.targets()[1]->name_) :
-                std::format("br label %{}", inst.operands_[0]->name_);
+            return inst->is_conditional() ? 
+                std::format("br %{}, label %{}, label %{}", inst->condition()->name_, inst->targets()[0]->name_, inst->targets()[1]->name_) :
+                std::format("br label %{}", inst->operands_[0]->name_);
         }
 
         case ValueKind::PtrAdd: {
-            auto& inst = static_cast<PtrAdd&>(value);
-            return std::format("%{} = ptradd %{}, %{}", inst.name_, inst.operands_[0]->name_, inst.operands_[1]->name_);
+            auto* inst = static_cast<PtrAdd*>(value);
+            return std::format("%{} = ptradd %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         };
 
         default: {
@@ -507,14 +507,13 @@ void PrettyPrinter::print(const SemaTree& tree) const
 }
 
 
-std::string get_arg_list_str(Function& function)
+std::string get_arg_list_str(const std::unique_ptr<Function>& function)
 {
     std::string arg_list;
 
-    for (auto& arg : function.args_) {
-        arg_list += "%" + arg.name_;
-
-        if (function.args_.iterator_to(arg) != std::prev(function.args_.end())) {
+    for (auto& arg : function->args_) {
+        arg_list += "%" + arg->name_;
+        if (arg != function->args_.back()) {
             arg_list += ", ";
         }
     }
@@ -522,15 +521,15 @@ std::string get_arg_list_str(Function& function)
     return arg_list;
 }
 
-std::string get_pred_list_str(BasicBlock& block)
+std::string get_pred_list_str(const std::unique_ptr<BasicBlock>& block)
 {
     std::string pred_list;
 
-    if (block.predecessors().size() > 0) {
+    if (block->predecessors().size() > 0) {
         pred_list = "preds: [";
-        for (auto pred : block.predecessors()) {
+        for (auto pred : block->predecessors()) {
             pred_list += "%" + pred->name_;
-            if (pred != block.predecessors().back()) {
+            if (pred != block->predecessors().back()) {
                 pred_list += ", ";
             }
         }
@@ -542,16 +541,15 @@ std::string get_pred_list_str(BasicBlock& block)
 
 void PrettyPrinter::print(Program& program) const
 {
-    for (auto& function : program.functions_) {
-        std::print("define @{}({}) -> () ", function.name_, get_arg_list_str(function));
+    for (const auto& function : program.functions_) {
+        std::print("define @{}({}) -> () ", function->name_, get_arg_list_str(function));
         std::cout << "{\n";
-        for (auto& block : function.blocks_) {
-            std::println("{:<30}{}", block.name_ + ":", get_pred_list_str(block));
-            for (auto& inst : block.instructions_) {
-                std::println("  {}", ir_value_to_str(inst));
+        for (const auto& block : function->blocks_) {
+            std::println("{:<30}{}", block->name_ + ":", get_pred_list_str(block));
+            for (const auto& inst : block->instructions_) {
+                std::println("  {}", ir_value_to_str(inst.get()));
             }
-            
-            if (function.blocks_.iterator_to(block) != std::prev(function.blocks_.end())) {
+            if (block != function->blocks_.back()) {
                 std::println();
             }
         }

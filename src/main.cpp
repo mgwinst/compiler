@@ -1,5 +1,9 @@
+#include <chrono>
+
 #include "core/driver/compile.hpp"
 #include "core/driver/cli.hpp"
+
+using namespace std::chrono;
 
 int main(int argc, const char** argv)
 {

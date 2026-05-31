@@ -21,7 +21,7 @@ public:
 private:
     ModuleContext& ctx_;
 
-    std::string ir_value_to_str(Value& value) const;
+    std::string ir_value_to_str(Value* value) const;
     std::string ir_type_str(TypeID type_id) const;
 };
 

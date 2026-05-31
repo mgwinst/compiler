@@ -11,8 +11,6 @@
 
 using boost::container::small_vector;
 
-using namespace IR;
-
 // map patterns to rewrite functions (rewrites)?
 
 // double branch -> remove second branch (this why merge_trivial_blocks() come after this pass, because this will alter CFG edges)
@@ -32,9 +30,4 @@ private:
 
 void RewriteEngine::fold()
 {
-    for (auto& function : program_.functions_) {
-        for (auto& block : function->blocks_) {
-            
-        }
-    }
 }

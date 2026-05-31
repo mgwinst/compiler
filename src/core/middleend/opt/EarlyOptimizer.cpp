@@ -6,32 +6,6 @@
 #include "EarlyOptimizer.hpp"
 #include "../../utils/casting.hpp"
 
-std::vector<BasicBlock*> post_order(Function& function, bool reverse = false)
-{
-    if (function.blocks_.empty())
-        return { };
-
-    BasicBlock* entry = &(function.blocks_.front());
-
-    std::unordered_set<BasicBlock*> visited;   
-    std::vector<BasicBlock*> post_order;
-
-    auto dfs = [&](this auto& self, BasicBlock* block) {
-        if (visited.contains(block)) 
-            return;
-        visited.insert(block);
-        for (auto* succ : block->successors())
-            self(succ);
-        post_order.push_back(block);
-    };
-
-    dfs(entry);
-
-    if (reverse)
-        std::ranges::reverse(post_order);
-
-    return post_order;
-}
 
 bool escapes_via(Value* value, Value* target, std::unordered_set<Value*>& visited)
 {
@@ -85,24 +59,26 @@ bool escapes(Alloca* alloca)
     return false;
 }
 
-std::unordered_set<Alloca*> non_escaping_allocas(Function& function)
+std::unordered_set<Alloca*> non_escaping_allocas(const std::unique_ptr<Function>& function)
 {
     std::unordered_set<Alloca*> allocas;
-    for (auto& block : function.blocks_) {
-        for (auto& inst : block.instructions_) {
-            if (auto* alloca = dyn_cast<Alloca>(&inst)) {
+
+    for (auto& block : function->blocks_) {
+        for (auto& inst : block->instructions_) {
+            if (auto* alloca = dyn_cast<Alloca>(inst)) {
                 if (escapes(alloca) == false) {
                     allocas.insert(alloca);
                 }
             }
         }
     }
+
     return allocas;
 }
 
-bool may_have_side_effect(const Instruction& inst)
+bool may_have_side_effect(const std::unique_ptr<Instruction>& inst)
 {
-    switch (inst.kind_) {
+    switch (inst->kind_) {
         case ValueKind::Store: // mutating memory state is a side effect
         case ValueKind::Call:
         case ValueKind::Return:
@@ -113,33 +89,32 @@ bool may_have_side_effect(const Instruction& inst)
     }
 }
 
+
 void EarlyOptimizer::trivial_dce()
 {
+    std::vector<Instruction*> dead;
+
     for (auto& function : program_.functions_) {
-        bool changed = true;
-        while (changed) {
-            changed = false;
-            for (auto& block : function.blocks_) {
-                for (auto it = block.instructions_.begin(); it != block.instructions_.end(); ) {
-                    if (it->users_.empty() && !may_have_side_effect(*it)) {
-                        it = block.instructions_.erase(it);
-                        changed = true;
-                    } else {
-                        ++it;
-                    }
+        for (auto& block : function->blocks_) {
+            for (auto it = block->instructions_.rbegin(); it != block->instructions_.rend(); ++it) {
+                if ((*it)->users_.empty() && !may_have_side_effect(*it)) {
+                    dead.push_back(it->get());
                 }
             }
+
+            block->instructions_.remove_if([&dead](std::unique_ptr<Instruction>& inst) {
+                return std::ranges::contains(dead, inst.get());
+            });
+
+            dead.clear();
         }
     }
+
+
 }
 
 template <typename T>
 concept LoadOrStore = std::same_as<T, Load> || std::same_as<T, Store>;
-
-bool targets_same_alloca(LoadOrStore auto* inst1, LoadOrStore auto* inst2)
-{
-    return inst1->operands_[0] == inst2->operands_[0];
-}
 
 Alloca* get_alloca_operand(LoadOrStore auto* inst)
 {
@@ -152,21 +127,22 @@ Alloca* get_alloca_operand(LoadOrStore auto* inst)
 
 void EarlyOptimizer::remove_dead_stores()
 {   
+    std::unordered_map<Alloca*, Store*> last_store;
+    std::vector<Store*> dead;
+
     for (auto& function : program_.functions_) {
         auto alloca_set = non_escaping_allocas(function);
-        for (auto& block : function.blocks_) {
-            std::unordered_map<Alloca*, Store*> last_store;
-            std::vector<Store*> to_delete;
-            for (auto& inst : std::views::reverse(block.instructions_)) {
-                if (auto* store = dyn_cast<Store>(&inst)) {
+        for (auto& block : function->blocks_) {
+            for (auto& inst : std::views::reverse(block->instructions_)) {
+                if (auto* store = dyn_cast<Store>(inst)) {
                     auto* a = get_alloca_operand(store);
                     if (alloca_set.contains(a)) {
                         if (last_store.contains(a)) {
-                            to_delete.push_back(store);
+                            dead.push_back(store);
                         }
                         last_store[a] = store;
                     }
-                } else if (auto* load = dyn_cast<Load>(&inst)) {
+                } else if (auto* load = dyn_cast<Load>(inst)) {
                     auto* a = get_alloca_operand(load);
                     if (alloca_set.contains(a)) {
                         last_store.erase(a);
@@ -174,9 +150,12 @@ void EarlyOptimizer::remove_dead_stores()
                 }
             }
 
-            block.instructions_.remove_if([&to_delete](const Instruction& inst) {
-                return std::ranges::contains(to_delete, &inst);
+            block->instructions_.remove_if([&dead](std::unique_ptr<Instruction>& inst) {
+                return std::ranges::contains(dead, inst.get());
             });
+
+            last_store.clear();
+            dead.clear();
         }
     }
 }
@@ -185,7 +164,6 @@ void EarlyOptimizer::remove_dead_stores()
 // do this during the merge pass to expose dead blocks during scan
 // what traversal will make this most efficient
 
-/*
 bool double_branch(std::unique_ptr<BasicBlock>& block)
 {
     auto& insts = block->instructions_;
@@ -200,6 +178,50 @@ bool double_branch(std::unique_ptr<BasicBlock>& block)
     return false;
 }
 
+
+
+// invariance = any block that exists must mean that a branch instruction leads to it
+
+// handle branch folding once we have handle booleans properly
+void remove_unreachable_blocks(std::unique_ptr<Function>& function)
+{
+    bool changed = true;
+    while (changed) {
+        changed = false;
+        for (auto it = function->blocks_.begin(); it != function->blocks_.end(); ) {
+            if ((*it)->predecessors().empty() && (*it)->name_ != "entry") {
+                it = function->blocks_.erase(it);
+                changed = true;
+                continue;
+            }
+
+            if (double_branch(*it)) {
+                (*it)->instructions_.pop_back();
+                changed = true;
+            }
+
+            ++it;
+        }
+    }
+}
+
+// should empty blocks include blocks with only a single branch?
+void remove_empty_blocks(std::unique_ptr<Function>& function)
+{
+    auto block_has_single_branch = [](auto& block) -> bool {
+        return block->instructions_.size() == 1 && isa<Branch>(block->instructions_.front());
+    };
+
+    for (auto it = function->blocks_.begin(); it != function->blocks_.end(); ) {
+        if ((*it)->empty() || block_has_single_branch(*it)) {
+            it = function->blocks_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
+
 void collapsible(BasicBlock* block1, BasicBlock* block2)
 {
 
@@ -210,69 +232,29 @@ void combine_blocks()
     
 }
 
-// instructions new parent is the collapsed block
+// instructions new parent is the collapsed block after merge
 
-void EarlyOptimizer::merge_blocks()
+void merge_linear_blocks(Function& function)
+{
+
+}
+
+void EarlyOptimizer::cleanup_cfg()
 {
     for (auto& function : program_.functions_) {
 
-        auto& blocks = function->blocks_;
-
-        for (auto it = blocks.begin(); it != blocks.end(); ) {
-            if ((*it)->instructions_.empty()) {
-                it = function->blocks_.erase(it); // pred.terminator.branch.operand[...] = nullptr for pred in block->preds()
-            } else {
-                if (double_branch(*it)) {
-                    (*it)->instructions_.pop_back();
-                }
-                ++it;
-            }
-        }
-        
         bool changed = true;
         while (changed) {
             changed = false;
-            for (auto it = blocks.begin(); it != blocks.end(); ) {
-                
-                if collapsible(it, it->succ())
-                    it.merge(it->succ())
+            
+            // these must mutate changed state
 
-                
+            remove_unreachable_blocks(function);
 
-                if ((*it)->successors().size() == 1) {
-                    auto* succ = (*it)->successors()[0];
-                    if (succ->predecessors().size() == 1) {
+            remove_empty_blocks(function);
 
-                        (*it)->instructions_.splice((*it)->instructions_.end(), succ->instructions_);
+            // merge_linear_blocks(function);
 
-
-
-                        changed = true;
-                    }
-                    
-                    
-                    
-                }               
-
-                // if block.succ() == 1 && succ().pred() == 1
-                //     block.remove(branch)
-                //     block.append(succ.instructions)
-            }
-
-            // post order rewiring?
         }
-        
     }
 }
-
-
-*/
-
-// if empty block : remove block
-// if block as one succ and that succ has one pred : delete terminator and insert range pred into end of this block
-// if 
-
-
-// return block will always exist for function with non void return type
-// but the type checker should not allow this to happen in the first place
-// so dont worry about this case in graph merger

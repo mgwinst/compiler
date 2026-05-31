@@ -12,16 +12,18 @@ public:
     {
         trivial_dce();
         remove_dead_stores();
-        // merge_blocks();
+        cleanup_cfg();
     }
 
 private:
     Program& program_;
 
-    void trivial_dce(); // run once before opts
+    void trivial_dce(); // run once before opts and once after
 
     void remove_dead_stores();
-    void merge_blocks(); // handle dead blocks also, do this early so less blocks to traverse in graph
+
+    void cleanup_cfg();
+    
     // void fold_instructions();
  
         
