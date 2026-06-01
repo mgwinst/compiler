@@ -201,6 +201,7 @@ struct BasicBlock : Value
     { 
         return users_ | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value->parent_); });
     };
+    void remove_from_parent();
 };
 
 struct Argument : Value
@@ -210,8 +211,8 @@ struct Argument : Value
 
 struct Function : Value
 {
-    std::list<std::unique_ptr<Argument>> args_;
-    std::list<std::unique_ptr<BasicBlock>> blocks_; // unordered
+    std::vector<std::unique_ptr<Argument>> args_;
+    std::vector<std::unique_ptr<BasicBlock>> blocks_; // unordered
     
     // memory leak
     Value* return_value_ = nullptr;

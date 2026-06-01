@@ -6,7 +6,6 @@
 #include "EarlyOptimizer.hpp"
 #include "../../utils/casting.hpp"
 
-
 bool escapes_via(Value* value, Value* target, std::unordered_set<Value*>& visited)
 {
     if (visited.contains(value)) {
@@ -109,8 +108,6 @@ void EarlyOptimizer::trivial_dce()
             dead.clear();
         }
     }
-
-
 }
 
 template <typename T>
@@ -178,26 +175,24 @@ bool double_branch(std::unique_ptr<BasicBlock>& block)
     return false;
 }
 
-
-
 // invariance = any block that exists must mean that a branch instruction leads to it
 
 // handle branch folding once we have handle booleans properly
-void remove_unreachable_blocks(std::unique_ptr<Function>& function)
+void remove_unreachable_blocks(std::unique_ptr<Function>& function, bool& changed)
 {
-    bool changed = true;
-    while (changed) {
-        changed = false;
+    bool local_change = true;
+    while (local_change) {
+        local_change = false;
         for (auto it = function->blocks_.begin(); it != function->blocks_.end(); ) {
             if ((*it)->predecessors().empty() && (*it)->name_ != "entry") {
                 it = function->blocks_.erase(it);
-                changed = true;
+                changed = local_change = true;
                 continue;
             }
 
             if (double_branch(*it)) {
                 (*it)->instructions_.pop_back();
-                changed = true;
+                changed = local_change = true;
             }
 
             ++it;
@@ -205,8 +200,7 @@ void remove_unreachable_blocks(std::unique_ptr<Function>& function)
     }
 }
 
-// should empty blocks include blocks with only a single branch?
-void remove_empty_blocks(std::unique_ptr<Function>& function)
+void remove_empty_blocks(std::unique_ptr<Function>& function, bool& changed)
 {
     auto block_has_single_branch = [](auto& block) -> bool {
         return block->instructions_.size() == 1 && isa<Branch>(block->instructions_.front());
@@ -215,28 +209,50 @@ void remove_empty_blocks(std::unique_ptr<Function>& function)
     for (auto it = function->blocks_.begin(); it != function->blocks_.end(); ) {
         if ((*it)->empty() || block_has_single_branch(*it)) {
             it = function->blocks_.erase(it);
+            changed = true;
         } else {
             ++it;
         }
     }
 }
 
-
-void collapsible(BasicBlock* block1, BasicBlock* block2)
+bool collapsible(std::unique_ptr<BasicBlock>& block)
 {
+    if (block->successors().size() == 1) {
+        auto successor = block->successors()[0];
+        if (successor->predecessors().size() == 1) {
+            assert(block.get() == successor->predecessors()[0]);
+            return true;
+        }
+    }
 
+    return false;
 }
 
-void combine_blocks()
+void combine_with_successor(std::unique_ptr<BasicBlock>& block)
 {
-    
+    auto* successor = block->successors()[0];
+
+    for (auto& inst : successor->instructions_) {
+        inst->parent_ = block.get();
+    }
+
+    // we have to remove the branch before the merging (br, new, new, ...), now when we call successor on next pass, terminator() does not return br/ret instruction
+    block->instructions_.pop_back();
+
+    block->instructions_.splice(block->instructions_.end(), successor->instructions_);
+
+    successor->remove_from_parent();
 }
 
-// instructions new parent is the collapsed block after merge
-
-void merge_linear_blocks(Function& function)
+void merge_linear_blocks(std::unique_ptr<Function>& function, bool& changed)
 {
-
+    for (auto& block : function->blocks_) {
+        if (collapsible(block)) {
+            combine_with_successor(block);
+            changed = true;
+        }
+    }
 }
 
 void EarlyOptimizer::cleanup_cfg()
@@ -244,17 +260,13 @@ void EarlyOptimizer::cleanup_cfg()
     for (auto& function : program_.functions_) {
 
         bool changed = true;
+
         while (changed) {
             changed = false;
-            
-            // these must mutate changed state
 
-            remove_unreachable_blocks(function);
-
-            remove_empty_blocks(function);
-
-            // merge_linear_blocks(function);
-
+            remove_unreachable_blocks(function, changed);
+            remove_empty_blocks(function, changed);
+            merge_linear_blocks(function, changed);
         }
     }
 }

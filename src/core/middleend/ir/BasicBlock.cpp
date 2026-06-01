@@ -1,4 +1,5 @@
 #include "IR.hpp"
+#include "../../utils/utils.hpp"
 #include "../../utils/casting.hpp"
 #include "../../utils/cast_range.hpp"
 
@@ -55,4 +56,14 @@ small_vector<BasicBlock*, 2> BasicBlock::successors()
         result.push_back(target);
 
     return result;
+}
+
+void BasicBlock::remove_from_parent()
+{
+    assert(parent_ != nullptr);
+
+    if (auto* func = dyn_cast<Function>(parent_)) {
+        auto index = (reinterpret_cast<std::byte*>(this) - reinterpret_cast<std::byte*>(func->blocks_.data())) / sizeof(std::unique_ptr<BasicBlock>);
+        swap_pop(func->blocks_, index);
+    }
 }
