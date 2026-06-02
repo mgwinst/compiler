@@ -132,14 +132,15 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
             auto* cond = lower(if_stmt.cond_);
 
             auto* if_then_block = builder_.create<BasicBlock>("if.then");
-            auto* if_else_block = builder_.create<BasicBlock>("if.else");
             auto* if_end_block = builder_.create<BasicBlock>("if.end");
 
             set_current_block(if_then_block);
             lower(if_stmt.then_stmt_);      
             builder_.create<Branch>(if_end_block);
 
+            BasicBlock* if_else_block = nullptr;
             if (if_stmt.else_stmt_.has_value()) {
+                if_else_block = builder_.create<BasicBlock>("if.else");
                 set_current_block(if_else_block);
                 lower(*if_stmt.else_stmt_);
                 builder_.create<Branch>(if_end_block);
@@ -147,7 +148,10 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
 
             set_current_block(header);
 
-            builder_.create<Branch>(cond, if_then_block, if_else_block);
+            if (if_else_block)
+                builder_.create<Branch>(cond, if_then_block, if_else_block);
+            else
+                builder_.create<Branch>(cond, if_then_block, if_end_block);
             
             set_current_block(if_end_block);
 

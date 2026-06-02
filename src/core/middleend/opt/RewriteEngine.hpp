@@ -13,7 +13,6 @@ using boost::container::small_vector;
 
 // map patterns to rewrite functions (rewrites)?
 
-// double branch -> remove second branch (this why merge_trivial_blocks() come after this pass, because this will alter CFG edges)
 // fold(add, 3, 2) -> 5
 // GEP(ptr, 0) -> ptr
 // ...

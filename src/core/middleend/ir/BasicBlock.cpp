@@ -8,6 +8,8 @@ BasicBlock::BasicBlock(std::string_view name) :
 
 BasicBlock::~BasicBlock()
 {
+    // bug: should remain conditional but switch targets (emulate a fall through in the graph)
+
     for (Branch* branch : static_cast_view<Branch>(users_)) {
         if (branch->is_conditional()) {
             branch->branch_kind_ = BranchKind::Unconditional;
