@@ -66,6 +66,7 @@ struct Value
     virtual ~Value() = default;
 
     void add_use(Value* value);
+    void replace_uses_with(Value* value);
 };
 
 template <typename T>
@@ -170,12 +171,12 @@ struct Phi : Value
     // std::initializer_std::list<std::pair<Value*, BasicBlock*>> [value, block], [value, block], ... 
 };
 
-struct Literal : Value
+struct Const : Value
 {
     int64_t data_;
 
     // this will cause error mismatch between accepted literal and internal type
-    Literal(int64_t data);
+    Const(int64_t data);
 };
 
 struct BasicBlock : Value
@@ -233,11 +234,11 @@ public:
     template <typename T>
     auto try_insert(T literal)
     {
-        return get_container<T>().try_emplace(literal, std::make_unique<Literal>(literal));
+        return get_container<T>().try_emplace(literal, std::make_unique<Const>(literal));
     }
 
 private:
-    std::unordered_map<int64_t, std::unique_ptr<Literal>> integer_pool_;
+    std::unordered_map<int64_t, std::unique_ptr<Const>> integer_pool_;
 
     template <typename T>
     auto& get_container()

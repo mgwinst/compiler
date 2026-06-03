@@ -23,8 +23,6 @@ private:
     void remove_dead_stores();
 
     void cleanup_cfg();
-    
-    // void fold_instructions();
  
         
 

@@ -31,9 +31,10 @@ Instruction* BasicBlock::terminator()
     if (instructions_.empty())
         return nullptr;
 
-    assert(isa<Return>(instructions_.back()) || isa<Branch>(instructions_.back()));
-
-    return instructions_.back().get();
+    if (isa<Return>(instructions_.back()) || isa<Branch>(instructions_.back()))
+        return instructions_.back().get();
+    
+    return nullptr;
 }
 
 bool BasicBlock::empty()

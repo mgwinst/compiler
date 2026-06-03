@@ -3,30 +3,35 @@
 #include <unordered_set>
 #include <algorithm>
 
-#include "boost/container/small_vector.hpp"
-
 #include "../ir/IRBuilder.hpp"
 #include "../ir/IR.hpp"
-#include "../utils/casting.hpp"
+#include "../../utils/casting.hpp"
 
-using boost::container::small_vector;
-
-// map patterns to rewrite functions (rewrites)?
-
-// fold(add, 3, 2) -> 5
-// GEP(ptr, 0) -> ptr
-// ...
-
+// local CSE
+// copy propagation
+// store-to-load forwarding
 
 class RewriteEngine
 {
-    void fold();
+public:
+    RewriteEngine(Program& program) : 
+        program_{ program }, 
+        builder_{ &program } {}
+
+    void run()
+    {
+        for (auto& function : program_.functions_) {
+            for (auto& block : function->blocks_) {
+                constant_folding(block);
+                strength_reduction(block);
+            }
+        }
+    }
 
 private:
     Program& program_;
     IRBuilder builder_;
-};
 
-void RewriteEngine::fold()
-{
-}
+    void constant_folding(std::unique_ptr<BasicBlock>& block);
+    void strength_reduction(std::unique_ptr<BasicBlock>& block);
+};

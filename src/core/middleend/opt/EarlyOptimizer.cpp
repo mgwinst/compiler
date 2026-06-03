@@ -237,7 +237,7 @@ void combine_with_successor(std::unique_ptr<BasicBlock>& block)
         inst->parent_ = block.get();
     }
 
-    // we have to remove the branch before the merging (br, new, new, ...), now when we call successor on next pass, terminator() does not return br/ret instruction
+    // remove the terminator branch block1(..., [br]) <- block2(inst, inst, ...) before merging
     block->instructions_.pop_back();
 
     block->instructions_.splice(block->instructions_.end(), successor->instructions_);

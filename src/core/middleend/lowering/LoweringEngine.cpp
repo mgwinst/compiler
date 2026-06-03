@@ -220,17 +220,17 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
             assert(op != BinaryOp::Invalid);
 
             if (op == BinaryOp::Assign) {
-                if (isa<Literal>(right)) {
+                if (isa<Const>(right)) {
                     return builder_.create<Store>(left, right);
                 } else {
                     return builder_.create<Store>(left, builder_.create<Load>(right));
                 }
             }
 
-            if (!isa<Literal>(left))
+            if (!isa<Const>(left))
                 left = builder_.create<Load>(left);
 
-            if (!isa<Literal>(right))
+            if (!isa<Const>(right))
                 right = builder_.create<Load>(right);
 
             switch (op) {

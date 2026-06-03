@@ -26,6 +26,7 @@ add_library(compiler_lib STATIC
     src/core/middleend/ir/Value.cpp
     src/core/middleend/lowering/LoweringEngine.cpp
     src/core/middleend/opt/EarlyOptimizer.cpp
+    src/core/middleend/opt/RewriteEngine.cpp
     src/core/utils/print/print.cpp
 )
 

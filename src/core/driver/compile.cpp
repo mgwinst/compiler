@@ -33,6 +33,7 @@ void Compiler::compile(const Module& module)
     }
 
     early_optimize(program);
+    rewrite(program);
 
     if (context_.flags().contains("-opt")) {
         printer.print(program);
@@ -87,4 +88,9 @@ Program Compiler::lower(const ModuleContext& ctx, const SemaTree& tree)
 void Compiler::early_optimize(Program& program)
 {
     EarlyOptimizer{program}.run();
+}
+
+void Compiler::rewrite(Program& program)
+{
+    RewriteEngine{program}.run();
 }

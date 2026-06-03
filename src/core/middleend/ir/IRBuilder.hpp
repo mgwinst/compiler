@@ -29,7 +29,7 @@ struct IRBuilder
         }
     }
 
-    Literal* get_or_create_literal(auto literal)
+    Const* get_or_create_literal(auto literal)
     {
         auto [it, _] = program_->constant_pool_.try_insert(literal); 
         return it->second.get();

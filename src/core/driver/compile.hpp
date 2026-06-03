@@ -7,6 +7,7 @@
 #include "../frontend/sema/types/type_checker.hpp"
 #include "../middleend/lowering/LoweringEngine.hpp"
 #include "../middleend/opt/EarlyOptimizer.hpp"
+#include "../middleend/opt/RewriteEngine.hpp"
 #include "../context/context.hpp"
 #include "../utils/utils.hpp"
 
@@ -30,5 +31,6 @@ private:
     void desugar(ModuleContext& ctx, SemaTree& tree);
     Program lower(const ModuleContext& ctx, const SemaTree& tree);
     void early_optimize(Program& program);
+    void rewrite(Program& program);
 };
 

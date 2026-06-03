@@ -23,8 +23,7 @@ template <> inline constexpr ValueKind value_kind_v<Return>     = ValueKind::Ret
 template <> inline constexpr ValueKind value_kind_v<Branch>     = ValueKind::Branch;
 template <> inline constexpr ValueKind value_kind_v<PtrAdd>     = ValueKind::PtrAdd;
 template <> inline constexpr ValueKind value_kind_v<Phi>        = ValueKind::Phi; // inst end
-template <> inline constexpr ValueKind value_kind_v<Literal>    = ValueKind::Const;
-
+template <> inline constexpr ValueKind value_kind_v<Const>      = ValueKind::Const;
 
 template <typename T, DerivedFromValue V>
 bool isa(const std::unique_ptr<V>& value)

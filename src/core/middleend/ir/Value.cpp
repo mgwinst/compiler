@@ -12,3 +12,16 @@ void Value::add_use(Value* value)
     if (value)
         users_.push_back(value);
 }
+
+void Value::replace_uses_with(Value* value)
+{
+    if (value) {
+        for (auto* user : static_cast_view<Instruction>(users_)) {
+            for (auto& operand : user->operands_) {
+                if (operand == this) {
+                    operand = value;
+                }
+            }
+        }
+    }
+}
