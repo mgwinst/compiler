@@ -317,7 +317,7 @@ namespace Syntax
 template <typename T>
 inline constexpr ASTNodeKind ast_node_kind_v = ASTNodeKind::Invalid;
 
-template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ModuleDecl> = ASTNodeKind::ModuleDecl;
+template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ModuleDecl>          = ASTNodeKind::ModuleDecl;
 template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::VarDecl>             = ASTNodeKind::VarDecl;
 template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::ParamDecl>           = ASTNodeKind::ParamDecl;
 template <> inline constexpr ASTNodeKind ast_node_kind_v<Syntax::FuncDecl>            = ASTNodeKind::FuncDecl;
@@ -412,7 +412,7 @@ private:
     void move_construct_from(ASTNode& other)
     {
         switch (other.kind_) {
-            case ASTNodeKind::ModuleDecl: move_construct<Syntax::ModuleDecl>(other); break;
+            case ASTNodeKind::ModuleDecl:          move_construct<Syntax::ModuleDecl>(other);          break;
             case ASTNodeKind::VarDecl:             move_construct<Syntax::VarDecl>(other);             break;
             case ASTNodeKind::ParamDecl:           move_construct<Syntax::ParamDecl>(other);           break;
             case ASTNodeKind::FuncDecl:            move_construct<Syntax::FuncDecl>(other);            break;

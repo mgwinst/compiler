@@ -7,12 +7,14 @@
 #include "types.hpp"
 #include "../../ast/ast.hpp"
 
+using boost::container::small_vector;
+
 inline constexpr std::size_t INLINE_VEC_SIZE{ 8 };
 
 struct TypePool
 {
     std::vector<Type> types_;
-    std::unordered_map<TypeID, boost::container::small_vector<TypeID, INLINE_VEC_SIZE>> buckets_;
+    std::unordered_map<TypeID, small_vector<TypeID, INLINE_VEC_SIZE>> buckets_;
     std::unordered_map<std::string, TypeID> user_defined_map_; // fixes unknown type resolution problem
 
     TypePool() noexcept;

@@ -298,3 +298,4 @@ inline constexpr SemaNodeID UINT64 = 12;
 inline constexpr SemaNodeID FLOAT16 = 13;
 inline constexpr SemaNodeID FLOAT32 = 14;
 inline constexpr SemaNodeID FLOAT64 = 15;
+

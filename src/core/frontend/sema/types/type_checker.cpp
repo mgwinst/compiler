@@ -75,7 +75,7 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
             auto cond_type_id = check_type(ifstmt.cond_);
             if (cond_type_id == ERROR_TYPE) return ERROR_TYPE;
 
-            if (!convertible_to_boolean(ctx_.type_pool_.get_type(*cond_type_id))) {
+            if (!convertible_to_boolean(ctx_.get_type(*cond_type_id))) {
                 auto err = TypeError{std::format("condition expression must be of boolean or scalar type")};
                 ctx_.diagnostics_.register_error(err);
                 return ERROR_TYPE;
@@ -93,7 +93,7 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
                 auto else_cond_type_id = check_type(*ifstmt.else_stmt_);
                 if (else_cond_type_id == ERROR_TYPE) return ERROR_TYPE;
             
-                if (!convertible_to_boolean(ctx_.type_pool_.get_type(*else_cond_type_id))) {
+                if (!convertible_to_boolean(ctx_.get_type(*else_cond_type_id))) {
                     auto err = TypeError{std::format("condition expression must be of boolean or scalar type")};
                     ctx_.diagnostics_.register_error(err);
                     return ERROR_TYPE;
@@ -110,7 +110,7 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
             auto cond_type_id = check_type(while_stmt.cond_);
             if (cond_type_id == ERROR_TYPE) return ERROR_TYPE;
             
-            if (!convertible_to_boolean(ctx_.type_pool_.get_type(*cond_type_id))) {
+            if (!convertible_to_boolean(ctx_.get_type(*cond_type_id))) {
                 auto err = TypeError{std::format("condition expression must be of boolean or scalar type")};
                 ctx_.diagnostics_.register_error(err);
                 return ERROR_TYPE;
@@ -141,7 +141,7 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
             auto operand_type_id = check_type(unary.operand_);
             if (*operand_type_id == ERROR_TYPE) return ERROR_TYPE;
 
-            const Type& operand_type = ctx_.type_pool_.get_type(*operand_type_id);
+            const Type& operand_type = ctx_.get_type(*operand_type_id);
 
             if (unary.op_ == "&") {
                 return ctx_.type_pool_.get_or_create<PointerType>(*operand_type_id);
@@ -217,7 +217,7 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
             auto& call = node.as<CallExpr>();
 
             auto call_ref = tree_.nodes_[call.callee_].as<ReferenceExpr>();
-            auto& func_type = ctx_.type_pool_.get_type(call_ref.type_id_).as<FunctionType>();
+            auto& func_type = ctx_.get_type(call_ref.type_id_).as<FunctionType>();
             
             if (func_type.params_.size() != call.args_.size()) {
                 auto err = InvalidArguments{std::format("expected '{}' arguments in call expression", func_type.params_.size()), call.source_loc_};
@@ -242,7 +242,7 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
         case SemaNodeKind::MemberExpr: {
             auto& expr = node.as<MemberExpr>();
             auto& rec_ref = tree_.nodes_[expr.base_].as<ReferenceExpr>();
-            auto& rec_type = ctx_.type_pool_.get_type(rec_ref.type_id_).as<RecordType>();
+            auto& rec_type = ctx_.get_type(rec_ref.type_id_).as<RecordType>();
             
             auto* field = rec_type.lookup_field(expr.member_);
             if (field == nullptr) {
@@ -258,7 +258,7 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
             auto& expr = node.as<ArraySubscriptExpr>();
             auto& arr_ref = tree_.nodes_[expr.base_].as<ReferenceExpr>();
             auto& arr_symbol = ctx_.symbol_table_.get_symbol(arr_ref.symbol_id_);
-            auto& arr_type = ctx_.type_pool_.get_type(arr_symbol.type_id_).as<ArrayType>();
+            auto& arr_type = ctx_.get_type(arr_symbol.type_id_).as<ArrayType>();
 
             return arr_type.inner_type_;
         }

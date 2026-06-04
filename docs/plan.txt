@@ -5,3 +5,10 @@ plan:
     - optimizations (SCCP -> GVN -> DCE -> LICM/unrolling) (first 3 are top priority)
     - SSA destruction? (or keep in SSA?)
     - pre-ra schedule -> register allocation -> post-ra schedule
+
+Today:
+    refactor some Sema (nice node query tuple unpacking structured binding generics (some ideas there...))
+    array size correctness
+    constness in frontend so we can unlock true constant folding in IR
+    opaque ptr type info in IR (info is in operands
+    SROA (look at llvm document, vector example)   

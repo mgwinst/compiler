@@ -81,15 +81,19 @@ TypeID TypePool::resolve_type(const ASTNodeID type_expr, const AST& ast) noexcep
             return get_or_create<ReferenceType>(resolve_type(ref.inner_, ast));
         }
 
-        // size might be wrong here
         case ASTNodeKind::ArrayTypeExpr: {
             const auto& arr = node.as<Syntax::ArrayTypeExpr>();
 
-            // temporary hack
             if (!arr.size_)
                 error_exit("array must have a size");
 
-            return get_or_create<ArrayType>(resolve_type(arr.inner_, ast), *arr.size_);
+            if (ast.nodes_[*arr.size_].get_kind() != ASTNodeKind::IntegerLiteralExpr) {
+                error_exit("array size must be Integer constant");
+            }
+
+            uint64_t size = ast.nodes_[*arr.size_].as<Syntax::IntegerLiteralExpr>().value_;
+
+            return get_or_create<ArrayType>(resolve_type(arr.inner_, ast), size);
         }
 
         case ASTNodeKind::NamedTypeExpr: {

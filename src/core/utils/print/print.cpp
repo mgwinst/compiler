@@ -70,7 +70,7 @@ std::string type_to_str(const ModuleContext& ctx, TypeID type_ref)
         // FIX: print size
         case TypeKind::Array: {
             const auto& t = type.as<ArrayType>();
-            return std::format("{}[]", type_to_str(ctx, t.inner_type_));
+            return std::format("{}[{}]", type_to_str(ctx, t.inner_type_), t.size_);
         }
 
         case TypeKind::Qualifier: {

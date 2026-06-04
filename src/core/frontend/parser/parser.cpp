@@ -217,7 +217,7 @@ std::expected<ASTNodeID, Error> Parser::parse_var_decl() noexcept
 std::expected<ASTNodeID, Error> Parser::parse_func_decl() noexcept
 {
     auto [name] = expect(TokenType::IDENTIFIER);
-    if (!name) return std::unexpected{ SyntaxError{cur_token_, "missing function identifier"}}; 
+    if (!name) return std::unexpected{ SyntaxError{cur_token_, "missing function identifier"} }; 
 
     SourceLoc source{ prev_token_ };
 
