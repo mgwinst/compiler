@@ -33,7 +33,7 @@ private:
     BasicBlock* current_block() const;
     void set_current_function(Function* function);
     void set_current_block(BasicBlock* block);
-    Value* get_value(const Sema::ReferenceExpr& ref) const; // {ref.name : Value*}
+    Value* get_value(const Sema::ReferenceExpr& ref) const; // {ref.name : Value*} -> get alloca ptr for this variable
     void push_loop_context(BasicBlock* preheader, BasicBlock* header, BasicBlock* body, BasicBlock* end);
     void pop_loop_context();
     LoopContext& get_loop_context();

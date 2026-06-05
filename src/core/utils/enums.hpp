@@ -153,6 +153,21 @@ enum class ImplicitCastKind
     BitCast
 };
 
+enum class UnaryOp
+{
+    AddressOf,
+    Dereference,
+    Increment,
+    Decrement
+};
+
+inline std::unordered_map<std::string, UnaryOp> unary_ops = {
+    {"&",  UnaryOp::AddressOf},
+    {"*",  UnaryOp::Dereference},
+    {"++", UnaryOp::Increment},
+    {"--", UnaryOp::Decrement},
+};
+
 enum class BinaryOp
 {
     Invalid,

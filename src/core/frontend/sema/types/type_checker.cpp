@@ -151,6 +151,8 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
                     ctx_.diagnostics_.register_error(err);
                     return ERROR_TYPE;
                 }
+                // dereference -> return underlying type
+                return operand_type.as<PointerType>().inner_type_; 
             } else if (unary.op_ == "!") {
                 if (!convertible_to_boolean(operand_type)) {
                     auto err = TypeError{std::format("invalid argument type '{}' to unary expression '!'", type_to_str(ctx_, *operand_type_id)), unary.source_loc_};
@@ -216,7 +218,7 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
         case SemaNodeKind::CallExpr: {
             auto& call = node.as<CallExpr>();
 
-            auto call_ref = tree_.nodes_[call.callee_].as<ReferenceExpr>();
+            auto& call_ref = tree_.nodes_[call.callee_].as<ReferenceExpr>();
             auto& func_type = ctx_.get_type(call_ref.type_id_).as<FunctionType>();
             
             if (func_type.params_.size() != call.args_.size()) {
@@ -257,7 +259,7 @@ std::optional<TypeID> TypeChecker::check_type(SemaNodeID node_id)
         case SemaNodeKind::ArraySubscriptExpr: {
             auto& expr = node.as<ArraySubscriptExpr>();
             auto& arr_ref = tree_.nodes_[expr.base_].as<ReferenceExpr>();
-            auto& arr_symbol = ctx_.symbol_table_.get_symbol(arr_ref.symbol_id_);
+            auto& arr_symbol = ctx_.get_symbol(arr_ref.symbol_id_);
             auto& arr_type = ctx_.get_type(arr_symbol.type_id_).as<ArrayType>();
 
             return arr_type.inner_type_;

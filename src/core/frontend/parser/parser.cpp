@@ -540,8 +540,8 @@ auto infix_lbp(Token token) noexcept {
         case TokenType::LBRACKET:    // index
         case TokenType::DOT:         // member access
         case TokenType::ARROW:       // member access
-        case TokenType::PLUS_PLUS:   // x++
-        case TokenType::MINUS_MINUS: // x--
+        case TokenType::PLUS_PLUS:   
+        case TokenType::MINUS_MINUS: 
             return prec::postfix;
 
         default:
@@ -562,7 +562,7 @@ std::expected<ASTNodeID, Error> Parser::nud(const Token token) noexcept
         case TokenType::MINUS:
         case TokenType::MINUS_MINUS:
         case TokenType::BANG:
-        case TokenType::CARROT: // move semantics later
+        case TokenType::CARROT:
         case TokenType::TILDE: {
             auto operand = parse_expr(prec::unary);
             if (!operand) return std::unexpected{ operand.error() };
