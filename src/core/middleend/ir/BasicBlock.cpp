@@ -1,10 +1,9 @@
 #include "IR.hpp"
-#include "../../utils/utils.hpp"
-#include "../../utils/casting.hpp"
-#include "../../utils/cast_range.hpp"
+#include "utils/utils.hpp"
+#include "utils/casting.hpp"
 
 BasicBlock::BasicBlock(std::string_view name) :
-    Value{ValueKind::BasicBlock, none, name} {}
+    Value{ValueKind::BasicBlock, nullptr, name} {}
 
 BasicBlock::~BasicBlock()
 {

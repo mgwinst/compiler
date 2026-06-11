@@ -4,7 +4,7 @@
 #include <ranges>
 
 #include "EarlyOptimizer.hpp"
-#include "../../utils/casting.hpp"
+#include "utils/casting.hpp"
 
 bool escapes_via(Value* value, Value* target, std::unordered_set<Value*>& visited)
 {

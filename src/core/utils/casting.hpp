@@ -1,29 +1,47 @@
 #pragma once
 
-#include "../middleend/ir/IR.hpp"
+#include <ranges>
+#include <cassert>
 
-template <typename T>
-inline constexpr ValueKind value_kind_v = ValueKind::Invalid;
+#include "frontend/ast/ast.hpp"
+#include "frontend/sema/types/types.hpp"
+#include "frontend/sema/sematree.hpp"
+#include "middleend/ir/IR.hpp"
 
-template <> inline constexpr ValueKind value_kind_v<Function>   = ValueKind::Function;
-template <> inline constexpr ValueKind value_kind_v<BasicBlock> = ValueKind::BasicBlock;
-template <> inline constexpr ValueKind value_kind_v<Argument>   = ValueKind::Argument;
-template <> inline constexpr ValueKind value_kind_v<Alloca>     = ValueKind::Alloca; // inst begin
-template <> inline constexpr ValueKind value_kind_v<Load>       = ValueKind::Load;
-template <> inline constexpr ValueKind value_kind_v<Store>      = ValueKind::Store;
-template <> inline constexpr ValueKind value_kind_v<Add>        = ValueKind::Add;
-template <> inline constexpr ValueKind value_kind_v<Sub>        = ValueKind::Sub;
-template <> inline constexpr ValueKind value_kind_v<Mul>        = ValueKind::Mul;
-template <> inline constexpr ValueKind value_kind_v<Div>        = ValueKind::Div;
-template <> inline constexpr ValueKind value_kind_v<Eq>         = ValueKind::Eq;
-template <> inline constexpr ValueKind value_kind_v<Ne>         = ValueKind::Ne;
-template <> inline constexpr ValueKind value_kind_v<Slt>        = ValueKind::Slt;
-template <> inline constexpr ValueKind value_kind_v<Call>       = ValueKind::Call;
-template <> inline constexpr ValueKind value_kind_v<Return>     = ValueKind::Return;
-template <> inline constexpr ValueKind value_kind_v<Branch>     = ValueKind::Branch;
-template <> inline constexpr ValueKind value_kind_v<PtrAdd>     = ValueKind::PtrAdd;
-template <> inline constexpr ValueKind value_kind_v<Phi>        = ValueKind::Phi; // inst end
-template <> inline constexpr ValueKind value_kind_v<Const>      = ValueKind::Const;
+using Syntax::ASTNode;
+using Sema::SemaNode;
+
+template <DerivedFromASTNode Derived>
+bool isa(ASTNode* ptr)
+{
+    return ptr && ptr->kind_ == ast_node_kind_v<Derived>;
+}
+
+template <AbstractNode T>
+bool category(auto* ptr)
+{
+    if constexpr (std::same_as<T, Sema::Decl>)
+        return ptr->kind_ >= SemaNodeKind::ModuleDecl && ptr->kind_ <= SemaNodeKind::RecordDecl;
+    else if constexpr (std::same_as<T, Sema::Stmt>)
+        return ptr->kind_ >= SemaNodeKind::CompoundStmt && ptr->kind_ <= SemaNodeKind::ForStmt;
+    else
+        return ptr->kind_ >= SemaNodeKind::IntegerLiteralExpr && ptr->kind_ <= SemaNodeKind::ImplicitCastExpr;
+}
+
+template <DerivedFromSemaNode Derived>
+bool isa(SemaNode* ptr)
+{
+    if constexpr (AbstractNode<Derived>)
+        return category<Derived>(ptr);
+
+    return ptr && ptr->kind_ == sema_node_kind_v<Derived>;
+}
+
+template <DerivedFromType Derived>
+bool isa(Type* ptr)
+{
+    return ptr && ptr->kind_ == type_kind_v<Derived>;
+}
 
 template <typename T, DerivedFromValue V>
 bool isa(const std::unique_ptr<V>& value)
@@ -43,46 +61,31 @@ bool isa(V* value)
     return value->kind_ == value_kind_v<T>;
 }
 
-template <typename T, DerivedFromValue V>
-T* dyn_cast(const std::unique_ptr<V>& value)
+template <typename T, typename U>
+T* cast(U* ptr)
 {
-    if (value && value->kind_ == value_kind_v<T>)
-        return static_cast<T*>(value.get());
-
-    return nullptr;
+    assert(isa<T>(ptr));
+    return static_cast<T*>(ptr);
 }
 
-template <typename T, DerivedFromValue V>
-T* dyn_cast(V* value)
+template <typename T, typename U>
+T* dyn_cast(U* ptr)
 {
-    if (value && value->kind_ == value_kind_v<T>)
-        return static_cast<T*>(value);
-
-    return nullptr;
+    return isa<T>(ptr) ? static_cast<T*>(ptr) : nullptr;
 }
 
-template <DerivedFromValue V>
-bool is_instruction(std::unique_ptr<V>& value) 
+template <typename T, typename U>
+T* dyn_cast(const std::unique_ptr<U>& ptr)
 {
-    return value->kind_ >= ValueKind::Alloca && value->kind_ <= ValueKind::Phi;
+    return isa<T>(ptr.get()) ? static_cast<T*>(ptr.get()) : nullptr;
 }
 
-template <DerivedFromValue V>
-bool is_instruction(V* value) 
-{
-    return value->kind_ >= ValueKind::Alloca && value->kind_ <= ValueKind::Phi;
-}
+// range casting
 
-template <DerivedFromValue V>
-bool is_terminator(std::unique_ptr<V>& value) 
+template <typename T>
+auto static_cast_view(auto&& range)
 {
-    return value->kind_ == ValueKind::Return || 
-           value->kind_ == ValueKind::Branch;
-}
-
-template <DerivedFromValue V>
-bool is_terminator(V* value) 
-{
-    return value->kind_ == ValueKind::Return || 
-           value->kind_ == ValueKind::Branch;
+    return std::forward<decltype(range)>(range)
+        | std::views::filter([](auto* p) { return p != nullptr; })
+        | std::views::transform([](auto* p) { return static_cast<T*>(p); });
 }

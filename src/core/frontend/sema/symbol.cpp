@@ -2,42 +2,41 @@
 
 #include "symbol.hpp"
 
-bool SymbolTable::exists_in_scope(const std::string& identifier) noexcept
+Symbol* SymbolTable::insert(Syntax::Decl* node, Type* type)
 {
-    return cur_scope().contains(identifier);           
+    auto* symbol = arena_.emplace<Symbol>(node->name_, type, StorageClass::Auto, Linkage::External);
+
+    cur_scope().emplace(node->name_, symbol);
+
+    return symbol;
+}
+
+bool SymbolTable::exists_in_scope(const std::string& identifier)
+{
+    return cur_scope().contains(identifier);
 }       
 
-SymbolID SymbolTable::lookup(const std::string& identifier) noexcept {
-    for (auto& scope : scopes_ | std::views::reverse) {
+Symbol* SymbolTable::lookup(const std::string& identifier) {
+    for (auto& scope : std::views::reverse(scopes_)) {
         if (scope.contains(identifier)) {
             return scope[identifier];
         }
     }
 
-    return static_cast<SymbolID>(-1);
+    return nullptr;
 }
 
-std::unordered_map<std::string, SymbolID>& SymbolTable::cur_scope() noexcept
+std::unordered_map<std::string, Symbol*>& SymbolTable::cur_scope()
 { 
     return scopes_.back();
 }
 
-void SymbolTable::enter_scope() noexcept
+void SymbolTable::enter_scope()
 {
-    scopes_.push_back({ });
+    scopes_.emplace_back();
 }
 
-void SymbolTable::exit_scope() noexcept
+void SymbolTable::exit_scope()
 {
     scopes_.pop_back();
-}
-
-const Symbol& SymbolTable::get_symbol(SymbolID id) const noexcept
-{
-    return symbol_pool_[id];
-}
-
-Symbol& SymbolTable::get_symbol(SymbolID id) noexcept
-{
-    return symbol_pool_[id];
 }

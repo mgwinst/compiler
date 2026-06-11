@@ -52,7 +52,5 @@ void RewriteEngine::constant_folding(std::unique_ptr<BasicBlock>& block)
 
 void RewriteEngine::strength_reduction(std::unique_ptr<BasicBlock>& block)
 {
-    for (auto it = block->instructions_.begin(); it != block->instructions_.end(); ) {
-        ++it;
-    }
+
 }

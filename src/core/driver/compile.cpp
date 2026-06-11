@@ -1,6 +1,16 @@
-#include "compile.hpp"
+#include <thread>
 
-#include "../utils/temp_ir_naming.hpp"
+#include "driver/compile.hpp"
+
+#include "utils/utils.hpp"
+#include "utils/temp_ir_naming.hpp"
+#include "utils/print/print.hpp"
+#include "frontend/error/diagnostics.hpp"
+#include "frontend/parser/parser.hpp"
+#include "frontend/sema/analyzer.hpp"
+#include "middleend/lowering/LoweringEngine.hpp"
+#include "middleend/opt/EarlyOptimizer.hpp"
+#include "middleend/opt/RewriteEngine.hpp"
 
 void Compiler::compile_modules()
 {
@@ -12,75 +22,51 @@ void Compiler::compile_modules()
 
 void Compiler::compile(const Module& module)
 {
-    ModuleContext ctx;
+    ModuleContext ctx;   
 
     AST ast = parse(module);
-    SemaTree sema_tree = decorate(ctx, ast);
-    type_check(ctx, sema_tree);
-    desugar(ctx, sema_tree);
+
+    SemaTree sema_tree = analyze(ctx, ast);
 
     Program program = lower(ctx, sema_tree);
     name_values(program); // temporary debug
 
-    PrettyPrinter printer{ ctx };
-    
     if (context_.flags().contains("-ast")) {
-        printer.print(sema_tree);
+        print(sema_tree);
     }
 
     if (context_.flags().contains("-ir")) {
-        printer.print(program);
+        print(program);
     }
 
     early_optimize(program);
     rewrite(program);
 
     if (context_.flags().contains("-opt")) {
-        printer.print(program);
-    }
-}
-
-void report(const Diagnostics& diag)
-{
-    if (diag.contains_warnings()) {
-        diag.dump_warnings();
-    }
-
-    if (diag.contains_errors()) {
-        diag.dump_errors();
-        exit(1);
+        print(program);
     }
 }
 
 AST Compiler::parse(const Module& module)
 {
     Parser parser{ module };
-    auto ast = parser.run();
+    AST ast = parser.run();
 
-    report(parser.diagnostics_);
+    parser.diagnostics_.report();
 
     return ast;
 }
 
-SemaTree Compiler::decorate(ModuleContext& ctx, const AST& ast)
+SemaTree Compiler::analyze(ModuleContext& ctx, AST& ast)
 {
-    auto sema_tree = SemaTreeBuilder{ctx, ast}.run();
-    report(ctx.diagnostics_);
+    SemaTree sema_tree = SemanticAnalyzer{ctx, ast}.run();
+
+    ctx.diagnostics_.report();
+
     return sema_tree;
 }
 
-void Compiler::type_check(ModuleContext& ctx, const SemaTree& tree)
-{
-    TypeChecker{ctx, tree}.run();
-    report(ctx.diagnostics_);
-}
-
-void Compiler::desugar(ModuleContext& ctx, SemaTree& tree)
-{
-    TreeDesugarer{ctx, tree}.run();
-}
-
-Program Compiler::lower(const ModuleContext& ctx, const SemaTree& tree)
+Program Compiler::lower(ModuleContext& ctx, const SemaTree& tree)
 {
     return LoweringEngine{ctx, tree}.run();
 }

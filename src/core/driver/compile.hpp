@@ -1,15 +1,9 @@
 #pragma once
 
-#include "../frontend/error/diagnostics.hpp"
-#include "../frontend/parser/parser.hpp"
-#include "../frontend/sema/sema_tree_builder.hpp"
-#include "../frontend/sema/desugar.hpp"
-#include "../frontend/sema/types/type_checker.hpp"
-#include "../middleend/lowering/LoweringEngine.hpp"
-#include "../middleend/opt/EarlyOptimizer.hpp"
-#include "../middleend/opt/RewriteEngine.hpp"
-#include "../context/context.hpp"
-#include "../utils/utils.hpp"
+#include "context/context.hpp"
+#include "frontend/ast/ast.hpp"
+#include "frontend/sema/sematree.hpp"
+#include "middleend/ir/IR.hpp"
 
 class Compiler
 {
@@ -26,11 +20,8 @@ private:
     void debug_compile(const Module& module);
 
     AST parse(const Module& module);
-    SemaTree decorate(ModuleContext& ctx, const AST& ast);
-    void type_check(ModuleContext& ctx, const SemaTree& tree);
-    void desugar(ModuleContext& ctx, SemaTree& tree);
-    Program lower(const ModuleContext& ctx, const SemaTree& tree);
+    SemaTree analyze(ModuleContext& ctx, AST& ast);
+    Program lower(ModuleContext& ctx, const SemaTree& tree);
     void early_optimize(Program& program);
     void rewrite(Program& program);
 };
-

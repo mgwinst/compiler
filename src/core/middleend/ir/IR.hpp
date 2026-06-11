@@ -2,6 +2,7 @@
 
 #include <initializer_list>
 #include <unordered_set>
+#include <unordered_map>
 #include <string_view>
 #include <cstdint>
 #include <concepts>
@@ -16,18 +17,14 @@
 
 #include "boost/container/small_vector.hpp"
 
-#include "../../frontend/sema/types/types.hpp"
-#include "../../utils/alias.hpp"
-#include "../../utils/utils.hpp"
-#include "../../utils/enums.hpp"
-#include "../../utils/cast_range.hpp"
+#include "frontend/sema/types/types.hpp"
+#include "utils/enums.hpp"
+#include "utils/utils.hpp"
 
 using boost::container::small_vector;
 
 namespace ranges = std::ranges;
 namespace views = std::views;
-
-inline constexpr TypeID none = -1;
 
 enum class ValueKind
 {
@@ -56,12 +53,12 @@ enum class ValueKind
 struct Value
 {
     ValueKind kind_;
-    TypeID type_id_;
+    Type* type_;
     std::string name_;
     small_vector<Value*, 4> users_;
     Value* parent_;
 
-    Value(ValueKind kind, TypeID type_id = none, std::string_view name = "", Value* parent = nullptr);
+    Value(ValueKind kind, Type* type = nullptr, std::string_view name = "", Value* parent = nullptr);
 
     virtual ~Value() = default;
 
@@ -76,7 +73,7 @@ struct Instruction : Value
 {
     small_vector<Value*, 2> operands_;
 
-    Instruction(ValueKind kind, std::initializer_list<Value*> operands, TypeID type_id = none, std::string_view name = "");
+    Instruction(ValueKind kind, std::initializer_list<Value*> operands, Type* type = nullptr, std::string_view name = "");
 
     ~Instruction() override;
 };
@@ -86,12 +83,12 @@ concept DerivedFromInstruction = std::derived_from<T, Instruction>;
 
 struct Alloca : Instruction
 {
-    Alloca(TypeID type_id, std::string_view name);
+    Alloca(Type* type, std::string_view name);
 };
 
 struct Load : Instruction
 {
-    Load(TypeID type_id, Value* ptr);
+    Load(Type* type, Value* ptr);
     Load(Value* ptr);
 };
 
@@ -154,6 +151,12 @@ struct PtrAdd : Instruction
 
 struct BasicBlock;
 
+enum class BranchKind
+{
+    Unconditional,
+    Conditional
+};
+
 struct Branch : Instruction
 {      
     BranchKind branch_kind_;
@@ -207,7 +210,7 @@ struct BasicBlock : Value
 
 struct Argument : Value
 {
-    Argument(TypeID type_id = none, std::string_view name = "");
+    Argument(Type* type = nullptr, std::string_view name = "");
 };
 
 struct Function : Value
@@ -227,6 +230,29 @@ struct Function : Value
     Argument* insert(Argument* arg);
     void initialize_return(Value* return_value, BasicBlock* return_block);
 };
+
+template <typename T>
+inline constexpr ValueKind value_kind_v = ValueKind::Invalid;
+
+template <> inline constexpr ValueKind value_kind_v<Function>   = ValueKind::Function;
+template <> inline constexpr ValueKind value_kind_v<BasicBlock> = ValueKind::BasicBlock;
+template <> inline constexpr ValueKind value_kind_v<Argument>   = ValueKind::Argument;
+template <> inline constexpr ValueKind value_kind_v<Alloca>     = ValueKind::Alloca; // inst begin
+template <> inline constexpr ValueKind value_kind_v<Load>       = ValueKind::Load;
+template <> inline constexpr ValueKind value_kind_v<Store>      = ValueKind::Store;
+template <> inline constexpr ValueKind value_kind_v<Add>        = ValueKind::Add;
+template <> inline constexpr ValueKind value_kind_v<Sub>        = ValueKind::Sub;
+template <> inline constexpr ValueKind value_kind_v<Mul>        = ValueKind::Mul;
+template <> inline constexpr ValueKind value_kind_v<Div>        = ValueKind::Div;
+template <> inline constexpr ValueKind value_kind_v<Eq>         = ValueKind::Eq;
+template <> inline constexpr ValueKind value_kind_v<Ne>         = ValueKind::Ne;
+template <> inline constexpr ValueKind value_kind_v<Slt>        = ValueKind::Slt;
+template <> inline constexpr ValueKind value_kind_v<Call>       = ValueKind::Call;
+template <> inline constexpr ValueKind value_kind_v<Return>     = ValueKind::Return;
+template <> inline constexpr ValueKind value_kind_v<Branch>     = ValueKind::Branch;
+template <> inline constexpr ValueKind value_kind_v<PtrAdd>     = ValueKind::PtrAdd;
+template <> inline constexpr ValueKind value_kind_v<Phi>        = ValueKind::Phi; // inst end
+template <> inline constexpr ValueKind value_kind_v<Const>      = ValueKind::Const;
 
 class ConstantPool
 {
@@ -264,8 +290,6 @@ struct Program
 
     Function* insert(Function* function);
 };
-
-
 inline std::vector<BasicBlock*> post_order(std::unique_ptr<Function>& function, bool reverse = false)
 {
     if (function->blocks_.empty())
@@ -292,7 +316,6 @@ inline std::vector<BasicBlock*> post_order(std::unique_ptr<Function>& function, 
 
     return post_order;
 }
-
 
 
 

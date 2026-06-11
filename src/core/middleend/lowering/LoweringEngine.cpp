@@ -4,12 +4,12 @@
 #include <utility>
 
 #include "LoweringEngine.hpp"
-#include "../../utils/enums.hpp"
-#include "../../utils/casting.hpp"
+#include "utils/casting.hpp"
+#include "utils/enums.hpp"
 
 using namespace Sema;
 
-LoweringEngine::LoweringEngine(const ModuleContext& ctx, const SemaTree& tree) :
+LoweringEngine::LoweringEngine(ModuleContext& ctx, const SemaTree& tree) :
     ctx_{ ctx }, 
     tree_{ tree },
     program_{ },
@@ -17,36 +17,35 @@ LoweringEngine::LoweringEngine(const ModuleContext& ctx, const SemaTree& tree) :
 
 Program LoweringEngine::run()
 {
-    lower(tree_.root());
+    lower(tree_.root_);
     return std::move(program_);
 }
 
-Value* LoweringEngine::lower(SemaNodeID node_id)
+Value* LoweringEngine::lower(SemaNode* node)
 {
-    const auto& node = tree_.nodes_[node_id];
-
-    switch (node.get_kind()) {
+    switch (node->kind_) {
         case SemaNodeKind::ModuleDecl: {
-            const auto& module = node.as<ModuleDecl>();
+            auto* module = cast<ModuleDecl>(node);
             
-            for (auto decl : module.declarations()) {
+            for (auto* decl : module->decls_) {
                 lower(decl);
             }
 
             return nullptr;
         }
 
+        // symbol should provide a member function that returns a tuple of common fields we need access to (symbol->unpack()) ? 
+
         case SemaNodeKind::VarDecl: {
-            const auto& var = node.as<VarDecl>();
-            auto [type, name] = extract_info(var);
+            auto* var = cast<VarDecl>(node);
 
-            auto* alloca = builder_.create<Alloca>(type, name);
-            name_to_value_map_[name] = alloca;
+            auto* alloca = builder_.create<Alloca>(var->type(), var->name());
+            name_to_value_map_[var->name()] = alloca;
 
-            if (!var.has_initializer()) {
+            if (!var->init_) {
                 return alloca;
             } else {
-                auto* init_value = lower(*var.init_);
+                auto* init_value = lower(var->init_);
                 if (isa<Alloca>(init_value))
                     init_value = builder_.create<Load>(init_value);
                 return builder_.create<Store>(alloca, init_value);
@@ -54,50 +53,50 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
         }
 
         case SemaNodeKind::ParamDecl: {
-            const auto& param = node.as<ParamDecl>();
-            auto [type, name] = extract_info(param);
-            auto* arg = builder_.create<Argument>(type, name);
-            auto* alloca = builder_.create<Alloca>(type, name);
-            name_to_value_map_[name] = alloca;
+            auto* param = cast<ParamDecl>(node);
+ 
+            auto* arg = builder_.create<Argument>(param->type(), param->name());
+            auto* alloca = builder_.create<Alloca>(param->type(), param->name());
+            name_to_value_map_[param->name()] = alloca;
             auto* store = builder_.create<Store>(alloca, arg);
 
             return nullptr;
         }
     
         case SemaNodeKind::FuncDecl: {
-            const auto& func = node.as<FuncDecl>();
-            auto [_, name] = extract_info(func);
+            auto* func = cast<FuncDecl>(node);
 
-            auto* function = builder_.create<Function>(name);
+            auto* function = builder_.create<Function>(func->name());
             set_current_function(function);
 
             auto* entry = builder_.create<BasicBlock>("entry");
             set_current_block(entry);
 
-            auto ret_type = ctx_.get_type(func.type_id_).as<FunctionType>().return_type_;
-            if (ret_type != VOID) {
-                auto* ret_val = builder_.create<Alloca>(ret_type, "retval"); // technically doesn't need to be in name:value map
+            auto* return_type = cast<FunctionType>(func->type())->return_type_;
+ 
+            if (return_type != ctx_.type_table_.builtin_map_["void"]) {
+                auto* ret_val = builder_.create<Alloca>(return_type, "retval"); // technically doesn't need to be in name:value map
                 auto* ret_block = builder_.create<BasicBlock>("return");
                 current_function()->initialize_return(ret_val, ret_block);
 
                 set_current_block(ret_block);
-                auto* ret = builder_.create<Load>(ret_type, ret_val);
+                auto* ret = builder_.create<Load>(return_type, ret_val);
                 builder_.create<Return>(ret);
                 set_current_block(entry);
             }
 
-            for (auto p : func.params_) {
+            for (auto* p : func->params_) {
                 lower(p);
             }
 
-            lower(func.body_);
+            lower(func->body_);
 
             return function;
         }
 
         case SemaNodeKind::CompoundStmt: {
-            const auto& compound = node.as<CompoundStmt>();
-            for (auto c : compound.children_) {
+            auto* compound = cast<CompoundStmt>(node);
+            for (auto c : compound->children_) {
                 lower(c);
             }
 
@@ -106,8 +105,9 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
 
         // if there is only one predecessor to a return block, remove branch and linearize
         case SemaNodeKind::ReturnStmt: {
-            const auto& return_stmt = node.as<ReturnStmt>();
-            auto* value = lower(return_stmt.value_);
+            auto* return_stmt = cast<ReturnStmt>(node);
+
+            auto* value = lower(return_stmt->value_);
 
             auto* load = builder_.create<Load>(value);
 
@@ -118,33 +118,31 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
         }
 
         case SemaNodeKind::BreakStmt: {
-            const auto& brk_stmt = node.as<BreakStmt>();
             return builder_.create<Branch>(get_loop_context().end_);
         };
 
         case SemaNodeKind::ContinueStmt: {
-            const auto& cont_stmt = node.as<BreakStmt>();
             return builder_.create<Branch>(get_loop_context().header_);
         };
 
         case SemaNodeKind::IfStmt: {
-            const auto& if_stmt = node.as<IfStmt>();
+            auto* if_stmt = cast<IfStmt>(node);
     
             auto* header = current_block();
-            auto* cond = lower(if_stmt.cond_);
+            auto* cond = lower(if_stmt->cond_);
 
             auto* if_then_block = builder_.create<BasicBlock>("if.then");
             auto* if_end_block = builder_.create<BasicBlock>("if.end");
 
             set_current_block(if_then_block);
-            lower(if_stmt.then_stmt_);      
+            lower(if_stmt->then_stmt_);      
             builder_.create<Branch>(if_end_block);
 
             BasicBlock* if_else_block = nullptr;
-            if (if_stmt.else_stmt_.has_value()) {
+            if (if_stmt->else_stmt_) {
                 if_else_block = builder_.create<BasicBlock>("if.else");
                 set_current_block(if_else_block);
-                lower(*if_stmt.else_stmt_);
+                lower(if_stmt->else_stmt_);
                 builder_.create<Branch>(if_end_block);
             }
 
@@ -161,7 +159,7 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
         }
 
         case SemaNodeKind::WhileStmt: {
-            const auto& while_stmt = node.as<WhileStmt>();
+            auto* while_stmt = cast<WhileStmt>(node);
             
             auto* preheader = current_block();
             auto* cond = builder_.create<BasicBlock>("loop.cond"); // loop header
@@ -173,11 +171,11 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
             builder_.create<Branch>(cond);
 
             set_current_block(cond);
-            auto* cmp = lower(while_stmt.cond_); // assert(cmp is binary instruction)
+            auto* cmp = lower(while_stmt->cond_); // assert(cmp is binary instruction)
             builder_.create<Branch>(cmp, body, end);
             
             set_current_block(body);
-            lower(while_stmt.body_);
+            lower(while_stmt->body_);
             builder_.create<Branch>(cond);
 
             set_current_block(end);
@@ -188,8 +186,8 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
         }
 
         case SemaNodeKind::IntegerLiteralExpr: {
-            const auto& int_literal = node.as<IntegerLiteralExpr>();
-            return builder_.get_or_create_literal(int_literal.value_);
+            auto* int_literal = cast<IntegerLiteralExpr>(node);
+            return builder_.get_or_create_literal(int_literal->value_);
         }
 
         case SemaNodeKind::FloatLiteralExpr: {
@@ -209,42 +207,51 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
         };
 
         case SemaNodeKind::UnaryExpr: {
-            const auto& unary = node.as<UnaryExpr>();
+            auto* unary = cast<UnaryExpr>(node);
 
-            auto* operand = lower(unary.operand_);
+            auto* operand = lower(unary->operand_);
 
-            if (unary.op_ == "&") {
+            // address of
+            if (unary->op_ == "&")
                 return operand;
-            }
             
-            if (unary.op_ == "*") {
+            // pointer dereference
+            if (unary->op_ == "*")
                 return builder_.create<Load>(operand);
-            }
+
+            /*
+            if ++:
+                ...
+
+            if --:
+                ...
+            */
+            
 
             return nullptr;
         };
 
         case SemaNodeKind::BinaryExpr: {
-            const auto& binary = node.as<BinaryExpr>();
+            auto* binary = cast<BinaryExpr>(node);
 
-            const BinaryOp op = binary_ops[binary.op_];
+            const BinaryOp op = binary_ops[binary->op_];
             assert(op != BinaryOp::Invalid);
 
-            auto* left = lower(binary.left_);
-            auto* right = lower(binary.right_);
+            auto* left = lower(binary->left_);
+            auto* right = lower(binary->right_);
 
             if (op == BinaryOp::Assign) {
-                if (tree_.nodes_[binary.right_].get_kind() == SemaNodeKind::ReferenceExpr) {
+                if (isa<ReferenceExpr>(binary->right_)) {
                     right = builder_.create<Load>(right);
                 }
                 return builder_.create<Store>(left, right);
             }
 
-            if (tree_.nodes_[binary.left_].get_kind() == SemaNodeKind::ReferenceExpr) {
+            if (isa<ReferenceExpr>(binary->left_)) {
                 left = builder_.create<Load>(left);
             }
             
-            if (tree_.nodes_[binary.right_].get_kind() == SemaNodeKind::ReferenceExpr) {
+            if (isa<ReferenceExpr>(binary->right_)) {
                 right = builder_.create<Load>(right);
             }
 
@@ -263,38 +270,38 @@ Value* LoweringEngine::lower(SemaNodeID node_id)
         }
 
         case SemaNodeKind::ReferenceExpr: {
-            const auto& ref = node.as<ReferenceExpr>();
+            auto* ref = cast<ReferenceExpr>(node);
             return get_value(ref);
         }
 
         case SemaNodeKind::CallExpr: {
-            const auto& call = node.as<CallExpr>();
+            auto* call = cast<CallExpr>(node);
             
             return nullptr;
         }
 
         case SemaNodeKind::MemberExpr: {
-            const auto& expr = node.as<MemberExpr>();
-            const auto& base = tree_.nodes_[expr.base_].as<ReferenceExpr>();
-            auto field_index = ctx_.get_type(base.type_id_).as<RecordType>().field_position(expr.member_);
+            auto* expr = cast<MemberExpr>(node);
+            auto* base = cast<ReferenceExpr>(expr->base_);
             
-            // make this a Value literal? yes to keep uniformity
-            auto* index = builder_.get_or_create_literal(static_cast<int64_t>(field_index)); 
+            auto* record_type = cast<RecordType>(base->type());
 
-            // assert type is ptr or record
+            auto field_index = record_type->field_position(expr->member_);
+            auto* index = builder_.get_or_create_literal(static_cast<int64_t>(field_index));
+
             auto* base_ptr = get_value(base);
 
             return builder_.create<PtrAdd>(base_ptr, index);
         };
 
         case SemaNodeKind::ArraySubscriptExpr: {
-            const auto& expr = node.as<ArraySubscriptExpr>();
-            const auto& base = tree_.nodes_[expr.base_].as<ReferenceExpr>();
+            auto* expr = cast<ArraySubscriptExpr>(node);
+            auto* base = cast<ReferenceExpr>(expr->base_);
 
             // assert type is ptr or record
             auto* base_ptr = get_value(base);
 
-            auto* index = lower(expr.index_);
+            auto* index = lower(expr->index_);
 
             return builder_.create<PtrAdd>(base_ptr, index);
         }
@@ -345,10 +352,9 @@ void LoweringEngine::set_current_block(BasicBlock* block)
     builder_.current_block_ = block;
 }
 
-Value* LoweringEngine::get_value(const ReferenceExpr& ref) const
+Value* LoweringEngine::get_value(ReferenceExpr* ref)
 {
-    auto& name = ctx_.get_symbol(ref).identifier_;
-    if (auto it = name_to_value_map_.find(name); it != name_to_value_map_.end())
+    if (auto it = name_to_value_map_.find(ref->name()); it != name_to_value_map_.end())
         return it->second;
 
     return nullptr;
@@ -369,10 +375,4 @@ void LoweringEngine::pop_loop_context()
 LoopContext& LoweringEngine::get_loop_context()
 {
     return loop_context_stack_.top();
-}
-
-std::tuple<TypeID, const std::string&> LoweringEngine::extract_info(const ContainsSymbol auto& node)
-{
-    auto& symbol = ctx_.get_symbol(node);
-    return {symbol.type_id_, symbol.identifier_};
 }

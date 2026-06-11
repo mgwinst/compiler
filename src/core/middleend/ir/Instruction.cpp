@@ -1,7 +1,7 @@
 #include "IR.hpp"
 
-Instruction::Instruction(ValueKind kind, std::initializer_list<Value*> operands, TypeID type_id, std::string_view name) : 
-    Value{kind, type_id, name}
+Instruction::Instruction(ValueKind kind, std::initializer_list<Value*> operands, Type* type, std::string_view name) : 
+    Value{kind, type, name}
 {
     operands_ = operands;
     for (auto* arg : operands_) {
@@ -20,11 +20,11 @@ Instruction::~Instruction()
     }
 }
 
-Alloca::Alloca(TypeID type_id, std::string_view name) :
-    Instruction{ValueKind::Alloca, {}, type_id, name} {}
+Alloca::Alloca(Type* type, std::string_view name) :
+    Instruction{ValueKind::Alloca, {}, type, name} {}
 
-Load::Load(TypeID type_id, Value* ptr) :
-    Instruction{ValueKind::Load, {ptr}, type_id} {}
+Load::Load(Type* type, Value* ptr) :
+    Instruction{ValueKind::Load, {ptr}, type} {}
 
 Load::Load(Value* ptr) :
     Instruction{ValueKind::Load, {ptr}} {}

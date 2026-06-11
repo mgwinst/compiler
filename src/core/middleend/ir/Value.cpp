@@ -1,8 +1,10 @@
 #include "IR.hpp"
 
-Value::Value(ValueKind kind, TypeID type_id, std::string_view name, Value* parent) :
+#include "utils/casting.hpp"
+
+Value::Value(ValueKind kind, Type* type, std::string_view name, Value* parent) :
     kind_{ kind },
-    type_id_{ type_id },
+    type_{ type },
     name_{ name },
     users_{ },
     parent_{ parent } {}

@@ -1,10 +1,11 @@
 #include "IR.hpp"
+#include "utils/casting.hpp"
 
-Argument::Argument(TypeID type_id, std::string_view name) :
-    Value{ValueKind::Argument, type_id, name} {}
+Argument::Argument(Type* type, std::string_view name) :
+    Value{ValueKind::Argument, type, name} {}
 
 Function::Function(std::string_view name) :
-    Value{ValueKind::Function, none, name} {}
+    Value{ValueKind::Function, nullptr, name} {}
 
 Function::~Function()
 {

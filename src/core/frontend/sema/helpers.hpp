@@ -1,42 +1,27 @@
-#pragma once   
+#pragma once
 
-#include "types/types.hpp"
-#include "../../utils/enums.hpp"
+#include "frontend/sema/types/types.hpp"
+#include "utils/casting.hpp"
 
-inline bool is_integral(TypeID type_id)
+inline bool is_const(Type* type)
 {
-    return (type_id >= INT8 && type_id <= UINT64);   
+    if (auto* qual = dyn_cast<QualifierType>(type))
+        return qual->kind_ == QualifierKind::Const;
+
+    return false; // maybe return inner type instead for more cleaner usage
 }
 
-inline bool is_int_or_ptr(const Type& type)
+inline bool is_scalar(Type* type)
 {
-    return type.get_kind() == TypeKind::Integer || type.get_kind() == TypeKind::Pointer;
+    return isa<PointerType>(type) || isa<IntegerType>(type) || isa<FloatType>(type);
 }
 
-inline bool is_const(const Type& type) 
+inline bool convertible_to_boolean(Type* type)
 {
-    if (type.get_kind() == TypeKind::Qualifier)
-        return type.as<QualifierType>().kind_ == QualifierKind::Const;
-    return false;
-}
+    if (is_const(type))
+        return convertible_to_boolean(cast<QualifierType>(type)->inner_type_);
 
-inline void ignore_const()
-{
-    
-}
-
-inline bool convertible_to_boolean(const Type& type)
-{
-    /*
-    if (is_const(type)) {
-        type = type.as<QualifierType>().inner_type_;
-    }
-    */
-
-    if (type.get_kind() == TypeKind::Record)
-        return false;
-
-    return true;
+    return isa<BoolType>(type) || is_scalar(type);
 }
 
 inline bool is_bitwise_op(std::string_view op)

@@ -3,9 +3,9 @@
 #include <unordered_set>
 #include <algorithm>
 
-#include "../ir/IRBuilder.hpp"
-#include "../ir/IR.hpp"
-#include "../../utils/casting.hpp"
+#include "middleend/ir/IR.hpp"
+#include "middleend/ir/IRBuilder.hpp"
+#include "utils/casting.hpp"
 
 // local CSE
 // copy propagation

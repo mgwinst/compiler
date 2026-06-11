@@ -8,7 +8,11 @@
 #include <iterator>
 #include <print>
 
-#include "boost/container/small_vector.hpp"
+inline void error_exit(std::string msg)
+{
+    std::println("{}", msg);
+    exit(EXIT_FAILURE);
+};
 
 struct Module
 {
@@ -46,8 +50,6 @@ constexpr auto combine(T first, Ts... rest)
 {
     return std::array<T, 1 + sizeof...(Ts)>{first, rest...};
 }
-
-using boost::container::small_vector;
 
 template <typename T>
 inline constexpr bool always_false_v = false;

@@ -1,7 +1,7 @@
 #include <chrono>
 
-#include "core/driver/compile.hpp"
-#include "core/driver/cli.hpp"
+#include "driver/compile.hpp"
+#include "driver/cli.hpp"
 
 using namespace std::chrono;
 

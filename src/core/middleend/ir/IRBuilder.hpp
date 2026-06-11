@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IR.hpp"
-#include "../../utils/casting.hpp"
+#include "utils/casting.hpp"
 
 struct IRBuilder
 {
@@ -15,7 +15,7 @@ struct IRBuilder
     template <DerivedFromValue T, typename... Args>
     T* create(Args&&... args)
     {
-        auto* value = new T{ std::forward<Args>(args)... };
+        T* value = new T{ std::forward<Args>(args)... };
 
         if (!value) 
             return nullptr;

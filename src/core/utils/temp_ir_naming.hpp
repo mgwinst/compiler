@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../middleend/ir/IR.hpp"
+#include "middleend/ir/IR.hpp"
 #include "casting.hpp"
 
 inline int value_count = 0;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../ir/IR.hpp"
+#include "middleend/ir/IR.hpp"
 
 class EarlyOptimizer
 {
@@ -13,6 +13,7 @@ public:
         trivial_dce();
         remove_dead_stores();
         cleanup_cfg();
+        trivial_dce();
     }
 
 private:
@@ -24,7 +25,5 @@ private:
 
     void cleanup_cfg();
  
-        
-
 
 };

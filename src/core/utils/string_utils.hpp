@@ -4,7 +4,8 @@
 #include <string_view>
 #include <charconv>
 
-#include "concepts.hpp"
+template <typename T>
+concept Numeric = std::is_arithmetic_v<T>;
 
 template <Numeric T>
 std::optional<T> sv_to_numeric(std::string_view str)
