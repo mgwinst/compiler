@@ -51,3 +51,11 @@ inline bool is_literal(Sema::SemaNode* node)
            isa<Sema::CharLiteralExpr>(node)    ||
            isa<Sema::StringLiteralExpr>(node);
 }
+
+inline Type* remove_const_qualifier(Type* type)
+{
+    if (auto* qual_type = dyn_cast<QualifierType>(type))
+        return qual_type->inner_type_;
+    
+    return type;
+}

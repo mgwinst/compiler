@@ -322,7 +322,7 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
                 if (init_type == nullptr)
                     return nullptr;
 
-                if (var->type() != init_type) {
+                if (remove_const_qualifier(var->type()) != remove_const_qualifier(init_type)) {
                     ctx_.diagnostics_.register_error(std::format("type mismatch ({} and {})", type_to_str(var->type()), type_to_str(init_type)), var->source_);
                     return nullptr;
                 }
@@ -461,6 +461,16 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
             
             if (left_type == nullptr || right_type == nullptr)
                 return nullptr;
+
+            if (binary->op_ == "=") {
+                if (is_const(left_type)) {
+                    ctx_.diagnostics_.register_error(std::format("cannot assign to a const-qualified variable", type_to_str(left_type), type_to_str(right_type)), binary->source_);
+                    return nullptr;
+                }
+            }
+
+            left_type = remove_const_qualifier(left_type);
+            right_type = remove_const_qualifier(right_type);
 
             if (left_type != right_type) {
                 ctx_.diagnostics_.register_error(std::format("type mismatch ({} and {})", type_to_str(left_type), type_to_str(right_type)), binary->source_);
