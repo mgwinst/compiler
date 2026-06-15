@@ -3,8 +3,6 @@
 #include "frontend/sema/sematree.hpp"
 #include "middleend/ir/IR.hpp"
 
-struct Type;
-
 std::string type_to_str(Type* type);
 std::string node_to_str(Sema::SemaNode* node, std::string indent);
 void print(SemaTree& tree);

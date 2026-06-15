@@ -1,7 +1,6 @@
-#include <gtest/gtest.h>
-#include <fstream>
+#include <docstring/docstring.h>
 
-#include "parser/parser.hpp"
+#include "frontend/parser/parser.hpp"
 #include "utils/utils.hpp"
 
 TEST(TestParser, Parsing)

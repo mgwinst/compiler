@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Boost REQUIRED)
 
-add_library(compiler_lib STATIC
+add_library(winc_lib STATIC
     src/core/driver/compile.cpp
     src/core/utils/print/print.cpp
     src/core/frontend/lexer/lexer.cpp 
@@ -28,14 +28,14 @@ add_library(compiler_lib STATIC
     src/core/middleend/opt/RewriteEngine.cpp
 )
 
-target_include_directories(compiler_lib PUBLIC
+target_include_directories(winc_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core
 )
 
-target_link_libraries(compiler_lib PUBLIC Boost::boost)
+target_link_libraries(winc_lib PUBLIC Boost::boost)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE compiler_lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE winc_lib)
 
 target_compile_options(${PROJECT_NAME} PRIVATE
     -march=native -fcolor-diagnostics -Wall
@@ -68,28 +68,3 @@ target_link_options(${PROJECT_NAME} PRIVATE
         -flto=thin
     >
 )
-
-# ************ TESTS ************
-
-option(ENABLE_TESTS "Build unit tests" ON)
-
-if(ENABLE_TESTS)
-    enable_testing()
-    add_subdirectory(test)
-endif()
-
-# this makes ninja check alias for ctest compiler_tests ?
-add_custom_target(check
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-    DEPENDS compiler_tests
-    USES_TERMINAL
-    COMMENT "Running all tests..."
-)
-
-# ************ BENCHMARKS ************
-
-option(ENABLE_BENCHMARKS "Build Google Benchmark suite" OFF)
-
-if(ENABLE_BENCHMARKS)
-    add_subdirectory(extra/benchmark)
-endif()

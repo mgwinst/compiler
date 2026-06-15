@@ -38,6 +38,8 @@ bool Parser::is_next_token(const TokenType token_type) const noexcept
     return lexer_.peek_token().type_ == token_type ? true : false;
 }
 
+// there is an error with the panic mechanism
+
 void Parser::panic(const Error& error) noexcept
 {
     diagnostics_.register_error(error);
@@ -50,6 +52,8 @@ void Parser::panic(const Error& error) noexcept
            !is_cur_token(TokenType::END_OF_FILE)) {
         eat_token();
     }
+
+    eat_token();
 }
 
 std::expected<std::string_view, Error> Parser::match(TokenType token_type) noexcept

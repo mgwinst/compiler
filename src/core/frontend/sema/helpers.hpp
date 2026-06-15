@@ -26,19 +26,28 @@ inline bool convertible_to_boolean(Type* type)
 
 inline bool is_bitwise_op(std::string_view op)
 {
-    return (op == "<<" ||
-            op == ">>" ||
-            op == "&"  || 
-            op == "^"  ||
-            op == "|");
+    return op == "<<" ||
+           op == ">>" ||
+           op == "&"  || 
+           op == "^"  ||
+           op == "|";
 }
 
 inline bool is_logical_op(std::string_view op)
 {
-    return (op == "&&" || op == "||" || op == "!=" || op == "==");
+    return op == "&&" || op == "||" || op == "!=" || op == "==";
 }
 
 inline bool is_relational_op(std::string_view op) 
 {
-    return (op == ">" || op == ">=" || op == "<" || op == "<=");
+    return op == ">" || op == ">=" || op == "<" || op == "<=";
+}
+
+inline bool is_literal(Sema::SemaNode* node)
+{
+    return isa<Sema::IntegerLiteralExpr>(node) ||
+           isa<Sema::FloatLiteralExpr>(node)   ||
+           isa<Sema::BooleanLiteralExpr>(node) ||
+           isa<Sema::CharLiteralExpr>(node)    ||
+           isa<Sema::StringLiteralExpr>(node);
 }

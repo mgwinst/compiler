@@ -24,15 +24,9 @@ enum class TokenType : uint16_t
     KEYWORD_BREAK,
     KEYWORD_CONTINUE,
     KEYWORD_CONST,
-    KEYWORD_TYPEDEF,
-    KEYWORD_STATIC,
-    KEYWORD_INLINE,
     KEYWORD_TRUE,
     KEYWORD_FALSE,
-    KEYWORD_LAMBDA,
-    KEYWORD_NULL,
-    KEYWORD_SIZEOF,
-    KEYWORD_ALIGNOF,
+    KEYWORD_INLINE,
     LPAREN,
     RPAREN,
     LBRACKET,
@@ -80,6 +74,84 @@ enum class TokenType : uint16_t
     INVALID,
 };
 
+inline constexpr std::string_view token_type_to_string(TokenType type) noexcept
+{
+    switch (type)
+    {
+        case TokenType::IDENTIFIER:            return "IDENTIFIER";
+        case TokenType::NUMERIC_LITERAL:       return "NUMERIC_LITERAL";
+        case TokenType::CHAR_LITERAL:          return "CHAR_LITERAL";
+        case TokenType::STRING_LITERAL:        return "STRING_LITERAL";
+        case TokenType::TYPE:                  return "TYPE";
+
+        case TokenType::KEYWORD_FUNCTION:      return "KEYWORD_FUNCTION";
+        case TokenType::KEYWORD_STRUCT:        return "KEYWORD_STRUCT";
+        case TokenType::KEYWORD_VAR:           return "KEYWORD_VAR";
+        case TokenType::KEYWORD_IF:            return "KEYWORD_IF";
+        case TokenType::KEYWORD_ELSE:          return "KEYWORD_ELSE";
+        case TokenType::KEYWORD_WHILE:         return "KEYWORD_WHILE";
+        case TokenType::KEYWORD_FOR:           return "KEYWORD_FOR";
+        case TokenType::KEYWORD_RETURN:        return "KEYWORD_RETURN";
+        case TokenType::KEYWORD_BREAK:         return "KEYWORD_BREAK";
+        case TokenType::KEYWORD_CONTINUE:      return "KEYWORD_CONTINUE";
+        case TokenType::KEYWORD_CONST:         return "KEYWORD_CONST";
+        case TokenType::KEYWORD_TRUE:          return "KEYWORD_TRUE";
+        case TokenType::KEYWORD_FALSE:         return "KEYWORD_FALSE";
+        case TokenType::KEYWORD_INLINE:        return "KEYWORD_INLINE";
+
+        case TokenType::LPAREN:                return "LPAREN";
+        case TokenType::RPAREN:                return "RPAREN";
+        case TokenType::LBRACKET:              return "LBRACKET";
+        case TokenType::RBRACKET:              return "RBRACKET";
+        case TokenType::LBRACE:                return "LBRACE";
+        case TokenType::RBRACE:                return "RBRACE";
+
+        case TokenType::EQUAL:                 return "EQUAL";
+        case TokenType::PLUS:                  return "PLUS";
+        case TokenType::MINUS:                 return "MINUS";
+        case TokenType::STAR:                  return "STAR";
+        case TokenType::SLASH:                 return "SLASH";
+        case TokenType::PERCENT:               return "PERCENT";
+        case TokenType::LESS:                  return "LESS";
+        case TokenType::GREATER:               return "GREATER";
+        case TokenType::SINGLE_QUOTE:          return "SINGLE_QUOTE";
+        case TokenType::DOUBLE_QUOTE:          return "DOUBLE_QUOTE";
+        case TokenType::AMPERSAND:             return "AMPERSAND";
+        case TokenType::BANG:                  return "BANG";
+        case TokenType::CARROT:                return "CARROT";
+        case TokenType::SEMICOLON:             return "SEMICOLON";
+        case TokenType::COLON:                 return "COLON";
+        case TokenType::COMMA:                 return "COMMA";
+        case TokenType::DOT:                   return "DOT";
+        case TokenType::PIPE:                  return "PIPE";
+        case TokenType::ARROW:                 return "ARROW";
+        case TokenType::TILDE:                 return "TILDE";
+
+        case TokenType::EQUAL_EQUAL:           return "EQUAL_EQUAL";
+        case TokenType::BANG_EQUAL:            return "BANG_EQUAL";
+        case TokenType::PLUS_EQUAL:            return "PLUS_EQUAL";
+        case TokenType::MINUS_EQUAL:           return "MINUS_EQUAL";
+        case TokenType::STAR_EQUAL:            return "STAR_EQUAL";
+        case TokenType::SLASH_EQUAL:           return "SLASH_EQUAL";
+        case TokenType::PERCENT_EQUAL:         return "PERCENT_EQUAL";
+        case TokenType::LESS_EQUAL:            return "LESS_EQUAL";
+        case TokenType::GREATER_EQUAL:         return "GREATER_EQUAL";
+        case TokenType::PLUS_PLUS:             return "PLUS_PLUS";
+        case TokenType::MINUS_MINUS:           return "MINUS_MINUS";
+        case TokenType::LESS_LESS:             return "LESS_LESS";
+        case TokenType::GREATER_GREATER:       return "GREATER_GREATER";
+        case TokenType::STAR_STAR:             return "STAR_STAR";
+        case TokenType::AMPERSAND_AMPERSAND:   return "AMPERSAND_AMPERSAND";
+        case TokenType::PIPE_PIPE:             return "PIPE_PIPE";
+        case TokenType::SLASH_SLASH:           return "SLASH_SLASH";
+
+        case TokenType::END_OF_FILE:           return "END_OF_FILE";
+        case TokenType::INVALID:               return "INVALID";
+    }
+
+    return "UNKNOWN";
+}
+
 inline const std::unordered_set<std::string_view> built_in_types {
     "int", "int8", "int16", "int32", "int64",
     "uint", "uint8", "uint16", "uint32", "uint64",
@@ -99,15 +171,9 @@ inline const std::unordered_map<std::string_view, TokenType> keywords {
     {"break",    TokenType::KEYWORD_BREAK},
     {"continue", TokenType::KEYWORD_CONTINUE},
     {"const",    TokenType::KEYWORD_CONST},
-    {"typedef",  TokenType::KEYWORD_TYPEDEF},
-    {"static",   TokenType::KEYWORD_STATIC},
-    {"inline",   TokenType::KEYWORD_INLINE},
     {"true",     TokenType::KEYWORD_TRUE},
     {"false",    TokenType::KEYWORD_FALSE},
-    {"lambda",   TokenType::KEYWORD_LAMBDA},
-    {"null",     TokenType::KEYWORD_NULL},
-    {"sizeof",   TokenType::KEYWORD_SIZEOF},
-    {"alignof",  TokenType::KEYWORD_ALIGNOF},
+    {"inline",   TokenType::KEYWORD_INLINE},
 };
 
 inline const std::unordered_map<char, TokenType> single_symbol_map {
@@ -184,6 +250,6 @@ struct Token {
 
     std::string to_string() const noexcept
     {
-        return std::format("[{}] {}:{} {} ", static_cast<int>(type_), line_number_, column_number_, lexeme_);
+        return std::format("[{}] {}:{} {} ", token_type_to_string(type_), line_number_, column_number_, lexeme_);
     }
 };

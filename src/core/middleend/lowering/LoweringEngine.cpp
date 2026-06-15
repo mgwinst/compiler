@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "LoweringEngine.hpp"
+#include "frontend/sema/helpers.hpp"
 #include "utils/casting.hpp"
 #include "utils/enums.hpp"
 
@@ -21,6 +22,21 @@ Program LoweringEngine::run()
     return std::move(program_);
 }
 
+bool load_required(SemaNode* node)
+{
+    if (auto* unary = dyn_cast<UnaryExpr>(node)) {
+        if (unary->op_ == "&") {
+            return false;
+        }
+    }
+
+    if (is_literal(node)) {
+        return false;
+    }
+
+    return true;
+}
+
 Value* LoweringEngine::lower(SemaNode* node)
 {
     switch (node->kind_) {
@@ -34,8 +50,6 @@ Value* LoweringEngine::lower(SemaNode* node)
             return nullptr;
         }
 
-        // symbol should provide a member function that returns a tuple of common fields we need access to (symbol->unpack()) ? 
-
         case SemaNodeKind::VarDecl: {
             auto* var = cast<VarDecl>(node);
 
@@ -46,8 +60,10 @@ Value* LoweringEngine::lower(SemaNode* node)
                 return alloca;
             } else {
                 auto* init_value = lower(var->init_);
-                if (isa<Alloca>(init_value))
+
+                if (load_required(var->init_))
                     init_value = builder_.create<Load>(init_value);
+
                 return builder_.create<Store>(alloca, init_value);
             }
         }
@@ -203,7 +219,10 @@ Value* LoweringEngine::lower(SemaNode* node)
         };
 
         case SemaNodeKind::BooleanLiteralExpr: {
-            return nullptr;
+            auto* bool_literal = cast<BooleanLiteralExpr>(node);
+            return bool_literal->value_ ? 
+                builder_.get_or_create_literal(static_cast<int64_t>(1)) :
+                builder_.get_or_create_literal(static_cast<int64_t>(0));
         };
 
         case SemaNodeKind::UnaryExpr: {
@@ -219,15 +238,6 @@ Value* LoweringEngine::lower(SemaNode* node)
             if (unary->op_ == "*")
                 return builder_.create<Load>(operand);
 
-            /*
-            if ++:
-                ...
-
-            if --:
-                ...
-            */
-            
-
             return nullptr;
         };
 
@@ -241,31 +251,28 @@ Value* LoweringEngine::lower(SemaNode* node)
             auto* right = lower(binary->right_);
 
             if (op == BinaryOp::Assign) {
-                if (isa<ReferenceExpr>(binary->right_)) {
+                if (load_required(binary->right_))
                     right = builder_.create<Load>(right);
-                }
                 return builder_.create<Store>(left, right);
             }
 
-            if (isa<ReferenceExpr>(binary->left_)) {
+            if (load_required(binary->left_))
                 left = builder_.create<Load>(left);
-            }
-            
-            if (isa<ReferenceExpr>(binary->right_)) {
+
+            if (load_required(binary->left_))
                 right = builder_.create<Load>(right);
-            }
 
             switch (op) {
-                case BinaryOp::Add:    return builder_.create<Add>(left, right);
-                case BinaryOp::Sub:    return builder_.create<Sub>(left, right);
-                case BinaryOp::Mul:    return builder_.create<Mul>(left, right);
-                case BinaryOp::Div:    return builder_.create<Div>(left, right);
-                case BinaryOp::Eq:     return builder_.create<Eq>(left, right);
-                case BinaryOp::Ne:     return builder_.create<Ne>(left, right);
-                case BinaryOp::Slt:    return builder_.create<Slt>(left, right);
+                case BinaryOp::Add:  return builder_.create<Add>(left, right);
+                case BinaryOp::Sub:  return builder_.create<Sub>(left, right);
+                case BinaryOp::Mul:  return builder_.create<Mul>(left, right);
+                case BinaryOp::Div:  return builder_.create<Div>(left, right);
+                case BinaryOp::Eq:   return builder_.create<Eq>(left, right);
+                case BinaryOp::Ne:   return builder_.create<Ne>(left, right);
+                case BinaryOp::Slt:  return builder_.create<Slt>(left, right);
 
                 default:
-                    error_exit("binary op error");
+                    error_exit("lowering binary op error");
             }
         }
 

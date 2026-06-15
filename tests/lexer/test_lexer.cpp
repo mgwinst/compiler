@@ -1,7 +1,8 @@
-#include <gtest/gtest.h>
+#include <doctest/doctest.h>
+
 #include <fstream>
 
-#include "lexer/lexer.hpp"
+#include "frontend/lexer/lexer.hpp"
 #include "utils/utils.hpp"
 
 TokenType token_test_table[] = {
@@ -18,14 +19,12 @@ TokenType token_test_table[] = {
     TokenType::KEYWORD_WHILE,
     TokenType::KEYWORD_FOR,
     TokenType::KEYWORD_RETURN,
+    TokenType::KEYWORD_BREAK,
+    TokenType::KEYWORD_CONTINUE,
     TokenType::KEYWORD_CONST,
-    TokenType::KEYWORD_TYPEDEF,
-    TokenType::KEYWORD_STATIC,
     TokenType::KEYWORD_TRUE,
     TokenType::KEYWORD_FALSE,
-    TokenType::KEYWORD_SIZEOF,
-    TokenType::KEYWORD_ALIGNOF,
-    TokenType::KEYWORD_LAMBDA,
+    TokenType::KEYWORD_INLINE,
     TokenType::EQUAL,
     TokenType::PLUS,
     TokenType::MINUS,
@@ -85,32 +84,31 @@ TokenType token_test_table[] = {
     TokenType::TYPE,
     TokenType::TYPE,
     TokenType::TYPE,
-    TokenType::TYPE
 };
 
-TEST(TestLexer, Tokens) {
+TEST_CASE("Lexer tokens") {
     Module module = get_module("lexer/sample_tokens.txt");
     Lexer lexer{module.data};
 
     int i = 0;
-    while (1) {
+    while (true) {
         Token tok = lexer.get_token();
         if (tok.type_ == TokenType::END_OF_FILE) 
             break;
 
-        EXPECT_EQ(tok.type_, token_test_table[i]) << "Mismatch at token: " << i << \
-        " [" << static_cast<int>(tok.type_) << ", " << static_cast<int>(token_test_table[i]) << ']' << \
-        " [error token: " << tok.lexeme_ << "]";
+        INFO(std::format("{} != {}", token_type_to_string(tok.type_), token_type_to_string(token_test_table[i])));
+        
+        CHECK(tok.type_ == token_test_table[i]);
 
         i++;
     }
 }
 
-TEST(TestLexer, GetAndPeekToken)
+TEST_CASE("get_token() / peek_token()")
 {
     Module module = get_module("lexer/sample_tokens.txt");
     Lexer lexer{module.data};
 
-    EXPECT_EQ(lexer.get_token().type_, token_test_table[0]);
-    EXPECT_EQ(lexer.peek_token().type_, token_test_table[1]);
+    REQUIRE(lexer.get_token().type_ == token_test_table[0]);
+    REQUIRE(lexer.peek_token().type_ == token_test_table[1]);
 }
