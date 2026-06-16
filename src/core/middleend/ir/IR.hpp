@@ -71,9 +71,9 @@ concept DerivedFromValue = std::derived_from<T, Value>;
 
 struct Instruction : Value
 {
-    small_vector<Value*, 2> operands_;
+    std::vector<Value*> operands_;
 
-    Instruction(ValueKind kind, std::initializer_list<Value*> operands, Type* type = nullptr, std::string_view name = "");
+    Instruction(ValueKind kind, std::vector<Value*> operands, Type* type = nullptr, std::string_view name = "");
 
     ~Instruction() override;
 };
@@ -132,9 +132,11 @@ struct Slt : Instruction
     Slt(Value* src1, Value* src2);
 };
 
+struct Function;
+
 struct Call : Instruction
 {
-    // Call(Function* callee, Value* )
+    Call(Function* callee, std::vector<Value*> args);
 };
 
 struct Return : Instruction
@@ -290,6 +292,7 @@ struct Program
 
     Function* insert(Function* function);
 };
+
 inline std::vector<BasicBlock*> post_order(std::unique_ptr<Function>& function, bool reverse = false)
 {
     if (function->blocks_.empty())

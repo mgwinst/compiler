@@ -22,19 +22,21 @@ Program LoweringEngine::run()
     return std::move(program_);
 }
 
+// load if reference 
+// load if pointer dereference (requires an additional load ontop of the load handled in the unary lowering)
+
 bool load_required(SemaNode* node)
 {
+    if (isa<ReferenceExpr>(node))
+        return true;
+    
     if (auto* unary = dyn_cast<UnaryExpr>(node)) {
-        if (unary->op_ == "&") {
-            return false;
+        if (unary->op_ == "*") {
+            return true;
         }
     }
-
-    if (is_literal(node)) {
-        return false;
-    }
-
-    return true;
+    
+    return false;
 }
 
 Value* LoweringEngine::lower(SemaNode* node)
@@ -54,7 +56,7 @@ Value* LoweringEngine::lower(SemaNode* node)
             auto* var = cast<VarDecl>(node);
 
             auto* alloca = builder_.create<Alloca>(var->type(), var->name());
-            name_to_value_map_[var->name()] = alloca;
+            alloca_map_[var->name()] = alloca;
 
             if (!var->init_) {
                 return alloca;
@@ -73,7 +75,7 @@ Value* LoweringEngine::lower(SemaNode* node)
  
             auto* arg = builder_.create<Argument>(param->type(), param->name());
             auto* alloca = builder_.create<Alloca>(param->type(), param->name());
-            name_to_value_map_[param->name()] = alloca;
+            alloca_map_[param->name()] = alloca;
             auto* store = builder_.create<Store>(alloca, arg);
 
             return nullptr;
@@ -83,6 +85,7 @@ Value* LoweringEngine::lower(SemaNode* node)
             auto* func = cast<FuncDecl>(node);
 
             auto* function = builder_.create<Function>(func->name());
+            function_map_[func->name()] = function;
             set_current_function(function);
 
             auto* entry = builder_.create<BasicBlock>("entry");
@@ -119,7 +122,6 @@ Value* LoweringEngine::lower(SemaNode* node)
             return nullptr;
         }
 
-        // if there is only one predecessor to a return block, remove branch and linearize
         case SemaNodeKind::ReturnStmt: {
             auto* return_stmt = cast<ReturnStmt>(node);
 
@@ -284,7 +286,21 @@ Value* LoweringEngine::lower(SemaNode* node)
         case SemaNodeKind::CallExpr: {
             auto* call = cast<CallExpr>(node);
             
-            return nullptr;
+            auto* callee = function_map_[cast<ReferenceExpr>(call->callee_)->name_];
+            
+            std::vector<Value*> args;
+            for (auto* arg : call->args_) {
+                auto* a = lower(arg);
+
+                // this is a special case that is not caught by the generic algorithm for determining when to load
+                // (think about why we are not loading on every reference automatically)
+                if (isa<Alloca>(a))
+                    a = builder_.create<Load>(a);
+
+                args.push_back(a);
+            }
+
+            return builder_.create<Call>(callee, std::move(args));
         }
 
         case SemaNodeKind::MemberExpr: {
@@ -361,7 +377,7 @@ void LoweringEngine::set_current_block(BasicBlock* block)
 
 Value* LoweringEngine::get_value(ReferenceExpr* ref)
 {
-    if (auto it = name_to_value_map_.find(ref->name()); it != name_to_value_map_.end())
+    if (auto it = alloca_map_.find(ref->name()); it != alloca_map_.end())
         return it->second;
 
     return nullptr;

@@ -23,7 +23,8 @@ private:
     Program program_;
     IRBuilder builder_;
 
-    std::unordered_map<std::string, Value*> name_to_value_map_; // scope aware? // this must outlive the LoweringEngine object?
+    std::unordered_map<std::string, Alloca*> alloca_map_; // must outlive LoweringEngine object
+    std::unordered_map<std::string, Function*> function_map_;
     std::stack<LoopContext> loop_context_stack_;
 
     Value* lower(SemaNode* node_id);

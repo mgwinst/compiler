@@ -7,9 +7,14 @@
 #include "middleend/ir/IRBuilder.hpp"
 #include "utils/casting.hpp"
 
-// local CSE
-// copy propagation
 // store-to-load forwarding
+// copy propagation
+// local CSE
+// const prop and folding
+
+// there must be a pass that removes all loads of literals
+// the reason we need this is because when we do folding and value->replace_uses_with(folded_value),
+// then there could be a final instruction that was a load, and we are now loading a const,
 
 class RewriteEngine
 {

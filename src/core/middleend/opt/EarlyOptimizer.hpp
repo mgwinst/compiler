@@ -12,7 +12,7 @@ public:
     {
         trivial_dce();
         remove_dead_stores();
-        cleanup_cfg();
+        cleanup_cfg(); // error with bool literal in condition of loop might stem from this
     }
 
 private:

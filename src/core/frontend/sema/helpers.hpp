@@ -8,7 +8,7 @@ inline bool is_const(Type* type)
     if (auto* qual = dyn_cast<QualifierType>(type))
         return qual->kind_ == QualifierKind::Const;
 
-    return false; // maybe return inner type instead for more cleaner usage
+    return false;
 }
 
 inline bool is_scalar(Type* type)

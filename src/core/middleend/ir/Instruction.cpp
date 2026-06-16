@@ -1,6 +1,6 @@
 #include "IR.hpp"
 
-Instruction::Instruction(ValueKind kind, std::initializer_list<Value*> operands, Type* type, std::string_view name) : 
+Instruction::Instruction(ValueKind kind, std::vector<Value*> operands, Type* type, std::string_view name) : 
     Value{kind, type, name}
 {
     operands_ = operands;
@@ -53,6 +53,9 @@ Ne::Ne(Value* src1, Value* src2) :
 Slt::Slt(Value* src1, Value* src2) :
     Instruction{ValueKind::Slt, {src1, src2}} {}
 
+Call::Call(Function* callee, std::vector<Value*> args) :
+    Instruction{ValueKind::Call, prepend(static_cast<Value*>(callee), std::move(args))} {}
+
 Return::Return(Value* value) :
     Instruction{ValueKind::Return, {value}} {}
 
@@ -61,7 +64,6 @@ Return::Return(Value* value) :
 PtrAdd::PtrAdd(Value* ptr, Value* offset) :
     Instruction{ValueKind::PtrAdd, {ptr, offset}} {}
 
-// will any DerivedFromValue* bind to the block pointer parameters? 
 Branch::Branch(BasicBlock* target) : 
     Instruction{ValueKind::Branch, {static_cast<Value*>(target)}},
     branch_kind_{BranchKind::Unconditional} {}

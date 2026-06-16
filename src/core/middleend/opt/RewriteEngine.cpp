@@ -1,5 +1,15 @@
 #include "RewriteEngine.hpp"
 
+// so we want to run const prop first, then fold from there
+
+// what is propable? anything that is const or literal and hasn't been stored (modified) since
+// after prop, we can actually delete the origin because we are no longer 'using' that value, so run a DCE after
+// then fold or dce after fold
+
+
+
+
+
 Value* fold(std::unique_ptr<Instruction>& inst, IRBuilder& builder)
 {
     auto a = static_cast<Const*>(inst->operands_[0])->data_;
@@ -20,7 +30,7 @@ Value* fold(std::unique_ptr<Instruction>& inst, IRBuilder& builder)
 
         case ValueKind::Div: {
             if (b != 0)
-                return builder.get_or_create_literal(a / b);
+                return builder.get_or_create_literal(a / b); // this is wrong if floats are not accepted in constant pool
         }
 
         default:

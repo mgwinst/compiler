@@ -349,70 +349,94 @@ std::string get_target_list_str(Branch* branch)
     return target_label_list;
 }
 
+std::string get_argument_list_str(Call* inst)
+{
+    std::string args_list_str{};
+    for (auto* arg : inst->operands_ | std::views::drop(1)) {
+        args_list_str += std::format("%{}", arg->name_);
+        if (arg != inst->operands_.back())
+            args_list_str += ", ";
+    }
+
+    return args_list_str;
+}
+
 std::string ir_value_to_str(Value* value)
 {
     switch (value->kind_) {
         case ValueKind::Alloca: {
-            auto* inst = static_cast<Alloca*>(value);
+            auto* inst = cast<Alloca>(value);
             return std::format("%{} = alloca", inst->name_); // %x = alloca int32
         }
 
         case ValueKind::Load: {
-            auto* inst = static_cast<Load*>(value);
+            auto* inst = cast<Load>(value);
             return std::format("%{} = load %{}", inst->name_, inst->operands_[0]->name_);
         }
 
         case ValueKind::Store: {
-            auto* inst = static_cast<Store*>(value);
+            auto* inst = cast<Store>(value);
             return std::format("store %{}, %{}", inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Add: {
-            auto* inst = static_cast<Add*>(value);
+            auto* inst = cast<Add>(value);
             return std::format("%{} = add %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Mul: {
-            auto* inst = static_cast<Mul*>(value);
+            auto* inst = cast<Mul>(value);
             return std::format("%{} = mul %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Eq: {
-            auto* inst = static_cast<Eq*>(value);
+            auto* inst = cast<Eq>(value);
             return std::format("%{} = eq %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Ne: {
-            auto* inst = static_cast<Ne*>(value);
+            auto* inst = cast<Ne>(value);
             return std::format("%{} = ne %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Slt: {
-            auto* inst = static_cast<Slt*>(value);
+            auto* inst = cast<Slt>(value);
             return std::format("%{} = slt %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
+        case ValueKind::Call: {
+            auto* inst = cast<Call>(value);
+
+            auto* func = cast<Function>(inst->operands_[0]);
+
+            if (func->return_value_)
+                return std::format("%{} = call @{}({})", inst->name_, func->name_, get_argument_list_str(inst));
+            
+            return std::format("call @{}({})", func->name_, get_argument_list_str(inst));
+        }
+
+
         case ValueKind::Return: {
-            auto* inst = static_cast<Return*>(value);
+            auto* inst = cast<Return>(value);
             return std::format("ret %{}", inst->operands_[0]->name_);
         }
 
         case ValueKind::Branch: {
-            auto* inst = static_cast<Branch*>(value);
+            auto* inst = cast<Branch>(value);
             
             return inst->is_conditional() ? 
                 std::format("br %{}, label %{}, label %{}", inst->condition()->name_, inst->targets()[0]->name_, inst->targets()[1]->name_) :
                 std::format("br label %{}", inst->operands_[0]->name_);
         }
 
+
         case ValueKind::PtrAdd: {
-            auto* inst = static_cast<PtrAdd*>(value);
+            auto* inst = cast<PtrAdd>(value);
             return std::format("%{} = ptradd %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         };
 
         default: {
-            std::perror("Unknown ValueKind");
-            std::terminate();
+            error_exit("Unknown ValueKind");
         }
     }
 }
