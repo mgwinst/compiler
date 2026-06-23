@@ -39,6 +39,7 @@ enum class ValueKind
     Sub,
     Mul,
     Div,
+    Mod,
     Eq,
     Ne,
     Slt,
@@ -117,6 +118,11 @@ struct Div : Instruction
     Div(Value* src1, Value* src2);
 };
 
+struct Mod : Instruction
+{
+    Mod(Value* src1, Value* src2);
+};
+
 struct Eq : Instruction
 {
     Eq(Value* src1, Value* src2);
@@ -141,11 +147,10 @@ struct Call : Instruction
 
 struct Return : Instruction
 {
+    Return();
     Return(Value* value);
 };
 
-// don't need to type this instruction,
-// it is just an opaque ptr, we know what it means from itself and first operand
 struct PtrAdd : Instruction
 {
     PtrAdd(Value* ptr, Value* offset);
@@ -173,14 +178,13 @@ struct Branch : Instruction
 
 struct Phi : Value
 {
-    // std::initializer_std::list<std::pair<Value*, BasicBlock*>> [value, block], [value, block], ... 
+    // std::list<std::pair<Value*, BasicBlock*>> [value, block], [value, block], ... 
 };
 
 struct Const : Value
 {
-    int64_t data_;
+    int64_t data_; // union
 
-    // this will cause error mismatch between accepted literal and internal type
     Const(int64_t data);
 };
 
@@ -203,11 +207,9 @@ struct BasicBlock : Value
     bool empty();
     Instruction* terminator();
     small_vector<BasicBlock*, 2> successors();
-    auto predecessors() 
-    { 
+    auto predecessors() { 
         return users_ | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value->parent_); });
     };
-    void remove_from_parent();
 };
 
 struct Argument : Value
@@ -217,8 +219,8 @@ struct Argument : Value
 
 struct Function : Value
 {
-    std::vector<std::unique_ptr<Argument>> args_;
-    std::vector<std::unique_ptr<BasicBlock>> blocks_; // unordered
+    std::list<std::unique_ptr<Argument>> args_;
+    std::list<std::unique_ptr<BasicBlock>> blocks_; // unordered
     
     // memory leak
     Value* return_value_ = nullptr;
@@ -228,9 +230,9 @@ struct Function : Value
 
     ~Function() override;
 
+    BasicBlock* get_entry_block();
     BasicBlock* insert(BasicBlock* block);
     Argument* insert(Argument* arg);
-    void initialize_return(Value* return_value, BasicBlock* return_block);
 };
 
 template <typename T>
@@ -246,6 +248,7 @@ template <> inline constexpr ValueKind value_kind_v<Add>        = ValueKind::Add
 template <> inline constexpr ValueKind value_kind_v<Sub>        = ValueKind::Sub;
 template <> inline constexpr ValueKind value_kind_v<Mul>        = ValueKind::Mul;
 template <> inline constexpr ValueKind value_kind_v<Div>        = ValueKind::Div;
+template <> inline constexpr ValueKind value_kind_v<Mod>        = ValueKind::Mod;
 template <> inline constexpr ValueKind value_kind_v<Eq>         = ValueKind::Eq;
 template <> inline constexpr ValueKind value_kind_v<Ne>         = ValueKind::Ne;
 template <> inline constexpr ValueKind value_kind_v<Slt>        = ValueKind::Slt;
@@ -319,11 +322,6 @@ inline std::vector<BasicBlock*> post_order(std::unique_ptr<Function>& function, 
 
     return post_order;
 }
-
-
-
-
-
 
 
 

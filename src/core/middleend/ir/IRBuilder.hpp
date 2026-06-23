@@ -29,6 +29,9 @@ struct IRBuilder
         }
     }
 
+    // this should not be exposed
+    // should just be create<Const>(42), create<Const>("hello world")... 
+
     Const* get_or_create_literal(auto literal)
     {
         auto [it, _] = program_->constant_pool_.try_insert(literal); 

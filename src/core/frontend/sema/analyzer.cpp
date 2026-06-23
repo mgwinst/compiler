@@ -107,6 +107,11 @@ SemaNode* SemanticAnalyzer::build_sema_node(Syntax::ASTNode* node)
 
             ctx_.symbol_table_.exit_scope();
 
+            if (type->return_type_ == ctx_.type_table_.builtin_map_["void"]) {
+                auto* ret = sema_tree_.emplace<ReturnStmt>();
+                cast<CompoundStmt>(body)->children_.push_back(ret);
+            }
+
             return sema_tree_.emplace<FuncDecl>(symbol, std::move(params), cast<Stmt>(body), func->source_);
         }
 
@@ -144,8 +149,12 @@ SemaNode* SemanticAnalyzer::build_sema_node(Syntax::ASTNode* node)
         }
 
         case ASTNodeKind::ReturnStmt: {
-            auto* ret = cast<Syntax::ReturnStmt>(node);
-            return sema_tree_.emplace<ReturnStmt>(cast<Expr>(build_sema_node(ret->value_)));
+            auto* return_stmt = cast<Syntax::ReturnStmt>(node);
+
+            if (return_stmt->value_)
+                return sema_tree_.emplace<ReturnStmt>(cast<Expr>(build_sema_node(return_stmt->value_)));
+
+            return sema_tree_.emplace<ReturnStmt>();
         }
 
         case ASTNodeKind::BreakStmt: {
@@ -355,12 +364,11 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
 
         case SemaNodeKind::ReturnStmt: {
             auto* return_stmt = cast<ReturnStmt>(node);
-            auto* return_type = check_type(return_stmt->value_);
-            
-            if (return_type == nullptr)
-                return nullptr;
 
-            return return_type;
+            if (return_stmt->value_)
+                check_type(return_stmt->value_);
+
+            return nullptr;
         }
 
         case SemaNodeKind::IfStmt: {
@@ -621,10 +629,6 @@ SemaNode* arr_idx_to_ptr_arithmetic(SemaTree& tree, ArraySubscriptExpr* expr)
 
 
 
-
-
-// PASSING POINTERS BY VALUE MAKES MUTATION OF THE TREE INCORRECT
-
 void SemanticAnalyzer::desugar(SemaNode*& node)
 {
     switch (node->kind_) {
@@ -650,7 +654,8 @@ void SemanticAnalyzer::desugar(SemaNode*& node)
 
         case SemaNodeKind::ReturnStmt: {
             auto* return_stmt = cast<ReturnStmt>(node);
-            desugar(return_stmt->value_);
+            if (return_stmt->value_)
+                desugar(return_stmt->value_);
             break;
         }
 

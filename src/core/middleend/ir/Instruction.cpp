@@ -5,7 +5,9 @@ Instruction::Instruction(ValueKind kind, std::vector<Value*> operands, Type* typ
 {
     operands_ = operands;
     for (auto* arg : operands_) {
-        arg->add_use(this);
+        if (arg) {
+            arg->add_use(this);
+        }
     }
 }
 
@@ -44,6 +46,9 @@ Mul::Mul(Value* src1, Value* src2) :
 Div::Div(Value* src1, Value* src2) :
     Instruction{ValueKind::Div, {src1, src2}} {}
 
+Mod::Mod(Value* src1, Value* src2) :
+    Instruction{ValueKind::Mod, {src1, src2}} {}
+
 Eq::Eq(Value* src1, Value* src2) :
     Instruction{ValueKind::Eq, {src1, src2}} {}
 
@@ -55,6 +60,9 @@ Slt::Slt(Value* src1, Value* src2) :
 
 Call::Call(Function* callee, std::vector<Value*> args) :
     Instruction{ValueKind::Call, prepend(static_cast<Value*>(callee), std::move(args))} {}
+
+Return::Return() :
+    Instruction{ValueKind::Return, {}} {}
 
 Return::Return(Value* value) :
     Instruction{ValueKind::Return, {value}} {}

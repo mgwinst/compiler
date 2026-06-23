@@ -157,7 +157,7 @@ struct ReturnStmt : Stmt
 {
     SemaNode* value_;
 
-    ReturnStmt(SemaNode* value) :
+    ReturnStmt(SemaNode* value = nullptr) :
         Stmt{ SemaNodeKind::ReturnStmt },
         value_{ value } {}
 };

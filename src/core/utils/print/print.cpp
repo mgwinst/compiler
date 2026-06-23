@@ -17,9 +17,7 @@ std::unordered_map<RecordKind, std::string> record_kind_to_str {
 
 }
 
-
 // ******************** TYPE PRINTING ********************
-
 
 std::string type_to_str(Type* type)
 {
@@ -189,7 +187,11 @@ std::string node_to_str(SemaNode* node, std::string indent = "")
 
         case SemaNodeKind::ReturnStmt: {
             auto* return_stmt = cast<ReturnStmt>(node);
-            return indent + std::format("ReturnStmt\n{}", node_to_str(return_stmt->value_, indent + "  "));
+
+            if (return_stmt->value_)
+                return indent + std::format("ReturnStmt\n{}", node_to_str(return_stmt->value_, indent + "  "));
+
+            return indent + std::format("ReturnStmt\n");
         }
 
         case SemaNodeKind::BreakStmt: {
@@ -384,9 +386,24 @@ std::string ir_value_to_str(Value* value)
             return std::format("%{} = add %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
+        case ValueKind::Sub: {
+            auto* inst = cast<Sub>(value);
+            return std::format("%{} = sub %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        }
+
         case ValueKind::Mul: {
             auto* inst = cast<Mul>(value);
             return std::format("%{} = mul %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        }
+
+        case ValueKind::Div: {
+            auto* inst = cast<Div>(value);
+            return std::format("%{} = div %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        }
+
+        case ValueKind::Mod: {
+            auto* inst = cast<Mod>(value);
+            return std::format("%{} = mod %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Eq: {
@@ -415,9 +432,12 @@ std::string ir_value_to_str(Value* value)
             return std::format("call @{}({})", func->name_, get_argument_list_str(inst));
         }
 
-
         case ValueKind::Return: {
             auto* inst = cast<Return>(value);
+
+            if (inst->operands_.empty())
+                return "ret";
+
             return std::format("ret %{}", inst->operands_[0]->name_);
         }
 

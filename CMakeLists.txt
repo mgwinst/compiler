@@ -24,8 +24,8 @@ add_library(winc_lib STATIC
     src/core/middleend/ir/Program.cpp
     src/core/middleend/ir/Value.cpp
     src/core/middleend/lowering/LoweringEngine.cpp
+    src/core/middleend/analysis/escape.cpp
     src/core/middleend/opt/EarlyOptimizer.cpp
-    src/core/middleend/opt/RewriteEngine.cpp
 )
 
 target_include_directories(winc_lib PUBLIC

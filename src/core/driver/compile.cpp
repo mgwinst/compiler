@@ -10,7 +10,6 @@
 #include "frontend/sema/analyzer.hpp"
 #include "middleend/lowering/LoweringEngine.hpp"
 #include "middleend/opt/EarlyOptimizer.hpp"
-#include "middleend/opt/RewriteEngine.hpp"
 
 void Compiler::compile_modules()
 {
@@ -40,7 +39,6 @@ void Compiler::compile(const Module& module)
     }
 
     early_optimize(program);
-    rewrite(program);
 
     if (context_.flags().contains("-opt")) {
         print(program);
@@ -74,9 +72,4 @@ Program Compiler::lower(ModuleContext& ctx, const SemaTree& tree)
 void Compiler::early_optimize(Program& program)
 {
     EarlyOptimizer{program}.run();
-}
-
-void Compiler::rewrite(Program& program)
-{
-    RewriteEngine{program}.run();
 }

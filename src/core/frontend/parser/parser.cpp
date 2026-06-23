@@ -295,13 +295,14 @@ std::expected<Decl*, Error> Parser::parse_struct_def() noexcept
 
 std::expected<Decl*, Error> Parser::parse_field() noexcept
 {
-    // EXPECT_VAR(); // parse_var_decl() expects var token to have already been eaten
-
     return parse_var_decl();
 }
 
 std::expected<Stmt*, Error> Parser::parse_return_stmt() noexcept
 {
+    if (is_cur_token(TokenType::SEMICOLON))
+        return ast_.emplace<ReturnStmt>();
+
     auto expr = parse_expr();
     if (!expr) return std::unexpected{ expr.error() };
 

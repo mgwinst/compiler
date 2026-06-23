@@ -155,7 +155,7 @@ struct ReturnStmt : Stmt
 {
     ASTNode* value_;
 
-    ReturnStmt(ASTNode* value) :
+    ReturnStmt(ASTNode* value = nullptr) :
         Stmt{ ASTNodeKind::ReturnStmt },
         value_{ value } {}
 };

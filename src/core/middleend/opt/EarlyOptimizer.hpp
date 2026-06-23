@@ -1,28 +1,40 @@
 #pragma once
 
 #include "middleend/ir/IR.hpp"
+#include "middleend/ir/IRBuilder.hpp"
 
 class EarlyOptimizer
 {
 public:
     EarlyOptimizer(Program& program) :
-        program_{ program } {}
+        program_{ program },
+        builder_{ &program } {}
 
     void run()
     {
+        // inline_functions()
+        // sroa()
+
         trivial_dce();
         remove_dead_stores();
-        cleanup_cfg(); // error with bool literal in condition of loop might stem from this
+        cleanup_cfg();
+        trivial_dce();
     }
 
 private:
     Program& program_;
+    IRBuilder builder_;
 
-    void trivial_dce(); // run once before opts and once after
-
+    // void inline_functions();
+    void trivial_dce();
     void remove_dead_stores();
 
-    void cleanup_cfg();
- 
+    // instruction simplify
+    void constant_folding();
+    void algebra();
 
+    void cleanup_cfg();
 };
+
+// need to implement
+// const prop -> const fold -> algebra

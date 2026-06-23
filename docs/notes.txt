@@ -42,32 +42,12 @@ pre-SSA memory op cleanup:
 
 
 
+Store-to-load forwarding (we are going to hold off on this pre-mem2reg)
+    stl fwd is basically a local mem2reg phase... let's keep the representations distinct phases
 
-intrusive linked list structure
-
-class Value
-{
-
-};
-
-class Instruction : Value
-{
-
-};
-
-class CFG {
-
-    vector<unique_ptr<Value>> values_; // place in IRBuilder?
-
-    // how can we have free create<T> know about the pool of values?
-
-    // we are moving backwards (recoupling the link between IR value creation and other infra)
-
-    // everything must be able to reference this global pool of values (per module)
-    
-};
+1. Constant propagation
+2. Constant folding
+3. Local CSE
 
 
-
-    
 

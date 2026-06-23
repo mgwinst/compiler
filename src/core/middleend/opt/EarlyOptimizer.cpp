@@ -5,75 +5,7 @@
 
 #include "EarlyOptimizer.hpp"
 #include "utils/casting.hpp"
-
-bool escapes_via(Value* value, Value* target, std::unordered_set<Value*>& visited)
-{
-    if (visited.contains(value)) {
-        return false;
-    }
-
-    visited.insert(value);
-
-    switch (value->kind_) {
-        case ValueKind::Store: {
-            auto* store = static_cast<Store*>(value);
-            return store->operands_[1] == target; // are we storing this alloca ptr, (since we are storing, we lost value flow because it has left ssa world)
-        }
-
-        case ValueKind::Return: {
-            auto* ret = static_cast<Return*>(value);
-            return ret->operands_[0] == target; // this is okay because this case is checking for returning the alloca itself, not a load of hte alloca, otherwise this operand would be a load instruction, not the alloca. the lowering engine will handle this case
-        }
-
-        case ValueKind::PtrAdd: {
-            auto* ptradd = static_cast<PtrAdd*>(value);
-            if (ptradd->operands_[0] == target) {
-                for (auto* use : ptradd->users_) {
-                    if (escapes_via(use, ptradd, visited)) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        // call(&alloca) ... 
-
-        default: {
-            return false;
-        }
-    }
-}
-
-bool escapes(Alloca* alloca)
-{
-    std::unordered_set<Value*> v;
-
-    for (auto* use : alloca->users_) {
-        if (escapes_via(use, alloca, v)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-std::unordered_set<Alloca*> non_escaping_allocas(const std::unique_ptr<Function>& function)
-{
-    std::unordered_set<Alloca*> allocas;
-
-    for (auto& block : function->blocks_) {
-        for (auto& inst : block->instructions_) {
-            if (auto* alloca = dyn_cast<Alloca>(inst)) {
-                if (escapes(alloca) == false) {
-                    allocas.insert(alloca);
-                }
-            }
-        }
-    }
-
-    return allocas;
-}
+#include "middleend/analysis/escape.hpp"
 
 bool may_have_side_effect(const std::unique_ptr<Instruction>& inst)
 {
@@ -87,7 +19,6 @@ bool may_have_side_effect(const std::unique_ptr<Instruction>& inst)
             return false;
     }
 }
-
 
 void EarlyOptimizer::trivial_dce()
 {
@@ -157,71 +88,46 @@ void EarlyOptimizer::remove_dead_stores()
     }
 }
 
-// remove double branch instructions to expose dead branches
-// do this during the merge pass to expose dead blocks during scan
-// what traversal will make this most efficient
-
-bool double_branch(std::unique_ptr<BasicBlock>& block)
-{
-    auto& insts = block->instructions_;
-
-    if (insts.size() >= 2) {
-        auto a = std::prev(insts.end(), 2);
-        auto b = std::prev(insts.end());
-     
-        return isa<Branch>(*a) && isa<Branch>(*b);
-    }
-
-    return false;
-}
-
-// invariance = any block that exists must mean that a branch instruction leads to it
-
-// handle branch folding once we have handle booleans properly
 void remove_unreachable_blocks(std::unique_ptr<Function>& function, bool& changed)
 {
-    bool local_change = true;
-    while (local_change) {
-        local_change = false;
-        for (auto it = function->blocks_.begin(); it != function->blocks_.end(); ) {
-            if ((*it)->predecessors().empty() && (*it)->name_ != "entry") {
-                it = function->blocks_.erase(it);
-                changed = local_change = true;
-                continue;
-            }
+    auto it = function->blocks_.begin();
+    auto end = function->blocks_.end();
 
-            if (double_branch(*it)) {
-                (*it)->instructions_.pop_back();
-                changed = local_change = true;
-            }
+    while (it != end) {
+        auto* block = it->get();
 
-            ++it;
-        }
-    }
-}
-
-void remove_empty_blocks(std::unique_ptr<Function>& function, bool& changed)
-{
-    auto block_has_single_branch = [](auto& block) -> bool {
-        return block->instructions_.size() == 1 && isa<Branch>(block->instructions_.front());
-    };
-
-    for (auto it = function->blocks_.begin(); it != function->blocks_.end(); ) {
-        if ((*it)->empty() || block_has_single_branch(*it)) {
+        if (block->predecessors().empty() && block != function->get_entry_block()) {
             it = function->blocks_.erase(it);
             changed = true;
-        } else {
-            ++it;
+        }
+
+        ++it;
+    }
+}
+
+void remove_redundant_branches(std::unique_ptr<Function>& function, bool& changed)
+{
+    for (auto& block : function->blocks_) {
+        auto& insts = block->instructions_;
+
+        if (insts.size() >= 2) {
+            auto a = std::prev(insts.end(), 2);
+            auto b = std::prev(insts.end());
+
+            if (isa<Branch>(*a) && isa<Branch>(*b)) {
+                insts.pop_back();
+                changed = true;
+            }
         }
     }
 }
 
-bool collapsible(std::unique_ptr<BasicBlock>& block)
+bool collapsible(BasicBlock* block)
 {
     if (block->successors().size() == 1) {
         auto successor = block->successors()[0];
         if (successor->predecessors().size() == 1) {
-            assert(block.get() == successor->predecessors()[0]);
+            assert(block == successor->predecessors()[0]);
             return true;
         }
     }
@@ -229,30 +135,51 @@ bool collapsible(std::unique_ptr<BasicBlock>& block)
     return false;
 }
 
-void combine_with_successor(std::unique_ptr<BasicBlock>& block)
+// return the successor so we can remove from function at the call site (hack b/c no intrusive list)
+BasicBlock* combine_with_successor(BasicBlock* block)
 {
     auto* successor = block->successors()[0];
 
     for (auto& inst : successor->instructions_) {
-        inst->parent_ = block.get();
+        inst->parent_ = block;
     }
 
-    // remove the terminator branch block1(..., [br]) <- block2(inst, inst, ...) before merging
+    // remove the terminator branch block1(..., -> [br] <-) + block2(inst, inst, ...) before merging
     block->instructions_.pop_back();
 
     block->instructions_.splice(block->instructions_.end(), successor->instructions_);
 
-    successor->remove_from_parent();
+    // this is just an empty block now, so return it and remove from function that owns it
+    return successor;
 }
 
 void merge_linear_blocks(std::unique_ptr<Function>& function, bool& changed)
 {
-    for (auto& block : function->blocks_) {
-        if (collapsible(block)) {
-            combine_with_successor(block);
-            changed = true;
+    std::unordered_set<BasicBlock*> dead;
+
+    auto it = function->blocks_.begin();
+    auto end = function->blocks_.end();
+
+    while (it != end) {
+        auto* block = it->get();
+
+        if (dead.contains(block)) {
+            ++it;
+            continue;
         }
+        
+        if (collapsible(block)) {
+            auto* dead_block = combine_with_successor(block);
+            dead.insert(dead_block);
+            changed = true; 
+        }
+
+        ++it;
     }
+
+    function->blocks_.remove_if([&](auto& b) {
+        return dead.contains(b.get());
+    });
 }
 
 void EarlyOptimizer::cleanup_cfg()
@@ -264,9 +191,10 @@ void EarlyOptimizer::cleanup_cfg()
         while (changed) {
             changed = false;
 
+            remove_redundant_branches(function, changed);
             remove_unreachable_blocks(function, changed);
-            remove_empty_blocks(function, changed);
             merge_linear_blocks(function, changed);
         }
     }
 }
+

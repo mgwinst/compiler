@@ -22,9 +22,6 @@ Program LoweringEngine::run()
     return std::move(program_);
 }
 
-// load if reference 
-// load if pointer dereference (requires an additional load ontop of the load handled in the unary lowering)
-
 bool load_required(SemaNode* node)
 {
     if (isa<ReferenceExpr>(node))
@@ -92,17 +89,19 @@ Value* LoweringEngine::lower(SemaNode* node)
             set_current_block(entry);
 
             auto* return_type = cast<FunctionType>(func->type())->return_type_;
- 
-            if (return_type != ctx_.type_table_.builtin_map_["void"]) {
-                auto* ret_val = builder_.create<Alloca>(return_type, "retval"); // technically doesn't need to be in name:value map
-                auto* ret_block = builder_.create<BasicBlock>("return");
-                current_function()->initialize_return(ret_val, ret_block);
 
-                set_current_block(ret_block);
-                auto* ret = builder_.create<Load>(return_type, ret_val);
-                builder_.create<Return>(ret);
-                set_current_block(entry);
+            current_function()->return_block_ = builder_.create<BasicBlock>("return");
+
+            if (return_type == ctx_.type_table_.builtin_map_["void"]) {
+                set_current_block(current_function()->return_block_);
+                builder_.create<Return>();
+            } else {
+                current_function()->return_value_ = builder_.create<Alloca>(return_type, "retval"); // technically doesn't need to be in alloca map, we can't anyway because of collision (many retvals in the graph)
+                set_current_block(current_function()->return_block_);
+                builder_.create<Return>(builder_.create<Load>(return_type, current_function()->return_value_));
             }
+
+            set_current_block(entry);
 
             for (auto* p : func->params_) {
                 lower(p);
@@ -125,11 +124,15 @@ Value* LoweringEngine::lower(SemaNode* node)
         case SemaNodeKind::ReturnStmt: {
             auto* return_stmt = cast<ReturnStmt>(node);
 
-            auto* value = lower(return_stmt->value_);
+            if (return_stmt->value_) {
+                auto* value = lower(return_stmt->value_);
 
-            auto* load = builder_.create<Load>(value);
+                if (load_required(return_stmt->value_))
+                    value = builder_.create<Load>(value);
 
-            builder_.create<Store>(current_function()->return_value_, load);
+                builder_.create<Store>(current_function()->return_value_, value);
+            }
+
             builder_.create<Branch>(current_function()->return_block_);
 
             return nullptr;
@@ -261,7 +264,7 @@ Value* LoweringEngine::lower(SemaNode* node)
             if (load_required(binary->left_))
                 left = builder_.create<Load>(left);
 
-            if (load_required(binary->left_))
+            if (load_required(binary->right_))
                 right = builder_.create<Load>(right);
 
             switch (op) {
@@ -269,6 +272,7 @@ Value* LoweringEngine::lower(SemaNode* node)
                 case BinaryOp::Sub:  return builder_.create<Sub>(left, right);
                 case BinaryOp::Mul:  return builder_.create<Mul>(left, right);
                 case BinaryOp::Div:  return builder_.create<Div>(left, right);
+                case BinaryOp::Mod:  return builder_.create<Mod>(left, right);
                 case BinaryOp::Eq:   return builder_.create<Eq>(left, right);
                 case BinaryOp::Ne:   return builder_.create<Ne>(left, right);
                 case BinaryOp::Slt:  return builder_.create<Slt>(left, right);

@@ -18,6 +18,13 @@ Function::~Function()
     }
 }
 
+BasicBlock* Function::get_entry_block()
+{
+    auto* entry = blocks_.front().get();
+    assert(entry->name_ == "entry" && entry->predecessors().size() == 0);
+    return entry;
+}
+
 BasicBlock* Function::insert(BasicBlock* block)
 {
     block->parent_ = this;
@@ -30,10 +37,4 @@ Argument* Function::insert(Argument* arg)
     arg->parent_ = this;
     args_.push_back(std::unique_ptr<Argument>{ arg });
     return arg;
-}
-
-void Function::initialize_return(Value* return_value, BasicBlock* return_block)
-{
-    return_value_ = return_value;
-    return_block_ = return_block;
 }

@@ -7,18 +7,17 @@ BasicBlock::BasicBlock(std::string_view name) :
 
 BasicBlock::~BasicBlock()
 {
-    // bug: should remain conditional but switch targets (emulate a fall through in the graph)
-
-    for (Branch* branch : static_cast_view<Branch>(users_)) {
-        if (branch->is_conditional()) {
+    for (auto* branch : static_cast_view<Branch>(users_)) {
+        if (branch->branch_kind_ == BranchKind::Conditional) {
+            branch->operands_.erase(branch->operands_.begin()); // remove the condition value
+            std::erase_if(branch->operands_, [this](auto* value) { return value == this; }); // remove the target (this block)
             branch->branch_kind_ = BranchKind::Unconditional;
-            auto it = ranges::find(branch->operands_, this);
-            branch->operands_.erase(it);
         } else {
-            assert(isa<BasicBlock>(branch->parent_));
-            static_cast<BasicBlock*>(branch->parent_)->instructions_.pop_back();
+            auto* pred = cast<BasicBlock>(branch->parent_);
+            assert(pred->instructions_.size() > 0);
+            pred->instructions_.pop_back();
         }
-    }
+    } 
 
     while (!instructions_.empty()) {
         instructions_.pop_back();
@@ -58,14 +57,4 @@ small_vector<BasicBlock*, 2> BasicBlock::successors()
         result.push_back(target);
 
     return result;
-}
-
-void BasicBlock::remove_from_parent()
-{
-    assert(parent_ != nullptr);
-
-    if (auto* func = dyn_cast<Function>(parent_)) {
-        auto index = (reinterpret_cast<std::byte*>(this) - reinterpret_cast<std::byte*>(func->blocks_.data())) / sizeof(std::unique_ptr<BasicBlock>);
-        swap_pop(func->blocks_, index);
-    }
 }
