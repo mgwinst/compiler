@@ -20,8 +20,9 @@ Function::~Function()
 
 BasicBlock* Function::get_entry_block()
 {
+    assert(!blocks_.empty());
     auto* entry = blocks_.front().get();
-    assert(entry->name_ == "entry" && entry->predecessors().size() == 0);
+    assert(entry->name_ == "entry" && entry->predecessors().empty());
     return entry;
 }
 

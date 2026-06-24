@@ -296,12 +296,12 @@ struct Program
     Function* insert(Function* function);
 };
 
-inline std::vector<BasicBlock*> post_order(std::unique_ptr<Function>& function, bool reverse = false)
+inline std::vector<BasicBlock*> post_order(Function* function, bool reverse = false)
 {
     if (function->blocks_.empty())
         return { };
 
-    BasicBlock* entry = function->blocks_.front().get();
+    BasicBlock* entry = function->get_entry_block();
 
     std::unordered_set<BasicBlock*> visited;   
     std::vector<BasicBlock*> post_order;
