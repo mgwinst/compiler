@@ -52,7 +52,7 @@ bool escapes(Alloca* alloca)
     return false;
 }
 
-std::unordered_set<Alloca*> non_escaping_allocas(const std::unique_ptr<Function>& function)
+std::unordered_set<Alloca*> non_escaping_allocas(Function* function)
 {
     std::unordered_set<Alloca*> allocas;
 

@@ -13,12 +13,13 @@ public:
     void run()
     {
         // inline_functions()
-        // sroa()
+        // sroa();
 
         trivial_dce();
         remove_dead_stores();
         cleanup_cfg();
         trivial_dce();
+        mem2reg();
     }
 
 private:
@@ -26,14 +27,17 @@ private:
     IRBuilder builder_;
 
     // void inline_functions();
+    // void sroa();
+
     void trivial_dce();
     void remove_dead_stores();
 
     // instruction simplify
-    void constant_folding();
-    void algebra();
+    // void constant_folding();
+    // void algebra();
 
     void cleanup_cfg();
+    void mem2reg();
 };
 
 // need to implement

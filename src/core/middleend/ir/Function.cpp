@@ -16,6 +16,10 @@ Function::~Function()
             }
         }
     }
+
+    while (!blocks_.empty()) {
+        blocks_.pop_back();
+    }
 }
 
 BasicBlock* Function::get_entry_block()

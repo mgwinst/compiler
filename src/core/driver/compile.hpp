@@ -23,5 +23,5 @@ private:
     SemaTree analyze(ModuleContext& ctx, AST& ast);
     Program lower(ModuleContext& ctx, const SemaTree& tree);
     void early_optimize(Program& program);
-    void rewrite(Program& program);
+    
 };

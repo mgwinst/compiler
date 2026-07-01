@@ -5,4 +5,4 @@
 
 bool escapes_via(Value* value, Value* target, std::unordered_set<Value*>& visited);
 bool escapes(Alloca* alloca);
-std::unordered_set<Alloca*> non_escaping_allocas(const std::unique_ptr<Function>& function);
+std::unordered_set<Alloca*> non_escaping_allocas(Function* function);

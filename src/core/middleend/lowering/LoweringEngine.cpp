@@ -71,7 +71,7 @@ Value* LoweringEngine::lower(SemaNode* node)
             auto* param = cast<ParamDecl>(node);
  
             auto* arg = builder_.create<Argument>(param->type(), param->name());
-            auto* alloca = builder_.create<Alloca>(param->type(), param->name());
+            auto* alloca = builder_.create<Alloca>(param->type(), param->name() + ".ptr");
             alloca_map_[param->name()] = alloca;
             auto* store = builder_.create<Store>(alloca, arg);
 

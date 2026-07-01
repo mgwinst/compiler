@@ -351,16 +351,29 @@ std::string get_target_list_str(Branch* branch)
     return target_label_list;
 }
 
-std::string get_argument_list_str(Call* inst)
+std::string get_argument_list_str(Call* call)
 {
     std::string args_list_str{};
-    for (auto* arg : inst->operands_ | std::views::drop(1)) {
+    for (auto* arg : call->operands_ | std::views::drop(1)) {
         args_list_str += std::format("%{}", arg->name_);
-        if (arg != inst->operands_.back())
+        if (arg != call->operands_.back())
             args_list_str += ", ";
     }
 
     return args_list_str;
+}
+
+std::string get_phi_operands_str(Phi* phi)
+{
+    std::string phi_operands_str{};
+    for (auto [value, block] : phi->operands_) {
+        phi_operands_str += std::format("[%{}, {}]", value->name_, block->name_);
+        if (value != phi->operands_.back().first) {
+            phi_operands_str += ", ";
+        }
+    }
+
+    return phi_operands_str;
 }
 
 std::string ir_value_to_str(Value* value)
@@ -449,6 +462,10 @@ std::string ir_value_to_str(Value* value)
                 std::format("br label %{}", inst->operands_[0]->name_);
         }
 
+        case ValueKind::Phi: {
+            auto* inst = cast<Phi>(value);
+            return std::format("%{} = phi {}", inst->name_, get_phi_operands_str(inst));
+        }
 
         case ValueKind::PtrAdd: {
             auto* inst = cast<PtrAdd>(value);

@@ -4,8 +4,7 @@
 
 #define REVERSE (true)
 
-inline std::unordered_map<BasicBlock*, uint64_t> 
-compute_rpo_index_map(const std::vector<BasicBlock*>& blocks) 
+inline auto compute_rpo_index_map(const std::vector<BasicBlock*>& blocks) 
 {
     std::unordered_map<BasicBlock*, uint64_t> rpo_index;
 
@@ -16,8 +15,7 @@ compute_rpo_index_map(const std::vector<BasicBlock*>& blocks)
     return rpo_index;
 }
 
-inline std::unordered_map<BasicBlock*, BasicBlock*>
-compute_dominators(Function* function)
+inline auto compute_immediate_dominators(Function* function)
 {
     std::unordered_map<BasicBlock*, BasicBlock*> idom;
     
@@ -52,7 +50,10 @@ compute_dominators(Function* function)
         changed = false;
         for (auto i = 0uz; i < blocks.size(); ++i) {
             BasicBlock* b = blocks[i];
-            if (b == entry) continue;
+
+            if (b == entry) 
+                continue;
+
             BasicBlock* new_idom = nullptr;
 
             for (BasicBlock* p : b->predecessors()) {
@@ -74,23 +75,60 @@ compute_dominators(Function* function)
     return idom;
 }
 
-inline auto compute_dominance_frontier(Function* function, std::unordered_map<BasicBlock*, BasicBlock*>& idom)
+class DominanceFrontier
 {
-    std::unordered_map<BasicBlock*, std::unordered_set<BasicBlock*>> df;
+public:
+    DominanceFrontier(Function* function)
+    {
+        auto idom = compute_immediate_dominators(function);
 
-    auto blocks = post_order(function, REVERSE);
+        auto blocks = post_order(function, REVERSE);
 
-    for (auto* b : blocks) {
-        if (b->predecessors().size() >= 2) {
-            for (auto* p : b->predecessors()) {
-                auto* runner = p;
-                while (runner != idom[b]) {
-                    df[runner].insert(b);
-                    runner = idom[runner];
+        for (auto* b : blocks) {
+            if (b->predecessors().size() >= 2) {
+                for (auto* p : b->predecessors()) {
+                    auto* runner = p;
+                    while (runner != idom[b]) {
+                        frontier[runner].insert(b);
+                        runner = idom[runner];
+                    }
                 }
             }
         }
     }
 
-    return df;
-}
+    auto operator[](BasicBlock* block)
+    {
+        return frontier[block];
+    }
+
+private:
+    std::unordered_map<BasicBlock*, std::unordered_set<BasicBlock*>> frontier;
+};
+
+class DominatorTree
+{
+public:
+    DominatorTree(Function* function)
+    {
+        auto blocks = post_order(function, REVERSE);  
+
+        auto idom = compute_immediate_dominators(function);
+
+        for (auto* b : blocks) {
+            auto* p = idom[b];
+
+            if (p != b) {
+                tree[p].insert(b);
+            }
+        }
+    }
+
+    auto operator[](BasicBlock* block)
+    {
+        return tree[block];
+    }
+
+private:
+    std::unordered_map<BasicBlock*, std::unordered_set<BasicBlock*>> tree;
+};

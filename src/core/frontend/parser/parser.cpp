@@ -153,31 +153,22 @@ std::expected<Decl*, Error> Parser::parse_decl() noexcept
             return *s;
         }
         
-        case TokenType::KEYWORD_VAR: {
-            eat_token();
-            
-            auto var = parse_var_decl();
-            if (!var) return std::unexpected{ var.error() };
-
-            return *var;
-        }
-
         default: {
             return std::unexpected{ SyntaxError{ cur_token_ } };
         }
     }
 }
 
-// var x: int;
-// var x: int = 0;
+// x: int;
+// x: int = 0;
 
-// var x: Point;
-// var x: Point = {};
-// var x: Point = {1, 2}
+// x: Point;
+// x: Point = {};
+// x: Point = {1, 2}
 
-// var x: int[4];
-// var x: int[4] = {}
-// var x: int[4] = {1, 2, 3, 4}
+// x: int[4];
+// x: int[4] = {}
+// x: int[4] = {1, 2, 3, 4}
 
 std::expected<Decl*, Error> Parser::parse_var_decl() noexcept
 {
@@ -318,14 +309,21 @@ std::expected<Stmt*, Error> Parser::parse_compound_stmt() noexcept
 
     while (!is_cur_token(TokenType::RBRACE)) {
         switch (cur_token_.type_) {
-            case TokenType::KEYWORD_VAR: {
-                eat_token();
+            case TokenType::IDENTIFIER: {
+                if (is_next_token(TokenType::COLON)) {
+                    auto decl = parse_var_decl();
+                    if (!decl) return std::unexpected{ decl.error() };
+                    
+                    children.push_back(*decl);
+                    break;
+                } else {
+                    auto expr = parse_expr();
+                    if (!expr) return std::unexpected{ expr.error() };
 
-                auto decl = parse_var_decl();
-                if (!decl) return std::unexpected{ decl.error() };
-                
-                children.push_back(*decl);
-                break;
+                    EXPECT_SEMICOLON();
+                    children.push_back(*expr);
+                    break;
+                }
             }
 
             case TokenType::KEYWORD_FOR: {
@@ -400,6 +398,7 @@ std::expected<Stmt*, Error> Parser::parse_compound_stmt() noexcept
             }
         }
     }
+
 
     EXPECT_RBRACE();
 

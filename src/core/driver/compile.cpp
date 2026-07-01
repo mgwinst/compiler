@@ -39,6 +39,7 @@ void Compiler::compile(const Module& module)
     }
 
     early_optimize(program);
+    name_values(program); // temporary debug
 
     if (context_.flags().contains("-opt")) {
         print(program);

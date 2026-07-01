@@ -19,7 +19,7 @@ namespace fs = std::filesystem;
 inline const std::unordered_set<std::string> winc_flags {
     "-ast",
     "-ir",
-    "-opt"
+    "-opt",
 };
 
 inline void print_winc_help()
@@ -68,7 +68,7 @@ inline CompilerContext parse_command(int argc, const char** argv)
         }
     }
 
-    if (errors) {
+    if (errors > 0) {
         std::exit(1);
     }
 
@@ -80,4 +80,4 @@ inline CompilerContext parse_command(int argc, const char** argv)
     return CompilerContext{std::move(files), std::move(flags)};
 }
 
-// -S flag to stop at that point
+// need -S flag to stop at that point

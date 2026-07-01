@@ -33,8 +33,8 @@ enum class ValueKind
     BasicBlock,
     Argument,
     Alloca,
-    Load,
     Store,
+    Load,
     Add,
     Sub,
     Mul,
@@ -45,9 +45,9 @@ enum class ValueKind
     Slt,
     Call,
     PtrAdd,
+    Phi,
     Return,
     Branch,
-    Phi,
     Const,
 };
 
@@ -178,7 +178,15 @@ struct Branch : Instruction
 
 struct Phi : Value
 {
-    // std::list<std::pair<Value*, BasicBlock*>> [value, block], [value, block], ... 
+    //  %3 = phi [%1, b1], [%2, b2], 
+
+    Alloca* alloca_;
+    std::vector<std::pair<Value*, BasicBlock*>> operands_;
+
+    Phi(Alloca* alloca) :
+        Value(ValueKind::Phi),
+        alloca_{ alloca },
+        operands_{ } {}
 };
 
 struct Const : Value
@@ -190,22 +198,22 @@ struct Const : Value
 
 struct BasicBlock : Value
 {
-    std::list<std::unique_ptr<Instruction>> instructions_; // ordered
+    std::list<std::unique_ptr<Value>> instructions_; // ordered
 
     BasicBlock(std::string_view name = "");
     
     ~BasicBlock() override;
 
-    template <DerivedFromInstruction T>
+    template <DerivedFromValue T>
     T* insert(T* value)
     {
         value->parent_ = this;
-        instructions_.push_back(std::unique_ptr<Instruction>{ value });
+        instructions_.push_back(std::unique_ptr<Value>{ value });
         return value;
     }
 
     bool empty();
-    Instruction* terminator();
+    Value* terminator();
     small_vector<BasicBlock*, 2> successors();
     auto predecessors() { 
         return users_ | std::views::transform([](Value* value) { return static_cast<BasicBlock*>(value->parent_); });

@@ -71,7 +71,8 @@ Type* TypeTable::resolve_type(ASTNode* type_expr)
             if (auto it = user_defined_map_.find(named->name_); it != user_defined_map_.end())
                 return it->second;
 
-            error_exit("type does not exist");
+            // we need access to the diagnostics object so we can report proper error instead of terminate
+            error_exit(std::format("type '{}' does not exist", named->name_));
         }
 
         case ASTNodeKind::FuncDecl: {

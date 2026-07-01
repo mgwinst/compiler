@@ -1,11 +1,12 @@
 #include <doctest/doctest.h>
 
 #include <fstream>
+#include <array>
 
 #include "frontend/lexer/lexer.hpp"
 #include "utils/utils.hpp"
 
-TokenType token_test_table[] = {
+std::array token_table = {
     TokenType::IDENTIFIER,
     TokenType::IDENTIFIER,
     TokenType::NUMERIC_LITERAL,
@@ -86,8 +87,8 @@ TokenType token_test_table[] = {
     TokenType::TYPE,
 };
 
-TEST_CASE("Lexer tokens") {
-    Module module = get_module("lexer/sample_tokens.txt");
+TEST_CASE("tokens") {
+    Module module = get_module("lexer/tokens.txt");
     Lexer lexer{module.data};
 
     int i = 0;
@@ -96,9 +97,9 @@ TEST_CASE("Lexer tokens") {
         if (tok.type_ == TokenType::END_OF_FILE) 
             break;
 
-        INFO(std::format("{} != {}", token_type_to_string(tok.type_), token_type_to_string(token_test_table[i])));
+        INFO(std::format("{} != {}", token_type_to_string(tok.type_), token_type_to_string(token_table[i])));
         
-        CHECK(tok.type_ == token_test_table[i]);
+        CHECK(tok.type_ == token_table[i]);
 
         i++;
     }
@@ -106,9 +107,9 @@ TEST_CASE("Lexer tokens") {
 
 TEST_CASE("get_token() / peek_token()")
 {
-    Module module = get_module("lexer/sample_tokens.txt");
+    Module module = get_module("lexer/tokens.txt");
     Lexer lexer{module.data};
 
-    REQUIRE(lexer.get_token().type_ == token_test_table[0]);
-    REQUIRE(lexer.peek_token().type_ == token_test_table[1]);
+    REQUIRE(lexer.get_token().type_ == token_table[0]);
+    REQUIRE(lexer.peek_token().type_ == token_table[1]);
 }

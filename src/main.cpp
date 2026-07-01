@@ -1,9 +1,5 @@
-#include <chrono>
-
 #include "driver/compile.hpp"
 #include "driver/cli.hpp"
-
-using namespace std::chrono;
 
 int main(int argc, const char** argv)
 {
@@ -11,4 +7,4 @@ int main(int argc, const char** argv)
     Compiler{ctx}.compile_modules();
 }
 
-// fix printing race condition
+// fix printing race condition when printing multiple module outputs

@@ -14,7 +14,12 @@ BasicBlock::~BasicBlock()
             branch->branch_kind_ = BranchKind::Unconditional;
         } else {
             auto* pred = cast<BasicBlock>(branch->parent_);
-            assert(pred->instructions_.size() > 0);
+            // assert(!pred->instructions_.empty());
+            if (pred->instructions_.empty()) {
+                std::println("destroying {}", this->name_);
+                std::println("predecessor {} is empty for some reason", pred->name_);
+                assert(0);
+            }
             pred->instructions_.pop_back();
         }
     } 
@@ -24,7 +29,7 @@ BasicBlock::~BasicBlock()
     }
 }
 
-Instruction* BasicBlock::terminator()
+Value* BasicBlock::terminator()
 {
     if (instructions_.empty())
         return nullptr;
