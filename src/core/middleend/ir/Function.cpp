@@ -17,6 +17,15 @@ Function::~Function()
         }
     }
 
+    // must destroy blocks in post order
+
+    // actually this is a perfect reason why
+    // destructors shouldn't be responsible for modifying the graph
+    // just make sure that nothing references the thing you are about to destroy
+    // and remove the references separately
+
+    // issue is ~Block() is modifying graph
+
     while (!blocks_.empty()) {
         blocks_.pop_back();
     }

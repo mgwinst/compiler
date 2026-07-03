@@ -232,7 +232,7 @@ std::expected<Decl*, Error> Parser::parse_func_decl() noexcept
     eat_token(); 
 
     auto [arrow] = expect(TokenType::ARROW);
-    if (!arrow) return std::unexpected{ SyntaxError{cur_token_, "missing '->' in trailing return type"} };
+    if (!arrow) return std::unexpected{ SyntaxError{cur_token_, "function missing trailing return type"} };
 
     auto return_type = parse_type();
     if (!return_type) return std::unexpected{ return_type.error() };

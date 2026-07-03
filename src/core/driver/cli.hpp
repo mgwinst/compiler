@@ -28,8 +28,8 @@ inline void print_winc_help()
     std::println("usage: winc [-options] [file1.w file2.w ...]\n");
     std::println("options:");
     std::println("  [-ast] -> dump AST");
-    std::println("  [-ir] -> dump IR");
-    std::println("  [-h] -> help");
+    std::println("  [-ir]  -> dump IR");
+    std::println("  [-h]   -> help");
 }
 
 inline CompilerContext parse_command(int argc, const char** argv)
