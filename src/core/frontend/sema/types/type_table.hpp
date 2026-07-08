@@ -11,14 +11,12 @@
 
 using boost::container::small_vector;
 
-inline constexpr std::size_t inline_vec_size{ 8 };
-
 class TypeTable
 {
 public:
-    std::unordered_map<std::size_t, small_vector<Type*, inline_vec_size>> buckets_;
-    std::unordered_map<std::string, Type*> builtin_map_;
-    std::unordered_map<std::string, Type*> user_defined_map_; // fixes unknown type resolution problem
+    std::unordered_map<std::size_t, small_vector<Type*, 8>> buckets_;
+    std::unordered_map<std::string, Type*> builtin_types_;
+    std::unordered_map<std::string, Type*> user_defined_types_; // fixes unknown type resolution problem
 
     TypeTable();
 
@@ -52,4 +50,5 @@ public:
 
 private:
     Arena arena;
+
 };

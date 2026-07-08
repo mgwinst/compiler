@@ -1,10 +1,10 @@
-#include "test_parser.hpp"
+#include "helpers.hpp"
 
 // functions
 
 TEST_CASE("function definition")
 {
-    auto ast = parse("parser/srctest/func_no_param.w");
+    auto ast = parse("parser/src/func_no_param.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     REQUIRE(module->decls_.size() == 1);
@@ -17,7 +17,7 @@ TEST_CASE("function definition")
 
 TEST_CASE("single parameter")
 {
-    auto ast = parse("parser/srctest/func_single_param.w");
+    auto ast = parse("parser/src/func_single_param.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -33,7 +33,7 @@ TEST_CASE("single parameter")
 
 TEST_CASE("multiple parameters")
 {
-    auto ast = parse("parser/srctest/func_multi_param.w");
+    auto ast = parse("parser/src/func_multi_param.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -57,7 +57,7 @@ TEST_CASE("missing 'fn' keyword")
 
 TEST_CASE("missing return type")
 {
-    Module module = get_module("parser/srctest/func_missing_ret_type.w");
+    Module module = get_module("parser/src/func_missing_ret_type.w");
     Parser parser{module};
     AST ast = parser.run();
 
@@ -69,7 +69,7 @@ TEST_CASE("missing return type")
 
 TEST_CASE("variable declaration")
 {
-    auto ast = parse("parser/srctest/var_decl.w");
+    auto ast = parse("parser/src/var_decl.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -86,7 +86,7 @@ TEST_CASE("variable declaration")
 
 TEST_CASE("variable initialization")
 {
-    auto ast = parse("parser/srctest/var_init.w");
+    auto ast = parse("parser/src/var_init.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -107,7 +107,7 @@ TEST_CASE("variable initialization")
 
 TEST_CASE("array")
 {
-    auto ast = parse("parser/srctest/array.w");
+    auto ast = parse("parser/src/array.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -135,7 +135,7 @@ TEST_CASE("array initializer list")
 
 TEST_CASE("struct definition")
 {
-    auto ast = parse("parser/srctest/struct_def.w");
+    auto ast = parse("parser/src/struct_def.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
 
@@ -150,7 +150,7 @@ TEST_CASE("struct definition")
 
 TEST_CASE("struct definition with fields")
 {
-    auto ast = parse("parser/srctest/struct_with_fields.w");
+    auto ast = parse("parser/src/struct_with_fields.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
 

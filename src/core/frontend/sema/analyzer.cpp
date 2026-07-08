@@ -11,10 +11,16 @@ using namespace Sema;
 SemaTree SemanticAnalyzer::run()
 {
     build_sema_node(ast_.root_);
-    ctx_.diagnostics_.report();
+
+    if (reporting_) {
+        ctx_.diagnostics_.report();
+    }
 
     check_type(sema_tree_.root_);
-    ctx_.diagnostics_.report();
+
+    if (reporting_) {
+        ctx_.diagnostics_.report();
+    }
 
     desugar(sema_tree_.root_);
 
@@ -107,7 +113,7 @@ SemaNode* SemanticAnalyzer::build_sema_node(Syntax::ASTNode* node)
 
             ctx_.symbol_table_.exit_scope();
 
-            if (type->return_type_ == ctx_.type_table_.builtin_map_["void"]) {
+            if (type->return_type_ == ctx_.type_table_.builtin_types_["void"]) {
                 auto* ret = sema_tree_.emplace<ReturnStmt>();
                 cast<CompoundStmt>(body)->children_.push_back(ret);
             }
@@ -408,19 +414,19 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
         }
 
         case SemaNodeKind::IntegerLiteralExpr: {
-            return ctx_.type_table_.builtin_map_["int"];
+            return ctx_.type_table_.builtin_types_["int"];
         }
 
         case SemaNodeKind::FloatLiteralExpr: {
-            return ctx_.type_table_.builtin_map_["float"];
+            return ctx_.type_table_.builtin_types_["float"];
         }
 
         case SemaNodeKind::CharLiteralExpr: {
-            return ctx_.type_table_.builtin_map_["char"];
+            return ctx_.type_table_.builtin_types_["char"];
         }
 
         case SemaNodeKind::BooleanLiteralExpr: {
-            return ctx_.type_table_.builtin_map_["bool"];
+            return ctx_.type_table_.builtin_types_["bool"];
         }
 
         case SemaNodeKind::UnaryExpr: {
@@ -432,25 +438,33 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
 
             if (unary->op_ == "&") {
                 return ctx_.type_table_.get_or_create<PointerType>(operand_type);
-            } else if (unary->op_ == "*") {
+            } 
+            
+            else if (unary->op_ == "*") {
                 if (!isa<PointerType>(operand_type)) {
                     ctx_.diagnostics_.register_error(std::format("dereferencing non-pointer type {}", type_to_str(operand_type)), unary->source_);
                     return nullptr;
                 }
                 // dereference -> return underlying type
                 return cast<PointerType>(operand_type)->inner_type_;
-            } else if (unary->op_ == "!") {
+            } 
+            
+            else if (unary->op_ == "!") {
                 if (!convertible_to_boolean(operand_type)) {
                     ctx_.diagnostics_.register_error(std::format("invalid argument type '{}' to unary expression '!'", type_to_str(operand_type)), unary->source_);
                     return nullptr;
                 }
-                return ctx_.type_table_.builtin_map_["bool"];
-            } else if (unary->op_ == "~") {
+                return ctx_.type_table_.builtin_types_["bool"];
+            } 
+            
+            else if (unary->op_ == "~") {
                 if (!isa<IntegerType>(operand_type)) {
                     ctx_.diagnostics_.register_error(std::format("non-integral type '{}' to unary expression '~'", type_to_str(operand_type)), unary->source_);
                     return nullptr;
                 }
-            } else if (unary->op_ == "++" || unary->op_ == "--") {
+            } 
+            
+            else if (unary->op_ == "++" || unary->op_ == "--") {
                 if (!is_scalar(operand_type) || is_const(operand_type)) {
                     ctx_.diagnostics_.register_error(std::format("can't '{}' value of type ({})", unary->op_, type_to_str(operand_type)), unary->source_);
                     return nullptr;
@@ -460,7 +474,6 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
             return operand_type;
         }
 
-        // FIX BIN OP RETURN TYPES (probably need a table for pattern matching...)
         case SemaNodeKind::BinaryExpr: {
             auto* binary = cast<BinaryExpr>(node);
 
@@ -471,6 +484,11 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
                 return nullptr;
 
             if (binary->op_ == "=") {
+                if (!is_lvalue(binary->left_)) {
+                    ctx_.diagnostics_.register_error(std::format("cannot assign to an rvalue", type_to_str(left_type), type_to_str(right_type)), binary->source_);
+                    return nullptr;
+                }
+
                 if (is_const(left_type)) {
                     ctx_.diagnostics_.register_error(std::format("cannot assign to a const-qualified variable", type_to_str(left_type), type_to_str(right_type)), binary->source_);
                     return nullptr;
@@ -485,19 +503,35 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
                 return nullptr;
             }
 
-            /*
-            if (is_bitwise_op(binary.op_)) {
-                if (!is_integral(*left_type) || !is_integral(*right_type)) {
-                    auto err = TypeError{std::format("bitwise ops require integral type operands", type_to_str(ctx_, *left_type), type_to_str(ctx_, *right_type)), binary.source_loc_};
-                    ctx_.diagnostics_.register_error(err);
-                    return ERROR_TYPE;
+            if (is_arithmetic_op(binary->op_)) {
+                if (!is_scalar(left_type) || !is_scalar(right_type)) {
+                    ctx_.diagnostics_.register_error(std::format("invalid operands for '{}' ({} and {})", binary->op_, type_to_str(left_type), type_to_str(right_type)), binary->source_);
+                    return nullptr;
                 }
-            } else if (is_logical_op(binary.op_)) {
-                return BOOL;
-            } else if (is_relational_op(binary.op_)) {
-                
             }
-            */
+
+            else if (is_bitwise_op(binary->op_)) {
+                if (!isa<IntegerType>(left_type) || !isa<IntegerType>(right_type)) {
+                    ctx_.diagnostics_.register_error(std::format("invalid operands for '{}' ({} and {})", binary->op_, type_to_str(left_type), type_to_str(right_type)), binary->source_);
+                    return nullptr;
+                }
+            }
+
+            else if (is_logical_op(binary->op_)) {
+                if (!convertible_to_boolean(left_type) || !convertible_to_boolean(right_type)) {
+                    ctx_.diagnostics_.register_error(std::format("invalid operands for '{}' ({} and {})", binary->op_, type_to_str(left_type), type_to_str(right_type)), binary->source_);
+                    return nullptr;
+                }
+                return ctx_.type_table_.builtin_types_["bool"];
+            } 
+            
+            else if (is_relational_op(binary->op_)) {
+                if (!is_scalar(left_type) || !is_scalar(right_type)) {
+                    ctx_.diagnostics_.register_error(std::format("invalid operands for '{}' ({} and {})", binary->op_, type_to_str(left_type), type_to_str(right_type)), binary->source_);
+                    return nullptr;
+                }
+                return ctx_.type_table_.builtin_types_["bool"];
+            }
 
             return left_type;
         }

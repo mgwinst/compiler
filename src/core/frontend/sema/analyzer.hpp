@@ -7,9 +7,10 @@
 class SemanticAnalyzer
 {
 public:
-    SemanticAnalyzer(ModuleContext& ctx, AST& ast) :
+    SemanticAnalyzer(ModuleContext& ctx, AST& ast, bool reporting = true) :
         ctx_{ ctx },
-        ast_{ ast } {}
+        ast_{ ast },
+        reporting_{ reporting } {}
 
     SemaTree run();
 
@@ -17,6 +18,7 @@ private:
     ModuleContext& ctx_;
     AST& ast_;
     SemaTree sema_tree_;
+    bool reporting_;
 
     Sema::SemaNode* build_sema_node(Syntax::ASTNode* node);
     Type* check_type(Sema::SemaNode* node);

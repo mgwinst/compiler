@@ -1,8 +1,8 @@
-#include "test_parser.hpp"
+#include "helpers.hpp"
 
 TEST_CASE("return statement")
 {
-    auto ast = parse("parser/srctest/return.w");
+    auto ast = parse("parser/src/return.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -17,7 +17,7 @@ TEST_CASE("return statement")
 
 TEST_CASE("if statement")
 {
-    auto ast = parse("parser/srctest/ifstmt.w");
+    auto ast = parse("parser/src/ifstmt.w");
     
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -34,7 +34,7 @@ TEST_CASE("if statement")
 
 TEST_CASE("if-else")
 {
-    auto ast = parse("parser/srctest/ifelse.w");
+    auto ast = parse("parser/src/ifelse.w");
     
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -56,7 +56,7 @@ TEST_CASE("else-if")
 
 TEST_CASE("while statement")
 {
-    auto ast = parse("parser/srctest/whilestmt.w");
+    auto ast = parse("parser/src/whilestmt.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -72,7 +72,7 @@ TEST_CASE("while statement")
 
 TEST_CASE("for statement")
 {
-    auto ast = parse("parser/srctest/forstmt.w");
+    auto ast = parse("parser/src/forstmt.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -91,7 +91,7 @@ TEST_CASE("for statement")
 
 TEST_CASE("break statment")
 {
-    auto ast = parse("parser/srctest/breakstmt.w");
+    auto ast = parse("parser/src/breakstmt.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -111,7 +111,7 @@ TEST_CASE("break statment")
 
 TEST_CASE("continue statment")
 {
-    auto ast = parse("parser/srctest/continuestmt.w");
+    auto ast = parse("parser/src/continuestmt.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);

@@ -25,7 +25,7 @@ Program lower(const std::string& source)
 
 TEST_CASE("add")
 {
-    auto program = lower("lowering/srctest/add.w");
+    auto program = lower("lowering/src/add.w");
 
     /*
     REQUIRE(program.functions_.size() == 1);

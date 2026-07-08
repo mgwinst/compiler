@@ -92,7 +92,7 @@ Value* LoweringEngine::lower(SemaNode* node)
 
             current_function()->return_block_ = builder_.create<BasicBlock>("return");
 
-            if (return_type == ctx_.type_table_.builtin_map_["void"]) {
+            if (return_type == ctx_.type_table_.builtin_types_["void"]) {
                 set_current_block(current_function()->return_block_);
                 builder_.create<Return>();
             } else {
@@ -149,7 +149,7 @@ Value* LoweringEngine::lower(SemaNode* node)
         case SemaNodeKind::IfStmt: {
             auto* if_stmt = cast<IfStmt>(node);
     
-            auto* header = current_block();
+            auto* header_block = current_block();
             auto* cond = lower(if_stmt->cond_);
 
             auto* if_then_block = builder_.create<BasicBlock>("if.then");
@@ -167,12 +167,13 @@ Value* LoweringEngine::lower(SemaNode* node)
                 builder_.create<Branch>(if_end_block);
             }
 
-            set_current_block(header);
+            set_current_block(header_block);
 
-            if (if_else_block)
+            if (if_else_block) {
                 builder_.create<Branch>(cond, if_then_block, if_else_block);
-            else
+            } else {
                 builder_.create<Branch>(cond, if_then_block, if_end_block);
+            }
             
             set_current_block(if_end_block);
 
