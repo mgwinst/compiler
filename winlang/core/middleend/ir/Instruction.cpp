@@ -1,12 +1,12 @@
 #include "IR.hpp"
 
 Instruction::Instruction(ValueKind kind, std::vector<Value*> operands, Type* type, std::string_view name) : 
-    Value{kind, type, name}
+    Value{kind, type, name},
+    operands_{ operands }
 {
-    operands_ = operands;
-    for (auto* arg : operands_) {
-        if (arg) {
-            arg->add_use(this);
+    for (auto* operand : operands_) {
+        if (operand) {
+            operand->add_use(this);
         }
     }
 }
@@ -15,7 +15,7 @@ Instruction::~Instruction()
 {
     for (auto* operand : operands_) {
         if (operand) {
-            if (auto it = ranges::find(operand->users_, this); it != operand->users_.end()) {
+            if (auto it = std::ranges::find(operand->users_, this); it != operand->users_.end()) {
                 swap_pop(operand->users_, it);
             }
         }

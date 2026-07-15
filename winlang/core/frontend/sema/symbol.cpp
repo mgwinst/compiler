@@ -4,7 +4,7 @@
 
 Symbol* SymbolTable::insert(Syntax::Decl* node, Type* type)
 {
-    auto* symbol = arena_.emplace<Symbol>(node->name_, type, StorageClass::Auto, Linkage::External);
+    auto* symbol = arena_.emplace<Symbol>(node->name_, type);
 
     cur_scope().emplace(node->name_, symbol);
 
@@ -28,6 +28,7 @@ Symbol* SymbolTable::lookup(const std::string& identifier) {
 
 std::unordered_map<std::string, Symbol*>& SymbolTable::cur_scope()
 { 
+    assert(!scopes_.empty());
     return scopes_.back();
 }
 
@@ -38,5 +39,6 @@ void SymbolTable::enter_scope()
 
 void SymbolTable::exit_scope()
 {
+    assert(!scopes_.empty());
     scopes_.pop_back();
 }

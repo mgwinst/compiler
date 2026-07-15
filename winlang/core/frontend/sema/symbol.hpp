@@ -9,11 +9,6 @@
 #include "frontend/sema/types/types.hpp"
 #include "utils/enums.hpp"
 
-enum class SymbolKind
-{
-
-};
-
 enum class StorageClass
 {
     Auto,
@@ -30,16 +25,21 @@ enum class Linkage
 
 struct Symbol
 {
-    // SymbolKind kind_;
     std::string identifier_;
     Type* type_;
     StorageClass storage_;
     Linkage linkage_;
+
+    Symbol(std::string_view identifier, Type* type, StorageClass storage = StorageClass::Auto, Linkage linkage = Linkage::External) :
+        identifier_{ identifier },
+        type_{ type },
+        storage_{ storage },
+        linkage_{ linkage } {}
 };
 
 struct SymbolTable
 {
-    SymbolTable() = default;   
+    SymbolTable() = default;
     SymbolTable(const SymbolTable&) = delete;
     SymbolTable& operator=(const SymbolTable&) = delete;
     SymbolTable(SymbolTable&&) = default;
@@ -47,8 +47,8 @@ struct SymbolTable
     ~SymbolTable() = default;
 
     Symbol* insert(Syntax::Decl* node, Type* type);
-    bool exists_in_scope(const std::string& ident);
     Symbol* lookup(const std::string& ident);
+    bool exists_in_scope(const std::string& ident);
     void enter_scope();
     void exit_scope();
     std::unordered_map<std::string, Symbol*>& cur_scope();

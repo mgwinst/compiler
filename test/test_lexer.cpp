@@ -87,9 +87,18 @@ std::array token_table = {
     TokenType::TYPE,
 };
 
+constexpr std::string_view tokens = R"(
+var1 b 123 35
+fn struct if else while for return break continue const true false inline
+= + - * / % < > ( ) { } [ ] & " ' ; : , . ! | ^
+== != += -= *= /= %= <= >= ++ -- << >> && || -> //
+int int8 int16 int32 int64
+uint uint8 uint16 uint32 uint64
+float float16 float32 float64
+char bool void union)";
+
 TEST_CASE("tokens") {
-    Module module = get_module("lexer/tokens.txt");
-    Lexer lexer{module.data};
+    Lexer lexer{tokens};
 
     int i = 0;
     while (true) {
@@ -101,15 +110,14 @@ TEST_CASE("tokens") {
         
         CHECK(tok.type_ == token_table[i]);
 
-        i++;
+        ++i;
     }
 }
 
 TEST_CASE("get_token() / peek_token()")
 {
-    Module module = get_module("lexer/tokens.txt");
-    Lexer lexer{module.data};
+    Lexer lexer{tokens};
 
-    REQUIRE(lexer.get_token().type_ == token_table[0]);
-    REQUIRE(lexer.peek_token().type_ == token_table[1]);
+    CHECK(lexer.get_token().type_ == token_table[0]);
+    CHECK(lexer.peek_token().type_ == token_table[1]);
 }

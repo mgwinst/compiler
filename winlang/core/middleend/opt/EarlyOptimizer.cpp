@@ -278,12 +278,14 @@ void rename(BasicBlock* block, std::unordered_map<Alloca*, std::stack<Value*>> d
         {
             def_stack[phi->alloca_].push(phi);
         } 
+        
         else if (auto* load = dyn_cast<Load>(inst)) 
         {
             auto* v = def_stack[get_alloca_operand(load)].top();
             inst->replace_uses_with(v);
             to_remove.push_back(load);
         } 
+
         else if (auto* store = dyn_cast<Store>(inst)) 
         {
             def_stack[get_alloca_operand(store)].push(store->operands_[1]);
@@ -292,12 +294,16 @@ void rename(BasicBlock* block, std::unordered_map<Alloca*, std::stack<Value*>> d
     }
 
     block->instructions_.remove_if([&to_remove](auto& inst) { 
-        return ranges::contains(to_remove, inst.get());
+        return std::ranges::contains(to_remove, inst.get());
     });
 
     for (auto* succ : block->successors()) {
         for (auto& inst : succ->instructions_) {
             if (auto* phi = dyn_cast<Phi>(inst)) {
+                
+                // modify CFG here
+                // this phi must be added to the use list of the def value and block
+
                 phi->operands_.emplace_back(def_stack[phi->alloca_].top(), block);
             }
         }
@@ -319,7 +325,7 @@ void promote_memory_to_register(Function* function, IRBuilder& builder) {
     auto dt = DominatorTree{function};
     auto df = DominanceFrontier{function};
 
-    auto promotable_allocas = non_escaping_allocas(function) | ranges::to<std::vector>();
+    auto promotable_allocas = non_escaping_allocas(function) | std::ranges::to<std::vector>();
 
     for (auto* alloca : promotable_allocas) {
         std::queue worklist = def_blocks(function, alloca);
@@ -351,7 +357,7 @@ void promote_memory_to_register(Function* function, IRBuilder& builder) {
 
     // delete all promotable allocas after the rename walk
     function->get_entry_block()->instructions_.remove_if([&promotable_allocas](auto& inst) {
-        return ranges::contains(promotable_allocas, inst.get());
+        return std::ranges::contains(promotable_allocas, inst.get());
     });
 }
 
