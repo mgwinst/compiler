@@ -21,3 +21,5 @@ inline void name_values(Program& program)
         }
     }
 }
+
+// naming should handle name prefix like %

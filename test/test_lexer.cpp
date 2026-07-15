@@ -84,7 +84,6 @@ std::array token_table = {
     TokenType::TYPE,
     TokenType::TYPE,
     TokenType::TYPE,
-    TokenType::TYPE,
 };
 
 constexpr std::string_view tokens = R"(
@@ -95,7 +94,7 @@ fn struct if else while for return break continue const true false inline
 int int8 int16 int32 int64
 uint uint8 uint16 uint32 uint64
 float float16 float32 float64
-char bool void union)";
+char bool void)";
 
 TEST_CASE("tokens") {
     Lexer lexer{tokens};

@@ -6,19 +6,27 @@
 struct IRBuilder
 {
     Program* program_;
-    Function* current_function_ = nullptr;
-    BasicBlock* current_block_ = nullptr;
+    Function* current_function_;
+    BasicBlock* current_block_;
+
+    IRBuilder() :
+        program_{ nullptr },
+        current_function_{ nullptr },
+        current_block_{ nullptr } {}
 
     IRBuilder(Program* program) : 
-        program_{ program } {}
+        program_{ program },
+        current_function_{ nullptr },
+        current_block_{ nullptr } {}
 
     template <DerivedFromValue T, typename... Args>
     T* create(Args&&... args)
     {
         T* value = new T{ std::forward<Args>(args)... };
 
-        if (!value) 
+        if (!value) {
             return nullptr;
+        }
 
         if constexpr (std::same_as<T, Function>) {
             return program_ ? program_->insert(value) : value;

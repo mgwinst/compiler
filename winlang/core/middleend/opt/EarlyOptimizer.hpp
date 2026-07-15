@@ -8,7 +8,7 @@ class EarlyOptimizer
 public:
     EarlyOptimizer(Program& program) :
         program_{ program },
-        builder_{ &program } {}
+        builder_{ } {}
 
     void run()
     {

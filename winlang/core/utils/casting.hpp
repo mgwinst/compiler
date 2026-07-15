@@ -12,7 +12,7 @@ using Syntax::ASTNode;
 using Sema::SemaNode;
 
 // if we want to upcast to base pointer should we just static_assert or build mechanism for that in cast<T>
-
+// this is important
 
 template <DerivedFromASTNode Derived>
 bool isa(ASTNode* ptr)

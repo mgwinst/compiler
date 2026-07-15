@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <string_view>
 
-enum class TokenType : uint16_t
+enum class TokenType
 {
     IDENTIFIER = 128,
     NUMERIC_LITERAL,
@@ -156,7 +156,7 @@ inline const std::unordered_set<std::string_view> built_in_types {
     "int", "int8", "int16", "int32", "int64",
     "uint", "uint8", "uint16", "uint32", "uint64",
     "float", "float16", "float32", "float64",
-    "char", "byte", "bool", "void", "union", "enum",
+    "char", "byte", "bool", "void"
 };
 
 inline const std::unordered_map<std::string_view, TokenType> keywords {

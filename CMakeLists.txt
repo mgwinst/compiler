@@ -9,32 +9,32 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(Boost REQUIRED)
 
 add_library(winc_lib STATIC
-    src/core/driver/compile.cpp
-    src/core/utils/print/print.cpp
-    src/core/frontend/lexer/lexer.cpp 
-    src/core/frontend/parser/parser.cpp 
-    src/core/frontend/error/diagnostics.cpp
-    src/core/frontend/sema/types/type_table.cpp
-    src/core/frontend/sema/symbol.cpp
-    src/core/frontend/sema/analyzer.cpp
-    src/core/middleend/ir/BasicBlock.cpp
-    src/core/middleend/ir/Constant.cpp
-    src/core/middleend/ir/Function.cpp
-    src/core/middleend/ir/Instruction.cpp
-    src/core/middleend/ir/Program.cpp
-    src/core/middleend/ir/Value.cpp
-    src/core/middleend/lowering/LoweringEngine.cpp
-    src/core/middleend/analysis/escape.cpp
-    src/core/middleend/opt/EarlyOptimizer.cpp
+    winlang/core/driver/compile.cpp
+    winlang/core/utils/print/print.cpp
+    winlang/core/frontend/lexer/lexer.cpp 
+    winlang/core/frontend/parser/parser.cpp 
+    winlang/core/frontend/error/diagnostics.cpp
+    winlang/core/frontend/sema/types/type_table.cpp
+    winlang/core/frontend/sema/symbol.cpp
+    winlang/core/frontend/sema/analyzer.cpp
+    winlang/core/middleend/ir/BasicBlock.cpp
+    winlang/core/middleend/ir/Constant.cpp
+    winlang/core/middleend/ir/Function.cpp
+    winlang/core/middleend/ir/Instruction.cpp
+    winlang/core/middleend/ir/Program.cpp
+    winlang/core/middleend/ir/Value.cpp
+    winlang/core/middleend/lowering/LoweringEngine.cpp
+    winlang/core/middleend/analysis/escape.cpp
+    winlang/core/middleend/opt/EarlyOptimizer.cpp
 )
 
 target_include_directories(winc_lib PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/winlang/core
 )
 
 target_link_libraries(winc_lib PUBLIC Boost::boost)
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(${PROJECT_NAME} winlang/main.cpp)
 target_link_libraries(${PROJECT_NAME} PRIVATE winc_lib)
 
 target_compile_options(${PROJECT_NAME} PRIVATE
