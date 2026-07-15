@@ -4,7 +4,7 @@
 
 TEST_CASE("address-of")
 {
-    auto ast = parse("srctest/address_of.w");
+    auto ast = parse("srctest/parser/address_of.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -19,7 +19,7 @@ TEST_CASE("address-of")
 
 TEST_CASE("pointer dereference")
 {
-    auto ast = parse("srctest/pointer_dereference.w");
+    auto ast = parse("srctest/parser/pointer_dereference.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -34,7 +34,7 @@ TEST_CASE("pointer dereference")
 
 TEST_CASE("prefix increment")
 {
-    auto ast = parse("srctest/increment.w");
+    auto ast = parse("srctest/parser/increment.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -48,7 +48,7 @@ TEST_CASE("prefix increment")
 
 TEST_CASE("prefix decrement")
 {
-        auto ast = parse("srctest/decrement.w");
+        auto ast = parse("srctest/parser/decrement.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -64,7 +64,7 @@ TEST_CASE("prefix decrement")
 
 TEST_CASE("assignment")
 {
-    auto ast = parse("srctest/assignment.w");
+    auto ast = parse("srctest/parser/assignment.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -77,7 +77,7 @@ TEST_CASE("assignment")
 
 TEST_CASE("compound assignment")
 {
-    auto ast = parse("srctest/compound_assignment.w");
+    auto ast = parse("srctest/parser/compound_assignment.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -90,7 +90,7 @@ TEST_CASE("compound assignment")
 
 TEST_CASE("a + b")
 {
-    auto ast = parse("srctest/add.w");
+    auto ast = parse("srctest/parser/add.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -103,7 +103,7 @@ TEST_CASE("a + b")
 
 TEST_CASE("function call no arguments")
 {
-    auto ast = parse("srctest/call.w");
+    auto ast = parse("srctest/parser/call.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -121,7 +121,7 @@ TEST_CASE("function call no arguments")
 
 TEST_CASE("direct member access")
 {
-    auto ast = parse("srctest/member_direct.w");
+    auto ast = parse("srctest/parser/member_direct.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -136,7 +136,7 @@ TEST_CASE("direct member access")
 
 TEST_CASE("indirect member access")
 {
-    auto ast = parse("srctest/member_indirect.w");
+    auto ast = parse("srctest/parser/member_indirect.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
@@ -152,7 +152,7 @@ TEST_CASE("indirect member access")
 
 TEST_CASE("array subscript")
 {
-    auto ast = parse("srctest/array_subscript.w");
+    auto ast = parse("srctest/parser/array_subscript.w");
 
     auto* module = cast<ModuleDecl>(ast.root_);
     auto* func = cast<FuncDecl>(module->decls_[0]);
