@@ -11,5 +11,6 @@ clang++ -std=c++23 \
     test_parser_expressions.cpp \
     test_type_interning.cpp \
     test_def_use.cpp \
+    test_basic_block.cpp \
     ../build/debug/libwinc_lib.a \
     && ./a.out

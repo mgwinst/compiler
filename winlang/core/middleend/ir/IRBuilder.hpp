@@ -28,6 +28,8 @@ struct IRBuilder
             return nullptr;
         }
 
+        // add case for std::same_as<Const> so there is more uniform api and delete get_or_create_literal()
+
         if constexpr (std::same_as<T, Function>) {
             return program_ ? program_->insert(value) : value;
         } else if constexpr (std::same_as<T, BasicBlock> || std::same_as<T, Argument>) {
@@ -39,6 +41,8 @@ struct IRBuilder
 
     // this should not be exposed
     // should just be create<Const>(42), create<Const>("hello world")... 
+
+    // there is no reason to specify program's constant pool since there is only ever one program during compilation
 
     Const* get_or_create_literal(auto literal)
     {
