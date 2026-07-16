@@ -28,7 +28,8 @@ void Compiler::compile(const Module& module)
     SemaTree sema_tree = analyze(ctx, ast);
 
     Program program = lower(ctx, sema_tree);
-    name_values(program); // temporary debug
+
+    name_values(program);
 
     if (context_.flags().contains("-ast")) {
         print(sema_tree);
@@ -38,16 +39,9 @@ void Compiler::compile(const Module& module)
         print(program);
     }
 
-    TransformPassManager manager{{
-        Transforms::TRIVIAL_DCE,
-        Transforms::DSE,
-        Transforms::CFG_CLEANUP,
-        Transforms::MEM2REG
-    }};
+    optimize(program);
 
-    manager.run(program);
-
-    name_values(program); // temporary debug naming again after mem2reg
+    name_values(program);
 
     if (context_.flags().contains("-opt")) {
         print(program);
@@ -76,4 +70,16 @@ SemaTree Compiler::analyze(ModuleContext& ctx, AST& ast)
 Program Compiler::lower(ModuleContext& ctx, const SemaTree& tree)
 {
     return LoweringEngine{ctx, tree}.run();
+}
+
+void Compiler::optimize(Program& program)
+{
+    TransformPassManager manager{{
+        Transforms::TRIVIAL_DCE,
+        Transforms::DSE,
+        Transforms::CFG_CLEANUP,
+        Transforms::MEM2REG,
+    }};
+
+    manager.run(program);
 }

@@ -13,7 +13,6 @@
 
 enum class TypeKind
 {
-    Error,
     Void,
     Byte,
     Char,
@@ -41,13 +40,6 @@ struct Type
 template <typename T>
 concept DerivedFromType = std::derived_from<T, Type>;
 
-struct ErrorType : Type
-{
-    ErrorType() :
-        Type{TypeKind::Error} {}
-
-    bool operator==(const ErrorType&) const { return true; }
-};
 struct VoidType : Type
 {
     VoidType() :
@@ -204,7 +196,6 @@ struct RecordType : Type
 template <typename T>
 inline constexpr TypeKind type_kind_v = TypeKind::Invalid;
 
-template <> inline constexpr TypeKind type_kind_v<ErrorType>     = TypeKind::Error;
 template <> inline constexpr TypeKind type_kind_v<VoidType>      = TypeKind::Void;
 template <> inline constexpr TypeKind type_kind_v<ByteType>      = TypeKind::Byte;
 template <> inline constexpr TypeKind type_kind_v<CharType>      = TypeKind::Char;

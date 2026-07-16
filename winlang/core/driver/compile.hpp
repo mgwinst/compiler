@@ -22,6 +22,5 @@ private:
     AST parse(const Module& module);
     SemaTree analyze(ModuleContext& ctx, AST& ast);
     Program lower(ModuleContext& ctx, const SemaTree& tree);
-    void early_optimize(Program& program);
-    
+    void optimize(Program& program);
 };

@@ -15,7 +15,10 @@ inline void name_values(Program& program)
         for (auto& block : function->blocks_) {
             for (auto& inst : block->instructions_) {
                 if (is_nameable(inst.get())) {
-                    inst->name_ = std::to_string(value_count++);
+                    if (!isa<Const>(inst))
+                        inst->name_ = "%" + std::to_string(value_count++);
+                    else
+                        inst->name_ = std::to_string(value_count++);
                 }
             }
         }

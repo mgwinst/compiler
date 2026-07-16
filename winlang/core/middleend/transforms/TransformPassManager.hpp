@@ -57,7 +57,6 @@ public:
         }
     }
 
-
 private:
     std::vector<std::move_only_function<void(Program&)>> passes_;
 

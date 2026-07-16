@@ -21,66 +21,54 @@ std::unordered_map<RecordKind, std::string> record_kind_to_str {
 
 std::string type_to_str(Type* type)
 {
-    switch (type->kind_) {
-        case TypeKind::Error: {
-            return "ErrorType";
-        }       
+    if (auto* t = dyn_cast<VoidType>(type)) {
+        return "void";
+    }
 
-        case TypeKind::Void: {
-            return "void";
-        }
+    else if (auto* t = dyn_cast<ByteType>(type)) {
+        return "byte";
+    }
 
-        case TypeKind::Byte: {
-            return "byte";
-        }
+    else if (auto* t = dyn_cast<CharType>(type)) {
+        return "char";
+    }
 
-        case TypeKind::Char: {
-            return "char";
-        }
+    else if (auto* t = dyn_cast<BoolType>(type)) {
+        return "bool";
+    }
 
-        case TypeKind::Bool: {
-            return "bool";
-        }
+    else if (auto* t = dyn_cast<IntegerType>(type)) {
+        if (t->is_signed_)
+            return std::format("int{}", t->bit_width_);
+        return std::format("uint{}", t->bit_width_);
+    }
 
-        case TypeKind::Integer: {
-            auto* t = cast<IntegerType>(type);
-            if (t->is_signed_)
-                return std::format("int{}", t->bit_width_);
-            return std::format("uint{}", t->bit_width_);
-        }
+    else if (auto* t = dyn_cast<FloatType>(type)) {
+        return std::format("float{}", t->bit_width_);
+    }
 
-        case TypeKind::Float: {
-            auto* t = cast<FloatType>(type);
-            return std::format("float{}", t->bit_width_);
-        }
+    else if (auto* t = dyn_cast<PointerType>(type)) {
+        return std::format("{}*", type_to_str(t->inner_type_));
+    }
 
-        case TypeKind::Pointer: {
-            auto* t = cast<PointerType>(type);
-            return std::format("{}*", type_to_str(t->inner_type_));
-        }
+    else if (auto* t = dyn_cast<ArrayType>(type)) {
+        return std::format("{}[{}]", type_to_str(t->inner_type_), t->size_);
+    }
 
-        case TypeKind::Array: {
-            auto* t = cast<ArrayType>(type);
-            return std::format("{}[{}]", type_to_str(t->inner_type_), t->size_);
-        }
+    else if (auto* t = dyn_cast<QualifierType>(type)) {
+        return std::format("{} {}", qualkind_to_str[t->kind_], type_to_str(t->inner_type_));
+    }
 
-        case TypeKind::Qualifier: {
-            auto* t = cast<QualifierType>(type);
-            return std::format("{} {}", qualkind_to_str[t->kind_], type_to_str(t->inner_type_));
-        }
+    else if (auto* t = dyn_cast<FunctionType>(type)) {
+        return std::format("Function '{}'", t->name_);
+    }
 
-        case TypeKind::Function: {
-            auto* t = cast<FunctionType>(type);
-            return std::format("Function '{}'", t->name_);
-        }
+    else if (auto* t = dyn_cast<RecordType>(type)) {
+        return std::format("{} {}", record_kind_to_str[t->kind_], t->name_);
+    }
 
-        case TypeKind::Record: {
-            auto* t = cast<RecordType>(type);
-            return std::format("{} {}", record_kind_to_str[t->kind_], t->name_);
-        }
-
-        default:
-            error_exit("type_to_str()");
+    else {
+        error_exit("type_to_str()");
     }
 }
 
@@ -330,9 +318,9 @@ std::string node_to_str(SemaNode* node, std::string indent = "")
     }
 }
 
-void print(SemaTree& graph)
+void print(SemaTree& tree)
 {
-    std::println("{}\n", node_to_str(graph.root_));
+    std::println("{}\n", node_to_str(tree.root_));
 }
 
 
@@ -343,7 +331,7 @@ std::string get_target_list_str(Branch* branch)
 {
     std::string target_label_list{};
     for (auto* target : branch->targets()) {
-    target_label_list += std::format("label %{}", target->name_);
+    target_label_list += std::format("label {}", target->name_);
     if (target != branch->targets().back())
         target_label_list += ", ";
     }
@@ -355,7 +343,7 @@ std::string get_argument_list_str(Call* call)
 {
     std::string args_list_str{};
     for (auto* arg : call->operands_ | std::views::drop(1)) {
-        args_list_str += std::format("%{}", arg->name_);
+        args_list_str += std::format("{}", arg->name_);
         if (arg != call->operands_.back())
             args_list_str += ", ";
     }
@@ -367,7 +355,7 @@ std::string get_phi_operands_str(Phi* phi)
 {
     std::string phi_operands_str{};
     for (auto [value, block] : phi->operands_) {
-        phi_operands_str += std::format("[%{}, {}]", value->name_, block->name_);
+        phi_operands_str += std::format("[{}, {}]", value->name_, block->name_);
         if (value != phi->operands_.back().first) {
             phi_operands_str += ", ";
         }
@@ -381,57 +369,57 @@ std::string ir_value_to_str(Value* value)
     switch (value->kind_) {
         case ValueKind::Alloca: {
             auto* inst = cast<Alloca>(value);
-            return std::format("%{} = alloca", inst->name_); // %x = alloca int32
+            return std::format("{} = alloca", inst->name_); // x = alloca int32
         }
 
         case ValueKind::Load: {
             auto* inst = cast<Load>(value);
-            return std::format("%{} = load %{}", inst->name_, inst->operands_[0]->name_);
+            return std::format("{} = load {}", inst->name_, inst->operands_[0]->name_);
         }
 
         case ValueKind::Store: {
             auto* inst = cast<Store>(value);
-            return std::format("store %{}, %{}", inst->operands_[0]->name_, inst->operands_[1]->name_);
+            return std::format("store {}, {}", inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Add: {
             auto* inst = cast<Add>(value);
-            return std::format("%{} = add %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+            return std::format("{} = add {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Sub: {
             auto* inst = cast<Sub>(value);
-            return std::format("%{} = sub %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+            return std::format("{} = sub {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Mul: {
             auto* inst = cast<Mul>(value);
-            return std::format("%{} = mul %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+            return std::format("{} = mul {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Div: {
             auto* inst = cast<Div>(value);
-            return std::format("%{} = div %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+            return std::format("{} = div {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Mod: {
             auto* inst = cast<Mod>(value);
-            return std::format("%{} = mod %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+            return std::format("{} = mod {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Eq: {
             auto* inst = cast<Eq>(value);
-            return std::format("%{} = eq %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+            return std::format("{} = eq {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Ne: {
             auto* inst = cast<Ne>(value);
-            return std::format("%{} = ne %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+            return std::format("{} = ne {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Slt: {
             auto* inst = cast<Slt>(value);
-            return std::format("%{} = slt %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+            return std::format("{} = slt {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Call: {
@@ -440,7 +428,7 @@ std::string ir_value_to_str(Value* value)
             auto* func = cast<Function>(inst->operands_[0]);
 
             if (func->return_value_)
-                return std::format("%{} = call @{}({})", inst->name_, func->name_, get_argument_list_str(inst));
+                return std::format("{} = call @{}({})", inst->name_, func->name_, get_argument_list_str(inst));
             
             return std::format("call @{}({})", func->name_, get_argument_list_str(inst));
         }
@@ -451,25 +439,25 @@ std::string ir_value_to_str(Value* value)
             if (inst->operands_.empty())
                 return "ret";
 
-            return std::format("ret %{}", inst->operands_[0]->name_);
+            return std::format("ret {}", inst->operands_[0]->name_);
         }
 
         case ValueKind::Branch: {
             auto* inst = cast<Branch>(value);
             
             return inst->is_conditional() ? 
-                std::format("br %{}, label %{}, label %{}", inst->condition()->name_, inst->targets()[0]->name_, inst->targets()[1]->name_) :
-                std::format("br label %{}", inst->operands_[0]->name_);
+                std::format("br {}, label {}, label {}", inst->condition()->name_, inst->targets()[0]->name_, inst->targets()[1]->name_) :
+                std::format("br label {}", inst->operands_[0]->name_);
         }
 
         case ValueKind::Phi: {
             auto* inst = cast<Phi>(value);
-            return std::format("%{} = phi {}", inst->name_, get_phi_operands_str(inst));
+            return std::format("{} = phi {}", inst->name_, get_phi_operands_str(inst));
         }
 
         case ValueKind::PtrAdd: {
             auto* inst = cast<PtrAdd>(value);
-            return std::format("%{} = ptradd %{}, %{}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+            return std::format("{} = ptradd {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         };
 
         default: {
@@ -483,7 +471,7 @@ std::string get_arg_list_str(const std::unique_ptr<Function>& function)
     std::string arg_list;
 
     for (auto& arg : function->args_) {
-        arg_list += "%" + arg->name_;
+        arg_list += arg->name_;
         if (arg != function->args_.back()) {
             arg_list += ", ";
         }
@@ -499,7 +487,7 @@ std::string get_pred_list_str(const std::unique_ptr<BasicBlock>& block)
     if (block->predecessors().size() > 0) {
         pred_list = "preds: [";
         for (auto pred : block->predecessors()) {
-            pred_list += "%" + pred->name_;
+            pred_list += pred->name_;
             if (pred != block->predecessors().back()) {
                 pred_list += ", ";
             }

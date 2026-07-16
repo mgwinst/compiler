@@ -23,7 +23,7 @@ Instruction::~Instruction()
 }
 
 Alloca::Alloca(Type* type, std::string_view name) :
-    Instruction{ValueKind::Alloca, {}, type, name} {}
+    Instruction{ValueKind::Alloca, {}, type, "%" + std::string{name}} {}
 
 Load::Load(Type* type, Value* ptr) :
     Instruction{ValueKind::Load, {ptr}, type} {}
