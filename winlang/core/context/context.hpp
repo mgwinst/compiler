@@ -3,13 +3,14 @@
 #include "frontend/error/diagnostics.hpp"
 #include "frontend/sema/types/type_table.hpp"
 #include "frontend/sema/symbol.hpp"
+#include "middleend/transforms/TransformPassManager.hpp"
 #include "utils/utils.hpp"
 
 struct ModuleContext
 {
+    Diagnostics diagnostics_;
     TypeTable type_table_;
     SymbolTable symbol_table_;
-    Diagnostics diagnostics_;
 };
 
 class CompilerContext

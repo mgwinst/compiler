@@ -17,7 +17,7 @@ private:
     const CompilerContext context_;
 
     void compile(const Module& module);
-    void debug_compile(const Module& module);
+    void debug_compile(const Module& module); // -debug=<#>
 
     AST parse(const Module& module);
     SemaTree analyze(ModuleContext& ctx, AST& ast);

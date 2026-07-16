@@ -2,4 +2,4 @@
 
 #include "middleend/ir/IR.hpp"
 
-void mem2reg(Program& program);
+void remove_dead_stores(Program& program);

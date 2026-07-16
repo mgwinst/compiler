@@ -2,4 +2,4 @@
 
 #include "middleend/ir/IR.hpp"
 
-void mem2reg(Program& program);
+void cleanup_cfg(Program& program);

@@ -51,7 +51,7 @@ TEST_CASE("conditional branch instruction adds all successors to block")
     CHECK(block2->predecessors()[0] == block1);
 
     REQUIRE(block3->predecessors().size() == 1);
-    CHECK(block2->predecessors()[0] == block1);
+    CHECK(block3->predecessors()[0] == block1);
 }
 
 TEST_CASE("delete successor block converts conditional branch instruction to unconditional")
@@ -92,5 +92,6 @@ TEST_CASE("delete successor block deletes branch instruction from predecessor")
     CHECK(block1->instructions_.size() == 1);
 
     delete block2;
+
     CHECK(block1->instructions_.size() == 0);
 }

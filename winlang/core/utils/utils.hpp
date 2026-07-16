@@ -24,14 +24,12 @@ struct Module
 [[nodiscard]] inline Module get_module(const std::string& file_path)
 {
     if (!std::filesystem::exists(file_path)) {
-        std::println(std::cerr, "File: {} does not exist", file_path);
-        exit(EXIT_FAILURE);
+        error_exit(std::format("File: {} does not exist", file_path));
     }
 
     std::ifstream file{file_path, std::ios::binary};
     if (!file.is_open()) {
-        std::println(std::cerr, "Failed to open file {}", file_path);
-        exit(EXIT_FAILURE);
+        error_exit(std::format("Failed to open file {}", file_path));
     }
 
     // mmap instead?

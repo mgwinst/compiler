@@ -9,7 +9,7 @@
 #include "frontend/parser/parser.hpp"
 #include "frontend/sema/analyzer.hpp"
 #include "middleend/lowering/LoweringEngine.hpp"
-#include "middleend/opt/EarlyOptimizer.hpp"
+#include "middleend/transforms/TransformPassManager.hpp"
 
 void Compiler::compile_modules()
 {
@@ -38,8 +38,16 @@ void Compiler::compile(const Module& module)
         print(program);
     }
 
-    early_optimize(program);
-    name_values(program); // temporary debug
+    TransformPassManager manager{{
+        Transforms::TRIVIAL_DCE,
+        Transforms::DSE,
+        Transforms::CFG_CLEANUP,
+        Transforms::MEM2REG
+    }};
+
+    manager.run(program);
+
+    name_values(program); // temporary debug naming again after mem2reg
 
     if (context_.flags().contains("-opt")) {
         print(program);
@@ -68,9 +76,4 @@ SemaTree Compiler::analyze(ModuleContext& ctx, AST& ast)
 Program Compiler::lower(ModuleContext& ctx, const SemaTree& tree)
 {
     return LoweringEngine{ctx, tree}.run();
-}
-
-void Compiler::early_optimize(Program& program)
-{
-    EarlyOptimizer{program}.run();
 }

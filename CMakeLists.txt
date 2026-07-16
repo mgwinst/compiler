@@ -25,7 +25,10 @@ add_library(winc_lib STATIC
     winlang/core/middleend/ir/Value.cpp
     winlang/core/middleend/lowering/LoweringEngine.cpp
     winlang/core/middleend/analysis/escape.cpp
-    winlang/core/middleend/opt/EarlyOptimizer.cpp
+    winlang/core/middleend/transforms/trivial_dce.cpp
+    winlang/core/middleend/transforms/dse.cpp
+    winlang/core/middleend/transforms/cleanup_cfg.cpp
+    winlang/core/middleend/transforms/mem2reg.cpp
 )
 
 target_include_directories(winc_lib PUBLIC
