@@ -48,22 +48,18 @@ void rename(BasicBlock* block, std::unordered_map<Alloca*, std::stack<Value*>> d
     
     std::vector<Value*> to_remove;
 
-    for (auto& inst : block->instructions_) 
-    {
-        if (auto* phi = dyn_cast<Phi>(inst)) 
-        {
+    for (auto& inst : block->instructions_) {
+        if (auto* phi = dyn_cast<Phi>(inst)) {
             def_stack[phi->alloca_].push(phi);
         } 
         
-        else if (auto* load = dyn_cast<Load>(inst)) 
-        {
+        else if (auto* load = dyn_cast<Load>(inst)) {
             auto* v = def_stack[get_alloca_operand(load)].top();
             inst->replace_uses_with(v);
             to_remove.push_back(load);
         } 
 
-        else if (auto* store = dyn_cast<Store>(inst)) 
-        {
+        else if (auto* store = dyn_cast<Store>(inst)) {
             def_stack[get_alloca_operand(store)].push(store->operands_[1]);
             to_remove.push_back(store);
         }
@@ -80,6 +76,7 @@ void rename(BasicBlock* block, std::unordered_map<Alloca*, std::stack<Value*>> d
                 // modify CFG here
                 // this phi must be added to the use list of the def value and block
 
+                // block argument should be the branch instruction of that block? what if the definition is from way above in the graph?
                 phi->operands_.emplace_back(def_stack[phi->alloca_].top(), block);
             }
         }

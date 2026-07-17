@@ -2,10 +2,10 @@
 #include "utils/casting.hpp"
 
 Argument::Argument(Type* type, std::string_view name) :
-    Value{ValueKind::Argument, type, name} {}
+    Value{ValueKind::Argument, type, "%" + std::string(name)} {}
 
-Function::Function(std::string_view name) :
-    Value{ValueKind::Function, nullptr, name} {}
+Function::Function(Type* type, std::string_view name) :
+    Value{ValueKind::Function, type, name} {}
 
 Function::~Function()
 {

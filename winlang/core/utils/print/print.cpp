@@ -369,7 +369,7 @@ std::string ir_value_to_str(Value* value)
     switch (value->kind_) {
         case ValueKind::Alloca: {
             auto* inst = cast<Alloca>(value);
-            return std::format("{} = alloca", inst->name_); // x = alloca int32
+            return std::format("{} = alloca {}", inst->name_, type_to_str(inst->type_)); // x = alloca int32
         }
 
         case ValueKind::Load: {
@@ -471,7 +471,7 @@ std::string get_arg_list_str(const std::unique_ptr<Function>& function)
     std::string arg_list;
 
     for (auto& arg : function->args_) {
-        arg_list += arg->name_;
+        arg_list += arg->name_ + ": " + type_to_str(arg->type_);
         if (arg != function->args_.back()) {
             arg_list += ", ";
         }
@@ -484,7 +484,7 @@ std::string get_pred_list_str(const std::unique_ptr<BasicBlock>& block)
 {
     std::string pred_list;
 
-    if (block->predecessors().size() > 0) {
+    if (!block->predecessors().empty()) {
         pred_list = "preds: [";
         for (auto pred : block->predecessors()) {
             pred_list += pred->name_;
@@ -501,7 +501,7 @@ std::string get_pred_list_str(const std::unique_ptr<BasicBlock>& block)
 void print(Program& program)
 {
     for (const auto& function : program.functions_) {
-        std::print("define @{}({}) -> () ", function->name_, get_arg_list_str(function));
+        std::print("define @{}({}) -> ({}) ", function->name_, get_arg_list_str(function), type_to_str(cast<FunctionType>(function->type_)->return_type_));
         std::cout << "{\n";
         for (const auto& block : function->blocks_) {
             std::println("{:<30}{}", block->name_ + ":", get_pred_list_str(block));

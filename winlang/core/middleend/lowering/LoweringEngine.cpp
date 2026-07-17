@@ -39,7 +39,6 @@ bool load_required(SemaNode* node)
 Value* LoweringEngine::lower(SemaNode* node)
 {
     if (auto* module = dyn_cast<ModuleDecl>(node)) {
-    
         for (auto* decl : module->decls_) {
             lower(decl);
         }
@@ -48,7 +47,6 @@ Value* LoweringEngine::lower(SemaNode* node)
     }
 
     else if (auto* var = dyn_cast<VarDecl>(node)) {
-
         auto* alloca = builder_.create<Alloca>(var->type(), var->name());
         alloca_map_[var->name()] = alloca;
 
@@ -65,7 +63,6 @@ Value* LoweringEngine::lower(SemaNode* node)
     }
 
     else if (auto* param = dyn_cast<ParamDecl>(node)) {
-
         auto* arg = builder_.create<Argument>(param->type(), param->name());
         auto* alloca = builder_.create<Alloca>(param->type(), param->name() + ".ptr");
         alloca_map_[param->name()] = alloca;
@@ -75,8 +72,7 @@ Value* LoweringEngine::lower(SemaNode* node)
     }
     
     else if (auto* func = dyn_cast<FuncDecl>(node)) {
-
-        auto* function = builder_.create<Function>(func->name());
+        auto* function = builder_.create<Function>(func->type(), func->name());
         function_map_[func->name()] = function;
         set_current_function(function);
 
@@ -116,7 +112,6 @@ Value* LoweringEngine::lower(SemaNode* node)
     }
 
     else if (auto* return_stmt = dyn_cast<ReturnStmt>(node)) {
-
         if (return_stmt->value_) {
             auto* value = lower(return_stmt->value_);
 
@@ -140,7 +135,6 @@ Value* LoweringEngine::lower(SemaNode* node)
     }
 
     else if (auto* if_stmt = dyn_cast<IfStmt>(node)) {
-
         auto* header_block = current_block();
         auto* cond = lower(if_stmt->cond_);
 
@@ -173,7 +167,6 @@ Value* LoweringEngine::lower(SemaNode* node)
     }
 
     else if (auto* while_stmt = dyn_cast<WhileStmt>(node)) {
-        
         auto* preheader = current_block();
         auto* cond = builder_.create<BasicBlock>("loop.cond"); // loop header
         auto* body = builder_.create<BasicBlock>("loop.body");
@@ -184,7 +177,7 @@ Value* LoweringEngine::lower(SemaNode* node)
         builder_.create<Branch>(cond);
 
         set_current_block(cond);
-        auto* cmp = lower(while_stmt->cond_); // assert(cmp is binary instruction)
+        auto* cmp = lower(while_stmt->cond_); // assert(cmp is ...)
         builder_.create<Branch>(cmp, body, end);
         
         set_current_block(body);
@@ -221,7 +214,6 @@ Value* LoweringEngine::lower(SemaNode* node)
     }
 
     else if (auto* unary = dyn_cast<UnaryExpr>(node)) {
-
         auto* operand = lower(unary->operand_);
 
         // address of
@@ -236,7 +228,6 @@ Value* LoweringEngine::lower(SemaNode* node)
     }
 
     else if (auto* binary = dyn_cast<BinaryExpr>(node)) {
-
         const BinaryOp op = binary_ops[binary->op_];
         assert(op != BinaryOp::Invalid);
 
@@ -275,7 +266,6 @@ Value* LoweringEngine::lower(SemaNode* node)
     }
 
     else if (auto* call = dyn_cast<CallExpr>(node)) {
-        
         auto* callee = function_map_[cast<ReferenceExpr>(call->callee_)->name_];
         
         std::vector<Value*> args;

@@ -175,8 +175,6 @@ struct Branch : Instruction
 
 struct Phi : Value
 {
-    //  %3 = phi [%1, b1], [%2, b2], 
-
     Alloca* alloca_;
     std::vector<std::pair<Value*, BasicBlock*>> operands_;
 
@@ -222,7 +220,7 @@ struct BasicBlock : Value
 
 struct Argument : Value
 {
-    Argument(Type* type = nullptr, std::string_view name = "");
+    Argument(Type* type, std::string_view name = "");
 };
 
 struct Function : Value
@@ -234,7 +232,7 @@ struct Function : Value
     Value* return_value_ = nullptr;
     BasicBlock* return_block_ = nullptr;
 
-    Function(std::string_view name = "");
+    Function(Type* type, std::string_view name = "");
 
     ~Function() override;
 
