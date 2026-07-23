@@ -29,7 +29,7 @@ Load::Load(Type* type, Value* ptr) :
     Instruction{ValueKind::Load, {ptr}, type} {}
 
 Load::Load(Value* ptr) :
-    Instruction{ValueKind::Load, {ptr}} {}
+    Instruction{ValueKind::Load, {ptr}, ptr->type_} {}
 
 Store::Store(Value* dst, Value* src) :
     Instruction{ValueKind::Store, {dst, src}} {}
@@ -55,8 +55,29 @@ Eq::Eq(Value* src1, Value* src2) :
 Ne::Ne(Value* src1, Value* src2) :
     Instruction{ValueKind::Ne, {src1, src2}} {}
 
+Not::Not(Value* src) :
+    Instruction{ValueKind::Not, {src}} {}
+
 Slt::Slt(Value* src1, Value* src2) :
     Instruction{ValueKind::Slt, {src1, src2}} {}
+
+Sle::Sle(Value* src1, Value* src2) :
+    Instruction{ValueKind::Sle, {src1, src2}} {}
+
+Ult::Ult(Value* src1, Value* src2) :
+    Instruction{ValueKind::Ult, {src1, src2}} {}
+
+Ule::Ule(Value* src1, Value* src2) :
+    Instruction{ValueKind::Ule, {src1, src2}} {}
+
+Shl::Shl(Value* src1, Value* src2) :
+    Instruction{ValueKind::Shl, {src1, src2}} {}
+
+Ashr::Ashr(Value* src1, Value* src2) :
+    Instruction{ValueKind::Ashr, {src1, src2}} {}
+
+Lshr::Lshr(Value* src1, Value* src2) :
+    Instruction{ValueKind::Lshr, {src1, src2}} {}
 
 Call::Call(Function* callee, std::vector<Value*> args) :
     Instruction{ValueKind::Call, prepend(static_cast<Value*>(callee), std::move(args))} {}

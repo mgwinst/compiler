@@ -216,6 +216,12 @@ Value* LoweringEngine::lower(SemaNode* node)
     else if (auto* unary = dyn_cast<UnaryExpr>(node)) {
         auto* operand = lower(unary->operand_);
 
+        if (unary->op_ == "!") {
+            if (load_required(unary->operand_))
+                operand = builder_.create<Load>(operand);
+            return builder_.create<Not>(operand);
+        }
+
         // address of
         if (unary->op_ == "&")
             return operand;
@@ -247,14 +253,43 @@ Value* LoweringEngine::lower(SemaNode* node)
             right = builder_.create<Load>(right);
 
         switch (op) {
-            case BinaryOp::Add:  return builder_.create<Add>(left, right);
-            case BinaryOp::Sub:  return builder_.create<Sub>(left, right);
-            case BinaryOp::Mul:  return builder_.create<Mul>(left, right);
-            case BinaryOp::Div:  return builder_.create<Div>(left, right);
-            case BinaryOp::Mod:  return builder_.create<Mod>(left, right);
-            case BinaryOp::Eq:   return builder_.create<Eq>(left, right);
-            case BinaryOp::Ne:   return builder_.create<Ne>(left, right);
-            case BinaryOp::Slt:  return builder_.create<Slt>(left, right);
+            case BinaryOp::Add:
+                return builder_.create<Add>(left, right);
+
+            case BinaryOp::Sub:
+                return builder_.create<Sub>(left, right);
+
+            case BinaryOp::Mul:
+                return builder_.create<Mul>(left, right);
+
+            case BinaryOp::Div:
+                return builder_.create<Div>(left, right);
+
+            case BinaryOp::Mod:
+                return builder_.create<Mod>(left, right);
+
+            case BinaryOp::Eq:
+                return builder_.create<Eq>(left, right);
+
+            case BinaryOp::Ne:
+                return builder_.create<Ne>(left, right);
+
+            case BinaryOp::lt: {
+                if (is_unsigned(left->type_))
+                    return builder_.create<Ult>(left, right);
+                else
+                    return builder_.create<Slt>(left, right);
+            }
+
+            case BinaryOp::Shl: 
+                return builder_.create<Shl>(left, right);
+
+            case BinaryOp::Shr: {
+                if (is_unsigned(left->type_))
+                    return builder_.create<Lshr>(left, right);
+                else
+                    return builder_.create<Ashr>(left, right);
+            }
 
             default:
                 error_exit("lowering binary op error");

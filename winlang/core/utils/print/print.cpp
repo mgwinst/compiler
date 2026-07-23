@@ -369,7 +369,7 @@ std::string ir_value_to_str(Value* value)
     switch (value->kind_) {
         case ValueKind::Alloca: {
             auto* inst = cast<Alloca>(value);
-            return std::format("{} = alloca {}", inst->name_, type_to_str(inst->type_)); // x = alloca int32
+            return std::format("{} = alloca", inst->name_); // x = alloca int32
         }
 
         case ValueKind::Load: {
@@ -417,9 +417,44 @@ std::string ir_value_to_str(Value* value)
             return std::format("{} = ne {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
+        case ValueKind::Not: {
+            auto* inst = cast<Not>(value);
+            return std::format("{} = not {}", inst->name_, inst->operands_[0]->name_);
+        }
+
         case ValueKind::Slt: {
             auto* inst = cast<Slt>(value);
             return std::format("{} = slt {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        }
+
+        case ValueKind::Sle: {
+            auto* inst = cast<Sle>(value);
+            return std::format("{} = sle {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        }
+
+        case ValueKind::Ult: {
+            auto* inst = cast<Ult>(value);
+            return std::format("{} = Ult {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        }
+
+        case ValueKind::Ule: {
+            auto* inst = cast<Ule>(value);
+            return std::format("{} = Ule {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        }
+
+        case ValueKind::Shl: {
+            auto* inst = cast<Shl>(value);
+            return std::format("{} = shl {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        }
+
+        case ValueKind::Ashr: {
+            auto* inst = cast<Ashr>(value);
+            return std::format("{} = ashr {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
+        }
+
+        case ValueKind::Lshr: {
+            auto* inst = cast<Lshr>(value);
+            return std::format("{} = lshr {}, {}", inst->name_, inst->operands_[0]->name_, inst->operands_[1]->name_);
         }
 
         case ValueKind::Call: {
@@ -461,7 +496,7 @@ std::string ir_value_to_str(Value* value)
         };
 
         default: {
-            error_exit("Unknown ValueKind");
+            error_exit("ir_value_to_str()");
         }
     }
 }

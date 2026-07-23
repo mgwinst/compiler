@@ -39,7 +39,14 @@ enum class ValueKind
     Mod,
     Eq,
     Ne,
+    Not,
     Slt,
+    Sle,
+    Ult,
+    Ule,
+    Shl,
+    Ashr,
+    Lshr,
     Call,
     PtrAdd,
     Phi,
@@ -130,9 +137,44 @@ struct Ne : Instruction
     Ne(Value* src1, Value* src2);
 };
 
+struct Not : Instruction
+{
+    Not(Value* src);
+};
+
 struct Slt : Instruction
 {
     Slt(Value* src1, Value* src2);
+};
+
+struct Sle : Instruction
+{
+    Sle(Value* src1, Value* src2);
+};
+
+struct Ult : Instruction
+{
+    Ult(Value* src1, Value* src2);
+};
+
+struct Ule : Instruction
+{
+    Ule(Value* src1, Value* src2);
+};
+
+struct Shl : Instruction
+{
+    Shl(Value* src1, Value* src2);
+};
+
+struct Ashr : Instruction
+{
+    Ashr(Value* src1, Value* src2);
+};
+
+struct Lshr : Instruction
+{
+    Lshr(Value* src1, Value* src2);
 };
 
 struct Function;
@@ -257,7 +299,14 @@ template <> inline constexpr ValueKind value_kind_v<Div>        = ValueKind::Div
 template <> inline constexpr ValueKind value_kind_v<Mod>        = ValueKind::Mod;
 template <> inline constexpr ValueKind value_kind_v<Eq>         = ValueKind::Eq;
 template <> inline constexpr ValueKind value_kind_v<Ne>         = ValueKind::Ne;
+template <> inline constexpr ValueKind value_kind_v<Not>        = ValueKind::Not;
 template <> inline constexpr ValueKind value_kind_v<Slt>        = ValueKind::Slt;
+template <> inline constexpr ValueKind value_kind_v<Sle>        = ValueKind::Sle;
+template <> inline constexpr ValueKind value_kind_v<Ult>        = ValueKind::Ult;
+template <> inline constexpr ValueKind value_kind_v<Ule>        = ValueKind::Ule;
+template <> inline constexpr ValueKind value_kind_v<Shl>        = ValueKind::Shl;
+template <> inline constexpr ValueKind value_kind_v<Ashr>       = ValueKind::Ashr;
+template <> inline constexpr ValueKind value_kind_v<Lshr>       = ValueKind::Lshr;
 template <> inline constexpr ValueKind value_kind_v<Call>       = ValueKind::Call;
 template <> inline constexpr ValueKind value_kind_v<Return>     = ValueKind::Return;
 template <> inline constexpr ValueKind value_kind_v<Branch>     = ValueKind::Branch;

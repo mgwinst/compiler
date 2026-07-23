@@ -61,7 +61,8 @@ inline bool is_logical_op(std::string_view op)
     return op == "&&" ||
            op == "||" || 
            op == "!=" || 
-           op == "==";
+           op == "==" ||
+           op == "!";
 }
 
 inline bool is_relational_op(std::string_view op) 
@@ -87,4 +88,15 @@ inline Type* remove_const_qualifier(Type* type)
         return qual_type->inner_type_;
     
     return type;
+}
+
+inline bool is_unsigned(Type* type)
+{
+    if (is_scalar(type)) {
+        if (auto* t = dyn_cast<IntegerType>(type)) {
+            return t->is_signed_ == false;
+        }
+    }
+
+    return false;
 }

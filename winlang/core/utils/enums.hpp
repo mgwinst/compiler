@@ -30,7 +30,8 @@ enum class BinaryOp
     Shr,
     Eq,
     Ne,
-    Slt,
+    lt,
+    le,
 };
 
 inline std::unordered_map<std::string, BinaryOp> binary_ops = {
@@ -47,7 +48,8 @@ inline std::unordered_map<std::string, BinaryOp> binary_ops = {
     {">>", BinaryOp::Shr},
     {"==", BinaryOp::Eq},
     {"!=", BinaryOp::Ne},
-    {"<", BinaryOp::Slt},
+    {"<", BinaryOp::lt},
+    {"<=", BinaryOp::le},
 };
 
 
