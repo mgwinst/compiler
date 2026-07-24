@@ -81,7 +81,7 @@ Value* LoweringEngine::lower(SemaNode* node)
 
         auto* return_type = cast<FunctionType>(func->type())->return_type_;
 
-        current_function()->return_block_ = builder_.create<BasicBlock>("return");
+        current_function()->return_block_ = builder_.create<BasicBlock>("exit");
 
         if (return_type == ctx_.type_table_.builtin_types_["void"]) {
             set_current_block(current_function()->return_block_);
@@ -101,6 +101,10 @@ Value* LoweringEngine::lower(SemaNode* node)
         lower(func->body_);
 
         return function;
+    }
+
+    else if (auto* record = dyn_cast<RecordDecl>(node)) {
+        return nullptr;
     }
 
     else if (auto* compound = dyn_cast<CompoundStmt>(node)) {
@@ -281,6 +285,13 @@ Value* LoweringEngine::lower(SemaNode* node)
                     return builder_.create<Slt>(left, right);
             }
 
+            case BinaryOp::le: {
+                if (is_unsigned(left->type_))
+                    return builder_.create<Ule>(left, right);
+                else
+                    return builder_.create<Sle>(left, right);
+            }
+
             case BinaryOp::Shl: 
                 return builder_.create<Shl>(left, right);
 
@@ -290,6 +301,15 @@ Value* LoweringEngine::lower(SemaNode* node)
                 else
                     return builder_.create<Ashr>(left, right);
             }
+
+            case BinaryOp::Xor:
+                return builder_.create<Xor>(left, right);
+
+            case BinaryOp::Or:
+                return builder_.create<Or>(left, right);
+
+            case BinaryOp::And:
+                return builder_.create<And>(left, right);
 
             default:
                 error_exit("lowering binary op error");
@@ -349,6 +369,7 @@ Value* LoweringEngine::lower(SemaNode* node)
     }
 
     else {
+        std::println("{}", (int)node->kind_);
         error_exit("LoweringEngine::lower()");
     }
 }

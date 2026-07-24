@@ -39,9 +39,9 @@ void Compiler::compile(const Module& module)
         print(program);
     }
 
-    optimize(program);
+    // optimize(program);
 
-    name_values(program);
+    // name_values(program);
 
     if (context_.flags().contains("-opt")) {
         print(program);

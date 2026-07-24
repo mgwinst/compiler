@@ -40,6 +40,9 @@ enum class ValueKind
     Eq,
     Ne,
     Not,
+    Xor,
+    Or,
+    And,
     Slt,
     Sle,
     Ult,
@@ -140,6 +143,21 @@ struct Ne : Instruction
 struct Not : Instruction
 {
     Not(Value* src);
+};
+
+struct Xor : Instruction
+{
+    Xor(Value* src1, Value* src2);
+};
+
+struct Or : Instruction
+{
+    Or(Value* src1, Value* src2);
+};
+
+struct And : Instruction
+{
+    And(Value* src1, Value* src2);
 };
 
 struct Slt : Instruction
@@ -300,6 +318,9 @@ template <> inline constexpr ValueKind value_kind_v<Mod>        = ValueKind::Mod
 template <> inline constexpr ValueKind value_kind_v<Eq>         = ValueKind::Eq;
 template <> inline constexpr ValueKind value_kind_v<Ne>         = ValueKind::Ne;
 template <> inline constexpr ValueKind value_kind_v<Not>        = ValueKind::Not;
+template <> inline constexpr ValueKind value_kind_v<Xor>        = ValueKind::Xor;
+template <> inline constexpr ValueKind value_kind_v<Or>         = ValueKind::Or;
+template <> inline constexpr ValueKind value_kind_v<And>        = ValueKind::And;
 template <> inline constexpr ValueKind value_kind_v<Slt>        = ValueKind::Slt;
 template <> inline constexpr ValueKind value_kind_v<Sle>        = ValueKind::Sle;
 template <> inline constexpr ValueKind value_kind_v<Ult>        = ValueKind::Ult;

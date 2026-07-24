@@ -320,7 +320,7 @@ std::string node_to_str(SemaNode* node, std::string indent = "")
 
 void print(SemaTree& tree)
 {
-    std::println("{}\n", node_to_str(tree.root_));
+    std::println("{}", node_to_str(tree.root_));
 }
 
 

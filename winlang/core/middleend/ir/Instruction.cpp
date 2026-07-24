@@ -58,6 +58,15 @@ Ne::Ne(Value* src1, Value* src2) :
 Not::Not(Value* src) :
     Instruction{ValueKind::Not, {src}} {}
 
+Xor::Xor(Value* src1, Value* src2) :
+    Instruction{ValueKind::Xor, {src1, src2}} {}
+
+Or::Or(Value* src1, Value* src2) :
+    Instruction{ValueKind::Or, {src1, src2}} {}
+
+And::And(Value* src1, Value* src2) :
+    Instruction{ValueKind::And, {src1, src2}} {}
+
 Slt::Slt(Value* src1, Value* src2) :
     Instruction{ValueKind::Slt, {src1, src2}} {}
 

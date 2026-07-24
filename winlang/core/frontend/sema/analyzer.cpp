@@ -466,7 +466,7 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
             
             else if (unary->op_ == "++" || unary->op_ == "--") {
                 if (!is_scalar(operand_type) || is_const(operand_type)) {
-                    ctx_.diagnostics_.register_error(std::format("can't '{}' value of type ({})", unary->op_, type_to_str(operand_type)), unary->source_);
+                    ctx_.diagnostics_.register_error(std::format("cannot '{}' value of type ({})", unary->op_, type_to_str(operand_type)), unary->source_);
                     return nullptr;
                 }
             }
@@ -484,7 +484,8 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
                 return nullptr;
 
             if (binary->op_ == "=") {
-                if (!is_lvalue(binary->left_)) {
+                if (!(is_lvalue(binary->left_) || is_pointer_dereference(binary->left_))) {
+                    std::println("{}", (int)binary->left_->kind_);
                     ctx_.diagnostics_.register_error(std::format("cannot assign to an rvalue", type_to_str(left_type), type_to_str(right_type)), binary->source_);
                     return nullptr;
                 }
@@ -755,6 +756,7 @@ void SemanticAnalyzer::desugar(SemaNode*& node)
             break;
         }
 
+        /*
         // a[i] -> *(a + i)
         case SemaNodeKind::ArraySubscriptExpr: {
             auto* expr = cast<ArraySubscriptExpr>(node);
@@ -765,6 +767,7 @@ void SemanticAnalyzer::desugar(SemaNode*& node)
 
             break;
         }
+        */
 
         case SemaNodeKind::InitListExpr: {
             auto* init_list = cast<InitListExpr>(node);

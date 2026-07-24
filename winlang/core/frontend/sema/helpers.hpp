@@ -100,3 +100,12 @@ inline bool is_unsigned(Type* type)
 
     return false;
 }
+
+inline bool is_pointer_dereference(Sema::SemaNode* node)
+{
+    if (auto* pd = dyn_cast<Sema::UnaryExpr>(node)) {
+        return pd->op_ == "*" && pd->is_postfix_ == false;
+    }
+
+    return false;
+}
