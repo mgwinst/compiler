@@ -485,7 +485,6 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
 
             if (binary->op_ == "=") {
                 if (!(is_lvalue(binary->left_) || is_pointer_dereference(binary->left_))) {
-                    std::println("{}", (int)binary->left_->kind_);
                     ctx_.diagnostics_.register_error(std::format("cannot assign to an rvalue", type_to_str(left_type), type_to_str(right_type)), binary->source_);
                     return nullptr;
                 }
@@ -566,10 +565,22 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
             return func_type->return_type_;
         }
 
+
         case SemaNodeKind::MemberExpr: {
             auto* expr = cast<MemberExpr>(node);
+            auto* base = cast<ReferenceExpr>(expr->base_);
 
-            auto* record_type = cast<RecordType>((cast<ReferenceExpr>(expr->base_)->type()));
+            if (isa<PointerType>(base->type()) && !expr->is_arrow_) {
+                ctx_.diagnostics_.register_error(std::format("cannot access member '{}' with '.' because expression has '{}' type (use '->' instead)", expr->member_, type_to_str(base->type())), expr->source_);
+                return nullptr;
+            } 
+            
+            if (!isa<PointerType>(base->type()) && expr->is_arrow_) {
+                ctx_.diagnostics_.register_error(std::format("cannot access member '{}' with '->' because expression has '{}' type (use '.' instead)", expr->member_, type_to_str(base->type())), expr->source_);
+                return nullptr;
+            }
+
+            auto* record_type = cast<RecordType>(decay_type(base->type()));
 
             auto* field = record_type->lookup_field(expr->member_);
             if (field == nullptr) {

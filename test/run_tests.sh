@@ -13,5 +13,7 @@ clang++ -std=c++23 \
     test_def_use.cpp \
     test_basic_block.cpp \
     test_lowering.cpp \
+    test_trivial_dce.cpp \
+    test_dse.cpp \
     ../build/debug/libwinc_lib.a \
     && ./a.out

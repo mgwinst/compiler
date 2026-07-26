@@ -93,8 +93,8 @@ void rename(BasicBlock* block, std::unordered_map<Alloca*, std::stack<Value*>> d
     } 
 }
 
-void promote_memory_to_register(Function* function) {   
-
+void promote_memory_to_register(Function* function) 
+{   
     auto dt = DominatorTree{function};
     auto df = DominanceFrontier{function};
 
@@ -123,7 +123,7 @@ void promote_memory_to_register(Function* function) {
 
     std::unordered_map<Alloca*, std::stack<Value*>> def_stack;
     for (auto* alloca : promotable_allocas) {
-        def_stack.emplace(alloca, std::stack<Value*>{ });
+        def_stack.emplace(alloca, std::stack<Value*>{});
     }
     
     rename(function->get_entry_block(), def_stack, dt);

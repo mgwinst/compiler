@@ -487,7 +487,7 @@ std::string ir_value_to_str(Value* value)
 
         case ValueKind::Phi: {
             auto* inst = cast<Phi>(value);
-            return std::format("{} = phi {}", inst->name_, get_phi_operands_str(inst));
+            return std::format("{} = φ {}", inst->name_, get_phi_operands_str(inst));
         }
 
         case ValueKind::PtrAdd: {

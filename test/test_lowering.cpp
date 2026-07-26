@@ -323,9 +323,37 @@ TEST_CASE("function arguments spill to stack slot")
     CHECK(isa<Store>(*it));
 }
 
-TEST_CASE("lvalue pointer dereference -> load");
-TEST_CASE("rvalue pointer dereference -> double load");
+TEST_CASE("lvalue pointer dereference -> load")
+{
+    auto program = lower("srctest/lowering/lvalue_ptr_deref.w");
+
+    auto& function = program.functions_.front();
+    auto& block = function->blocks_.front();
+
+    auto it = block->instructions_.begin();
+    
+    CHECK(isa<Alloca>(*it++));
+    CHECK(isa<Load>(*it));
+}
+
+TEST_CASE("rvalue pointer dereference -> double load")
+{
+    auto program = lower("srctest/lowering/rvalue_ptr_deref.w");
+
+    auto& function = program.functions_.front();
+    auto& block = function->blocks_.front();
+
+    auto it = block->instructions_.begin();
+    
+    CHECK(isa<Alloca>(*it++));
+    CHECK(isa<Alloca>(*it++));
+    CHECK(isa<Load>(*it++));
+    CHECK(isa<Load>(*it));
+}
+
+/*
+TEST_CASE("if (x) -> ne x, 0") {}
 TEST_CASE("if statement -> br label if.then, label if.end") {}
 TEST_CASE("if-else statement -> br label if.then, label if.else") {}
-TEST_CASE("if (x) -> ne x, 0") {}
 TEST_CASE("&&") {}
+*/

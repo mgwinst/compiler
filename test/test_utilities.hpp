@@ -4,6 +4,7 @@
 #include "frontend/parser/parser.hpp"
 #include "frontend/sema/analyzer.hpp"
 #include "middleend/lowering/LoweringEngine.hpp"
+#include "middleend/transforms/TransformPassManager.hpp"
 #include "utils/utils.hpp"
 #include "utils/casting.hpp"
 

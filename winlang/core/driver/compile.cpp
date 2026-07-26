@@ -39,9 +39,9 @@ void Compiler::compile(const Module& module)
         print(program);
     }
 
-    // optimize(program);
+    optimize(program);
 
-    // name_values(program);
+    name_values(program);
 
     if (context_.flags().contains("-opt")) {
         print(program);
@@ -74,12 +74,10 @@ Program Compiler::lower(ModuleContext& ctx, const SemaTree& tree)
 
 void Compiler::optimize(Program& program)
 {
-    TransformPassManager manager{{
+    TransformPassManager{{
         Transforms::TRIVIAL_DCE,
         Transforms::DSE,
         Transforms::CFG_CLEANUP,
         Transforms::MEM2REG,
-    }};
-
-    manager.run(program);
+    }}.run(program);
 }
