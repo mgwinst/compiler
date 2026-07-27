@@ -17,10 +17,6 @@ handle trivial cases before full mem2reg
 
 // also must run dead store elimination in case of immediately overwritten phi via store in block
 
-// also must run dce after to clean up dead phi's b/c cheaper to over generate and cleanup
-
-// must wire up operands use list with the phi (phi does not inherit from instruction so we must do this manually)
-
 std::queue<BasicBlock*> def_blocks(Function* function, Alloca* alloca)
 {
     std::queue<BasicBlock*> def_blocks;   
@@ -72,12 +68,9 @@ void rename(BasicBlock* block, std::unordered_map<Alloca*, std::stack<Value*>> d
     for (auto* succ : block->successors()) {
         for (auto& inst : succ->instructions_) {
             if (auto* phi = dyn_cast<Phi>(inst)) {
-                
-                // modify CFG here
-                // this phi must be added to the use list of the def value and block
-
-                // block argument should be the branch instruction of that block? what if the definition is from way above in the graph?
-                phi->operands_.emplace_back(def_stack[phi->alloca_].top(), block);
+                auto& def = def_stack[phi->alloca_].top();
+                def->add_use(phi);
+                phi->operands_.emplace_back(def, block);
             }
         }
     }

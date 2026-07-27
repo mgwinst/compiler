@@ -15,3 +15,5 @@ Optimizations:
     - strength reduction
     - GVN
     - LICM
+    - loop unrolling
+    - vectorization

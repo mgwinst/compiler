@@ -29,7 +29,7 @@ TEST_CASE("instruction def-use list")
     }
 }
 
-TEST_CASE("replace_uses_with() updates all uses with new value")
+TEST_CASE("replace_uses_with() modifies graph properly updates all uses with new value")
 {
     IRBuilder builder{};
 
@@ -43,9 +43,15 @@ TEST_CASE("replace_uses_with() updates all uses with new value")
 
     auto* add = builder.create<Add>(alloca1, alloca2);
 
-    CHECK(add->operands_[0] == alloca1);
-
     alloca1->replace_uses_with(num);
 
-    CHECK(add->operands_[0] == num);
+    SUBCASE("operand is replaced with new value")
+    {
+        CHECK(add->operands_[0] == num);
+    }
+
+    SUBCASE("updates the use list of the value we are replacing with")
+    {
+        CHECK(std::ranges::contains(num->users_, add));
+    }
 }

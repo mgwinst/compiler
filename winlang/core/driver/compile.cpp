@@ -79,5 +79,6 @@ void Compiler::optimize(Program& program)
         Transforms::DSE,
         Transforms::CFG_CLEANUP,
         Transforms::MEM2REG,
+        Transforms::TRIVIAL_DCE
     }}.run(program);
 }

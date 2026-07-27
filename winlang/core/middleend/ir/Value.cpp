@@ -18,6 +18,9 @@ void Value::add_use(Value* value)
 void Value::replace_uses_with(Value* value)
 {
     if (value) {
+
+        value->users_ = this->users_;
+
         for (auto* user : static_cast_view<Instruction>(users_)) {
             for (auto& operand : user->operands_) {
                 if (operand == this) {
