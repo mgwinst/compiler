@@ -14,6 +14,8 @@ Optimizations:
     - const prop and folding
     - strength reduction
     - GVN
-    - LICM
+    - LICM (code motion)
     - loop unrolling
     - vectorization
+    - partial redundancy elimination
+

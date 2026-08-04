@@ -1,8 +1,8 @@
 #include <queue>
 #include <stack>
 
-#include "middleend/analysis/dominator.hpp"
-#include "middleend/analysis/escape.hpp"
+#include "analysis/dominator.hpp"
+#include "analysis/escape.hpp"
 #include "middleend/transforms/helpers.hpp"
 #include "utils/casting.hpp"
 
@@ -109,8 +109,7 @@ void promote_memory_to_register(Function* function)
         }
 
         for (auto* block : phi_blocks) {
-            auto* phi = new Phi{alloca};
-            block->instructions_.emplace_front(phi);
+            block->instructions_.emplace_front(new Phi{alloca});
         }
     }
 

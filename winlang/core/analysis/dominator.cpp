@@ -1,10 +1,8 @@
-#pragma once
-
-#include "middleend/ir/IR.hpp"
+#include "dominator.hpp"
 
 #define REVERSE (true)
 
-inline auto compute_rpo_index_map(const std::vector<BasicBlock*>& blocks) 
+auto compute_rpo_index_map(const std::vector<BasicBlock*>& blocks) 
 {
     std::unordered_map<BasicBlock*, uint64_t> rpo_index;
 
@@ -15,7 +13,7 @@ inline auto compute_rpo_index_map(const std::vector<BasicBlock*>& blocks)
     return rpo_index;
 }
 
-inline auto compute_immediate_dominators(Function* function)
+auto compute_immediate_dominators(Function* function)
 {
     std::unordered_map<BasicBlock*, BasicBlock*> idom;
     
@@ -75,60 +73,46 @@ inline auto compute_immediate_dominators(Function* function)
     return idom;
 }
 
-class DominanceFrontier
+DominanceFrontier::DominanceFrontier(Function* function)
 {
-public:
-    DominanceFrontier(Function* function)
-    {
-        auto idom = compute_immediate_dominators(function);
+    auto idom = compute_immediate_dominators(function);
 
-        auto blocks = post_order(function, REVERSE);
+    auto blocks = post_order(function, REVERSE);
 
-        for (auto* b : blocks) {
-            if (b->predecessors().size() >= 2) {
-                for (auto* p : b->predecessors()) {
-                    auto* runner = p;
-                    while (runner != idom[b]) {
-                        frontier[runner].insert(b);
-                        runner = idom[runner];
-                    }
+    for (auto* b : blocks) {
+        if (b->predecessors().size() >= 2) {
+            for (auto* p : b->predecessors()) {
+                auto* runner = p;
+                while (runner != idom[b]) {
+                    frontier[runner].insert(b);
+                    runner = idom[runner];
                 }
             }
         }
     }
+}
 
-    auto operator[](BasicBlock* block)
-    {
-        return frontier[block];
-    }
-
-private:
-    std::unordered_map<BasicBlock*, std::unordered_set<BasicBlock*>> frontier;
-};
-
-class DominatorTree
+std::unordered_set<BasicBlock*>& DominanceFrontier::operator[](BasicBlock* block)
 {
-public:
-    DominatorTree(Function* function)
-    {
-        auto blocks = post_order(function, REVERSE);  
+    return frontier[block];
+}
 
-        auto idom = compute_immediate_dominators(function);
+DominatorTree::DominatorTree(Function* function)
+{
+    auto blocks = post_order(function, REVERSE);  
 
-        for (auto* b : blocks) {
-            auto* p = idom[b];
+    auto idom = compute_immediate_dominators(function);
 
-            if (p != b) {
-                tree[p].insert(b);
-            }
+    for (auto* b : blocks) {
+        auto* p = idom[b];
+
+        if (p != b) {
+            tree[p].insert(b);
         }
     }
+}
 
-    auto operator[](BasicBlock* block)
-    {
-        return tree[block];
-    }
-
-private:
-    std::unordered_map<BasicBlock*, std::unordered_set<BasicBlock*>> tree;
-};
+std::unordered_set<BasicBlock*>& DominatorTree::operator[](BasicBlock* block)
+{
+    return tree[block];
+}

@@ -24,7 +24,8 @@ add_library(winc_lib STATIC
     winlang/core/middleend/ir/Program.cpp
     winlang/core/middleend/ir/Value.cpp
     winlang/core/middleend/lowering/LoweringEngine.cpp
-    winlang/core/middleend/analysis/escape.cpp
+    winlang/core/analysis/escape.cpp
+    winlang/core/analysis/dominator.cpp
     winlang/core/middleend/transforms/trivial_dce.cpp
     winlang/core/middleend/transforms/dse.cpp
     winlang/core/middleend/transforms/cleanup_cfg.cpp

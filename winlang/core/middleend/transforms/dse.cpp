@@ -1,5 +1,5 @@
 #include "dse.hpp"
-#include "middleend/analysis/escape.hpp"
+#include "analysis/escape.hpp"
 #include "middleend/transforms/helpers.hpp"
 #include "utils/casting.hpp"
 
