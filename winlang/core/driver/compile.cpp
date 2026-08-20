@@ -53,6 +53,7 @@ AST Compiler::parse(const Module& module)
     Parser parser{ module };
     AST ast = parser.run();
 
+    // parser shouldn't own diagnostics, module object should own diag and flush per major pass
     parser.diagnostics_.report();
 
     return ast;

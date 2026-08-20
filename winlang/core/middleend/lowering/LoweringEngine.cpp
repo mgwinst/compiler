@@ -338,8 +338,14 @@ Value* LoweringEngine::lower(SemaNode* node)
 
     else if (auto* expr = dyn_cast<MemberExpr>(node)) {
         auto* base = cast<ReferenceExpr>(expr->base_);
-    
-        auto* record_type = cast<RecordType>(decay_type(base->type()));
+
+        auto* type = base->type();
+
+        if (expr->is_arrow_) {
+            type = cast<PointerType>(type)->inner_type_;
+        }
+
+        auto* record_type = cast<RecordType>(type);
 
         auto field_index = record_type->field_position(expr->member_);
         auto* index = builder_.get_or_create_literal(static_cast<int64_t>(field_index));

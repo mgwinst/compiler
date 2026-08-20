@@ -55,7 +55,7 @@ small_vector<BasicBlock*, 2> BasicBlock::successors()
     if (!isa<Branch>(term))
         return result;
 
-    auto* branch = static_cast<Branch*>(term);
+    auto* branch = cast<Branch>(term);
 
     for (auto* target : static_cast_view<BasicBlock>(branch->targets()))
         result.push_back(target);

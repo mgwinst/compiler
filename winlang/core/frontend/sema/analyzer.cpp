@@ -565,37 +565,55 @@ Type* SemanticAnalyzer::check_type(SemaNode* node)
             return func_type->return_type_;
         }
 
+        // TODO: handle const properly with struct
+        // TODO: ordering of pointer + arrow check is wrong when you try to access field of a T* when T is not struct
 
         case SemaNodeKind::MemberExpr: {
             auto* expr = cast<MemberExpr>(node);
             auto* base = cast<ReferenceExpr>(expr->base_);
 
-            if (isa<PointerType>(base->type()) && !expr->is_arrow_) {
+            auto* type = base->type();
+
+            if (isa<PointerType>(type) && !expr->is_arrow_) {
                 ctx_.diagnostics_.register_error(std::format("cannot access member '{}' with '.' because expression has '{}' type (use '->' instead)", expr->member_, type_to_str(base->type())), expr->source_);
                 return nullptr;
             } 
             
-            if (!isa<PointerType>(base->type()) && expr->is_arrow_) {
+            if (!isa<PointerType>(type) && expr->is_arrow_) {
                 ctx_.diagnostics_.register_error(std::format("cannot access member '{}' with '->' because expression has '{}' type (use '.' instead)", expr->member_, type_to_str(base->type())), expr->source_);
                 return nullptr;
             }
 
-            auto* record_type = cast<RecordType>(decay_type(base->type()));
-
-            auto* field = record_type->lookup_field(expr->member_);
-            if (field == nullptr) {
-                ctx_.diagnostics_.register_error(std::format("no member named '{}' in '{}'", expr->member_, type_to_str(record_type)), expr->source_);
-                return nullptr;
+            if (auto* pointer_type = dyn_cast<PointerType>(base->type())) {
+                type = pointer_type->inner_type_;
             }
 
-            return field->type_;
+            if (auto* record_type = dyn_cast<RecordType>(type)) {
+                auto* field = record_type->lookup_field(expr->member_);
+                if (field == nullptr) {
+                    ctx_.diagnostics_.register_error(std::format("no member named '{}' in '{}'", expr->member_, type_to_str(record_type)), expr->source_);
+                    return nullptr;
+                } else {
+                    return field->type_;
+                }
+            } else {
+                ctx_.diagnostics_.register_error(std::format("member reference base type '{}' is not a struct", type_to_str(type)), expr->source_);
+                return nullptr;
+            }
         }
 
         case SemaNodeKind::ArraySubscriptExpr: {
             auto* expr = cast<ArraySubscriptExpr>(node);           
-            auto* elem_type = cast<ArrayType>(cast<ReferenceExpr>(expr->base_)->type())->inner_type_;
+            auto* base = cast<ReferenceExpr>(expr->base_);
 
-            return elem_type;
+            if (auto* array_type = dyn_cast<ArrayType>(base->type())) {
+                return array_type->inner_type_;
+            } else if (auto* pointer_type = dyn_cast<PointerType>(base->type())) {
+                return pointer_type->inner_type_;
+            } else {
+                ctx_.diagnostics_.register_error(std::format("type '{}' does not support subscript operator", type_to_str(base->type())), expr->source_);
+                return nullptr;
+            }
         }
 
         case SemaNodeKind::InitListExpr: {
@@ -766,19 +784,6 @@ void SemanticAnalyzer::desugar(SemaNode*& node)
 
             break;
         }
-
-        /*
-        // a[i] -> *(a + i)
-        case SemaNodeKind::ArraySubscriptExpr: {
-            auto* expr = cast<ArraySubscriptExpr>(node);
-
-            desugar(expr->index_);
-
-            node = arr_idx_to_ptr_arithmetic(sema_tree_, expr);
-
-            break;
-        }
-        */
 
         case SemaNodeKind::InitListExpr: {
             auto* init_list = cast<InitListExpr>(node);

@@ -9,6 +9,8 @@
 #include "middleend/transforms/cleanup_cfg.hpp"
 #include "middleend/transforms/mem2reg.hpp"
 
+using PassCallback = void(*)(Program&);
+
 enum class Transforms
 {
     INLINE,
@@ -17,7 +19,7 @@ enum class Transforms
     DSE,
     CONST_FOLD,
     CFG_CLEANUP,
-    MEM2REG,
+    MEM2REG
 };
 
 class TransformPassManager
@@ -45,7 +47,6 @@ public:
                 
                 default:
                     error_exit("transform pass not supported");
-                    break;
             }
         }
     }
@@ -58,10 +59,10 @@ public:
     }
 
 private:
-    std::vector<std::move_only_function<void(Program&)>> passes_;
+    std::vector<PassCallback> passes_;
 
-    void add_pass(std::move_only_function<void(Program&)> pass)
+    void add_pass(PassCallback pass)
     {
-        passes_.push_back(std::move(pass));
+        passes_.push_back(pass);
     }
 };

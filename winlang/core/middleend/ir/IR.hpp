@@ -242,9 +242,6 @@ struct Phi : Value
         Value(ValueKind::Phi),
         alloca_{ alloca },
         operands_{ } {}
-
-    // we need to add this phi to the use list of operands that we add during mem2reg pass
-    // since we can't do it during object construction
 };
 
 struct Const : Value

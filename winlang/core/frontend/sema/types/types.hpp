@@ -155,6 +155,8 @@ struct FunctionType : Type
     bool operator==(const FunctionType& other) const = default;
 };
 
+// fields must know if they are being accessed through a const reference
+
 struct Field
 {
     std::string name_;          

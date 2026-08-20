@@ -109,16 +109,3 @@ inline bool is_pointer_dereference(Sema::SemaNode* node)
 
     return false;
 }
-
-inline Type* decay_type(Type* type)
-{
-    if (auto* t = dyn_cast<QualifierType>(type)) {
-        return decay_type(t->inner_type_);
-    }
-
-    if (auto* t = dyn_cast<PointerType>(type)) {
-        return decay_type(t->inner_type_);
-    }
-
-    return type;
-}
