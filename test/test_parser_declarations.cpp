@@ -1,4 +1,5 @@
-#include "test/test_utilities.hpp"
+#include "frontend/translation_unit.hpp"
+#include "test/test_utils.hpp"
 
 // functions
 
@@ -6,10 +7,10 @@ TEST_CASE("function definition")
 {
     auto ast = parse("srctest/parser/func_no_param.w");
 
-    auto* module = cast<ModuleDecl>(ast.root_);
-    REQUIRE(module->decls_.size() == 1);
+    auto* translation_unit = cast<TranslationUnitDecl>(ast.root_);
+    REQUIRE(translation_unit->decls_.size() == 1);
 
-    auto* func = cast<FuncDecl>(module->decls_[0]);
+    auto* func = cast<FuncDecl>(translation_unit->decls_[0]);
     CHECK(func->name_ == "func");
     CHECK(func->params_.size() == 0);
     CHECK(cast<NamedTypeExpr>(func->return_type_)->name_ == "void");
@@ -19,8 +20,8 @@ TEST_CASE("single parameter")
 {
     auto ast = parse("srctest/parser/func_single_param.w");
 
-    auto* module = cast<ModuleDecl>(ast.root_);
-    auto* func = cast<FuncDecl>(module->decls_[0]);
+    auto* translation_unit = cast<TranslationUnitDecl>(ast.root_);
+    auto* func = cast<FuncDecl>(translation_unit->decls_[0]);
 
     CHECK(func->params_.size() == 1);
 
@@ -35,8 +36,8 @@ TEST_CASE("multiple parameters")
 {
     auto ast = parse("srctest/parser/func_multi_param.w");
 
-    auto* module = cast<ModuleDecl>(ast.root_);
-    auto* func = cast<FuncDecl>(module->decls_[0]);
+    auto* translation_unit = cast<TranslationUnitDecl>(ast.root_);
+    auto* func = cast<FuncDecl>(translation_unit->decls_[0]);
 
     CHECK(func->params_.size() == 2);
 
@@ -57,12 +58,12 @@ TEST_CASE("missing 'fn' keyword")
 
 TEST_CASE("missing return type")
 {
-    Module module = get_module("srctest/parser/func_missing_ret_type.w");
-    Parser parser{module};
+    TranslationUnit translation_unit{ "srctest/parser/func_missing_ret_type.w" };
+    Parser parser{translation_unit};
     AST ast = parser.run();
 
-    REQUIRE(parser.diagnostics_.contains_errors());
-    CHECK(parser.diagnostics_.errors_[0].msg_.contains("syntax error: function missing trailing return type"));
+    REQUIRE(translation_unit.diagnostics_.contains_errors());
+    CHECK(translation_unit.diagnostics_.errors_[0].msg_.contains("syntax error: function missing trailing return type"));
 }
 
 // variables
@@ -71,8 +72,8 @@ TEST_CASE("variable declaration")
 {
     auto ast = parse("srctest/parser/var_decl.w");
 
-    auto* module = cast<ModuleDecl>(ast.root_);
-    auto* func = cast<FuncDecl>(module->decls_[0]);
+    auto* translation_unit = cast<TranslationUnitDecl>(ast.root_);
+    auto* func = cast<FuncDecl>(translation_unit->decls_[0]);
     auto* body = cast<CompoundStmt>(func->body_);
 
     REQUIRE(body->children_.size() == 1);
@@ -88,8 +89,8 @@ TEST_CASE("variable initialization")
 {
     auto ast = parse("srctest/parser/var_init.w");
 
-    auto* module = cast<ModuleDecl>(ast.root_);
-    auto* func = cast<FuncDecl>(module->decls_[0]);
+    auto* translation_unit = cast<TranslationUnitDecl>(ast.root_);
+    auto* func = cast<FuncDecl>(translation_unit->decls_[0]);
     auto* body = cast<CompoundStmt>(func->body_);
 
     REQUIRE(body->children_.size() == 2);
@@ -109,8 +110,8 @@ TEST_CASE("array")
 {
     auto ast = parse("srctest/parser/array.w");
 
-    auto* module = cast<ModuleDecl>(ast.root_);
-    auto* func = cast<FuncDecl>(module->decls_[0]);
+    auto* translation_unit = cast<TranslationUnitDecl>(ast.root_);
+    auto* func = cast<FuncDecl>(translation_unit->decls_[0]);
     auto* body = cast<CompoundStmt>(func->body_);
 
     REQUIRE(body->children_.size() == 1);
@@ -119,7 +120,7 @@ TEST_CASE("array")
 
     CHECK(arr->name_ == "arr");
     CHECK(arr->init_ == nullptr);
- 
+
     auto* type = cast<ArrayTypeExpr>(arr->type_expr_);
 
     CHECK(cast<IntegerLiteralExpr>(type->size_)->value_ == 10);
@@ -137,12 +138,12 @@ TEST_CASE("struct definition")
 {
     auto ast = parse("srctest/parser/struct_def.w");
 
-    auto* module = cast<ModuleDecl>(ast.root_);
+    auto* translation_unit = cast<TranslationUnitDecl>(ast.root_);
 
-    REQUIRE(module->decls_.size() == 1);
-    
-    auto* s = cast<RecordDecl>(module->decls_[0]);
-    
+    REQUIRE(translation_unit->decls_.size() == 1);
+
+    auto* s = cast<RecordDecl>(translation_unit->decls_[0]);
+
     CHECK(s->kind_ == RecordKind::Struct);
     CHECK(s->name_ == "Foo");
     CHECK(s->fields_.empty());
@@ -152,19 +153,19 @@ TEST_CASE("struct definition with fields")
 {
     auto ast = parse("srctest/parser/struct_with_fields.w");
 
-    auto* module = cast<ModuleDecl>(ast.root_);
+    auto* translation_unit = cast<TranslationUnitDecl>(ast.root_);
 
-    REQUIRE(module->decls_.size() == 1);
-    
-    auto* s = cast<RecordDecl>(module->decls_[0]);
-    
+    REQUIRE(translation_unit->decls_.size() == 1);
+
+    auto* s = cast<RecordDecl>(translation_unit->decls_[0]);
+
     CHECK(s->kind_ == RecordKind::Struct);
     CHECK(s->name_ == "Foo");
     REQUIRE(s->fields_.size() == 2);
-    
+
     auto* field1 = cast<VarDecl>(s->fields_[0]);
     auto* field2 = cast<VarDecl>(s->fields_[1]);
-    
+
     CHECK(field1->name_ == "x");
     CHECK(field2->name_ == "y");
 
@@ -174,4 +175,3 @@ TEST_CASE("struct definition with fields")
     CHECK(field1->init_ == nullptr);
     CHECK(field2->init_ == nullptr);
 }
-
